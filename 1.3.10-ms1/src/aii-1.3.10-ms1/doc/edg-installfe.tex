@@ -1,0 +1,172 @@
+\section{edg-installfe\label{edg-installfe}\index{edg-installfe}}
+
+
+AII command line installation frontend
+
+\subsection*{SYNOPSIS\label{edg-installfe_SYNOPSIS}\index{edg-installfe!SYNOPSIS}}
+\begin{verbatim}
+ edg-installfe [options] <--boot <hostname|regexp>      |
+                          --bootlist <filename>         |
+                          --configure <hostname|regexp> |
+                          --configurelist <filename>    |
+                          --install <hostname|regexp>   |
+                          --installlist <filename>      |
+                          --remove <hostname|regexp>    |
+                          --removeall                   |
+                          --removelist <filename> >     |
+                          --status <hostname|regexp>    |
+                          --statuslist <filename> >
+\end{verbatim}
+\subsection*{DESCRIPTION\label{edg-installfe_DESCRIPTION}\index{edg-installfe!DESCRIPTION}}
+
+
+This module provides a command line interface to AII tools to 1.
+select if a node has to be installed or not 2. add/update nodes
+3. remove nodes.  It receives as input from the user
+a lists of nodes and their installation status (to be installed/booted from local disk).
+It executes the frontend edg-installfe on all installation servers.
+
+
+
+Regular expressions can be used to specify hostnames.
+
+
+
+Servers can listed in the configuration file (see below).
+
+\subsection*{COMMANDS\label{edg-installfe_COMMANDS}\index{edg-installfe!COMMANDS}}
+\begin{description}
+
+\item[--boot $<$hostname$|$regexp$>$] \mbox{}
+
+Select the boot from local disk for $<$hostname$>$. Perl regular
+expressions can be used (e.g node00[1-9], node.*).
+
+
+\item[--bootlist $<$filename$>$] \mbox{}
+
+Select boot from local disk for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--configure $<$hostname$|$regexp$>$] \mbox{}
+
+Configure $<$hostname$>$. Perl regular expressions can be used.
+
+
+\item[--configurelist $<$filename$>$] \mbox{}
+
+Configure hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--install $<$hostname$|$regexp$>$] \mbox{}
+
+Select the installation for $<$hostname$>$. Perl regular expressions
+can be used.
+
+
+\item[--installlist $<$filename$>$] \mbox{}
+
+Select installation for the hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--remove $<$hostname$|$regexp$>$] \mbox{}
+
+Remove the configuration for $<$hostname$>$. Perl regular expressions
+can be used.
+
+
+\item[--removelist $<$filename$>$] \mbox{}
+
+Remove configurations for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--removeall] \mbox{}
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+
+\item[--status $<$hostname$|$regexp$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for $<$hostname$>$ or
+for all hostnames that match the regular expression $<$regexp$>$
+
+
+\item[--statuslist $<$filename$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for hosts listed
+on $<$filename$>$. Hosts have to be listed one per line. Lines starting
+with \# are comment.
+
+\end{description}
+\subsection*{OPTIONS\label{edg-installfe_OPTIONS}\index{edg-installfe!OPTIONS}}
+\begin{description}
+
+\item[--servers $<$user1@server1 user2@server2] \textbf{...$>$}
+
+Installation servers to be updated remotely via ssh. Use'@'
+to select the remote user to use. E.g:
+
+\begin{verbatim}
+ servers = john@install-1.asdf.fi
+\end{verbatim}
+
+
+If there are more servers, use ' ' to separate them:
+
+\begin{verbatim}
+ servers = john@install-1.asdf.fi john@install-2.asdf.fi
+\end{verbatim}
+
+
+If you are running *all* tools (edg-dhcp, edg-nbp, edg-osinstall)
+on *this* machine, use just:
+
+\begin{verbatim}
+ server = localhost
+\end{verbatim}
+
+
+They will be executed *directly* (no ssh required). Of course you can mix:
+
+\begin{verbatim}
+ servers = localhost john@install-1.asdf.fi
+\end{verbatim}
+
+
+Default value: localhost
+
+
+\item[--nodhcp] \mbox{}
+
+Run do not update DHCP configuration.
+
+
+\item[--nonbp] \mbox{}
+
+Do not update NBP configuration.
+
+
+\item[--noosinstall] \mbox{}
+
+Do not update OS installer configurations.
+
+\end{description}
+\subsection*{CONFIGURATION FILE\label{edg-installfe_CONFIGURATION_FILE}\index{edg-installfe!CONFIGURATION FILE}}
+
+
+Default values of command lines options can be specified in the file
+\$EDG\_LOCATION/etc/edg-nbp.conf using syntax:
+
+\begin{verbatim}
+ <option> = <value>
+\end{verbatim}
+\subsection*{AUTHORS\label{edg-installfe_AUTHORS}\index{edg-installfe!AUTHORS}}
+
+
+Enrico Ferro $<$enrico.ferro@pd.infn.it$>$
+

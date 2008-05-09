@@ -1,0 +1,106 @@
+\section{edg-osinstall\label{edg-osinstall}\index{edg-osinstall}}
+
+
+Create/remove configuration files of the OS installer
+
+\subsection*{SYNOPSIS\label{edg-osinstall_SYNOPSIS}\index{edg-osinstall!SYNOPSIS}}
+\begin{verbatim}
+ edg-osinstall [options] <--configure <hostname>     |
+                          --configurelist <filename> |
+                          --remove <hostname>        |
+                          --removelist <filename>    |
+                          --removeall >
+\end{verbatim}
+\subsection*{DESCRIPTION\label{edg-osinstall_DESCRIPTION}\index{edg-osinstall!DESCRIPTION}}
+
+
+edg-osinstall manages configuration files required by the OS installation. Currently
+supports RedHat Kickstart files. It access via CCM to the local caches, created
+by edg-shellfe, and it is executed by edg-shellfe. Input date
+can be specified via command line (for just 1 host) or via text files (for more hosts).
+
+
+
+Currently it supports RedHat 7.3 kickstart files.
+
+
+
+Command line line options override default values in \$EDG\_LOCATION/etc/edg-osinstall.conf.
+
+\subsection*{COMMANDS\label{edg-osinstall_COMMANDS}\index{edg-osinstall!COMMANDS}}
+\begin{description}
+
+\item[--configure $<$hostname$>$] \mbox{}
+
+Configure $<$hostname$>$ for the installation. The kickstart template and the
+parameters required to fill the template are read directly from the local caches
+previously downloaded by edg-shellfe.
+
+
+\item[--configurelist $<$filename$>$] \mbox{}
+
+Configure hosts listed on $<$filename$>$. Hosts have to be listed one per line.
+Lines starting with \# are comment. An example:
+
+
+\item[--remove $<$hostname$>$] \mbox{}
+
+Remove configuration file for $<$hostname$>$.
+
+
+\item[--removelist $<$filename$>$] \mbox{}
+
+Remove configurations for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--removeall] \mbox{}
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+\end{description}
+\subsection*{OPTIONS\label{edg-osinstall_OPTIONS}\index{edg-osinstall!OPTIONS}}
+\begin{description}
+
+\item[--cfgfile $<$path$>$] \mbox{}
+
+Use as configuration file $<$path$>$ instead of the default
+configuration file \$EDG\_LOCATION/etc/edg-osinstall.conf.
+
+
+\item[--templatedir $<$directory$>$] \mbox{}
+
+Directory where the template files for the OS installation have to be present
+(default value: \$EDG\_LOCATION/lib/aii/osinstall). A template file is
+provided by the package itself.
+
+
+\item[--osinstalldir $<$directory$>$] \mbox{}
+
+Directory where the configuration files are written
+(default: /osinstall/ks). For Kickstart files the filenames are in the form $<$FQDN$>$.ks
+(e.g. node002.qwer.fi.ks). The directory has to be available via NFS or HTTP.
+
+\end{description}
+\subsection*{CONFIGURATION FILE\label{edg-osinstall_CONFIGURATION_FILE}\index{edg-osinstall!CONFIGURATION FILE}}
+
+
+Default values of command lines options can be specified in the file
+\$EDG\_LOCATION/etc/edg-osinstall.conf using syntax:
+
+\begin{verbatim}
+ <option> = <value>
+\end{verbatim}
+
+
+e.g.:
+
+\begin{verbatim}
+ osinstalldir = /my/personal/osinstall
+\end{verbatim}
+\subsection*{AUTHORS\label{edg-osinstall_AUTHORS}\index{edg-osinstall!AUTHORS}}
+
+
+Enrico Ferro $<$enrico.ferro@pd.infn.it$>$
+

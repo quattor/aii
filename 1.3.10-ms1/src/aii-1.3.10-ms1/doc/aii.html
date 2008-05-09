@@ -1,0 +1,1799 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 3.2 Final//EN">
+
+<!--Converted with jLaTeX2HTML 2002 (1.62) JA patch-1.4
+patched version by:  Kenshi Muto, Debian Project.
+LaTeX2HTML 2002 (1.62),
+original version by:  Nikos Drakos, CBLU, University of Leeds
+* revised and updated by:  Marcus Hennecke, Ross Moore, Herb Swan
+* with significant contributions from:
+  Jens Lippmann, Marek Rouchal, Martin Wilck and others -->
+<HTML>
+<HEAD>
+<TITLE>Automated Installation Infrastructure</TITLE>
+<META NAME="description" CONTENT="Automated Installation Infrastructure">
+<META NAME="keywords" CONTENT="aii">
+<META NAME="resource-type" CONTENT="document">
+<META NAME="distribution" CONTENT="global">
+
+<META HTTP-EQUIV="Content-Type" CONTENT="text/html; charset=iso-8859-1">
+<META NAME="Generator" CONTENT="jLaTeX2HTML v2002 JA patch-1.4">
+<META HTTP-EQUIV="Content-Style-Type" CONTENT="text/css">
+
+<LINK REL="STYLESHEET" HREF="aii.css">
+
+</HEAD>
+
+<BODY >
+
+<P>
+
+<H1><A NAME="SECTION00100000000000000000">
+1 Introduction</A>
+</H1>
+Automated Installation Infrastructure manages three services:
+
+<UL>
+<LI>DHCP: to distribute network configuration parameters.
+</LI>
+<LI>TFTP: to distribute Network Boot Program (NBP, the boot loader) and kernel
+       images
+</LI>
+<LI>OS installer tools: to manage operating system installation.
+</LI>
+</UL>
+Currently AII supports ISC-DHCP 2.0, pxelinux as NBP and RedHat 7.3.  Nodes
+installation is managed via Anaconda and Kickstart files.
+
+<P>
+We suppose that the CDB server is already installed and you already setup the basic
+HLD files for the nodes to install. In this document you can find:
+
+<UL>
+<LI>setup of an ``all-in-one'' installation server (useful for
+small sites)
+</LI>
+<LI>setup of a situation with more installation servers
+</LI>
+<LI>customization of HLD files with all parameters needed
+</LI>
+<LI>installation startup
+</LI>
+<LI>tools documentation.
+</LI>
+</UL>
+
+<P>
+
+<H1><A NAME="SECTION00200000000000000000"></A> <A NAME="allinone"></A>
+<BR>
+2 Small site setup (all-in-one)
+</H1>
+Although AII is designed to support redundancy / load reduction by spreading
+installations services in more nodes, you can concentrate all the services in just
+one. This can be useful for a small site. In this situation we suppose you will
+have 1 node running <I>all</I> services (CDB + DHCP + TFTP + OS installer tools).
+This section describes how to install all these services on the same
+machine where you already installed CDB.
+
+<P>
+
+<H1><A NAME="SECTION00210000000000000000"></A> <A NAME="packages"></A>
+<BR>
+1 Packages installation
+</H1>
+The following packages are provided by RedHat (it is likely that some of them are already
+installed on your server):
+
+<UL>
+<LI>perl-URI
+</LI>
+<LI>perl-Digest-MD5
+</LI>
+<LI>perl-libwww-perl
+</LI>
+<LI>perl-MIME-Base64
+</LI>
+<LI>perl-HTML-Parser
+</LI>
+<LI>perl-HTML-Tagset
+</LI>
+</UL>
+The following packages are required by edg-aii and are provided by EDG WP4.
+You can downloand them from:
+<BR><TT><A NAME="tex2html1"
+  HREF="http://datagrid.in2p3.fr/distribution/datagrid/wp4/install-r3 ???">http://datagrid.in2p3.fr/distribution/datagrid/wp4/install-r3 ???</A></TT>
+<UL>
+<LI>edg-perl-LC
+</LI>
+<LI>edg-caf-perl
+</LI>
+<LI>edg-ccm
+</LI>
+</UL>
+From the same URL download and install the AII package:
+
+<UL>
+<LI>edg-aii
+</LI>
+</UL>
+
+<P>
+<I>TO BE COMPLETED: nch module?</I>
+
+<P>
+
+<H1><A NAME="SECTION00220000000000000000">
+2 Run edg-aiisetup-all-in-one</A>
+</H1>
+The script <TT>$EDG_LOCATION/sbin/edg-aiisetup-all-in-one</TT> is provided to automate the
+installation of an all-in-one installation server. Run it to install and configure automatically
+DHCP, NFS, TFTP, sudo. The script installs missing packages downloading them from a RedHat's mirror
+(using the latest version on the updates section if present), creates configuration files needed
+(it asks <I>before overwriting</I> existing ones), starts the daemons and enables them.
+The following packages will be installed:
+
+<UL>
+<LI>For DHCP: dhcp
+</LI>
+<LI>For NBP: mtools, syslinux, xinetd, tftp-server
+</LI>
+<LI>For HTTP: expat, mm, apache
+</LI>
+<LI>For NFS: portmap, nfs-utils
+</LI>
+<LI>For remote execution: sudo, openssh, openssh-server, openssh-clients
+</LI>
+</UL>
+The directory <TT>/osinstall/</TT> will be used to distribute the packages and configuration
+files needed for nodes installation.
+
+<P>
+
+<H1><A NAME="SECTION00230000000000000000">
+3 Complete DHCP setup</A>
+</H1>
+
+<OL>
+<LI>Edit <TT>/etc/dhcpd.conf</TT> to configure your network parameters (gateway, DNS, ...).
+Hosts entries will be added by the AII tool edg-dhcp but you have to write here all common parameters.
+Already existing entries and manually added are preserved if they does not conflict with
+the ones managed by aii-dhcp. See <TT>man dhcpd.conf</TT> for more details.
+</LI>
+<LI>Restart dhcpd daemon <TT>/sbin/service dhcpd restart</TT>
+</LI>
+</OL>
+
+<P>
+
+<H1><A NAME="SECTION00240000000000000000">
+4 Copy OS distribution</A>
+</H1>
+
+<OL>
+<LI>Copy RedHat 7.3 distribution in <TT>/osinstall/rh73/</TT>
+</LI>
+<LI>Copy in the TFTP accessible area the RedHat's kernel and initrd
+<BR><TT>cp /osinstall/rh73/images/pxeboot/* /osinstall/nbp/rh73</TT>
+</LI>
+</OL>
+
+<P>
+
+<H1><A NAME="SECTION00250000000000000000"></A> <A NAME="confaii"></A>
+<BR>
+5 Configure AII tools
+</H1>
+Edit <TT>$EDG_LOCATION/etc/edg-shellfe.conf</TT> and customize the parameter <I>cdburl</I>
+with the URL where the CDB is publishing the XML profiles.
+
+<P>
+
+<H1><A NAME="SECTION00260000000000000000"></A> <A NAME="nch"></A>
+<BR>
+6 Configure edg-nch
+</H1>
+The Notification Client Handler (NCH) is run by edg-ccm-listend to receive notifications
+about CDB profiles changes. You should configure it so in this way:
+<PRE>
+url = http://localhost/hld
+[...]
+actions = /opt/edg/sbin/edg-shellfe.conf --notify
+</PRE>
+
+<P>
+
+<H1><A NAME="SECTION00270000000000000000"></A> <A NAME="ssh"></A>
+<BR>
+7 Configure SSH
+</H1>
+Now you can <I>already</I> use the frontend edg-installfe (see <A HREF="aii.html#installingnodes">5</A>) in your
+installation server to select which nodes should be installed.
+
+<P>
+If you want you can install edg-installfe also in your personal workstation; in this
+case you do not need to login into the installation server to operate. This section and
+the next one describe the steps needed.
+
+<P>
+AII frontend uses Secure SHell to execute remotely others AII tools using public
+key authentication. For this reason you should:
+
+<OL>
+<LI>Create an user (e.g. <TT>aii</TT>) on the installation server and the directory
+<TT>.ssh</TT> with the right permissions:
+<PRE>
+useradd aii
+passwd aii
+su - aii
+mkdir ~/.ssh
+chmod 0700 ~/.ssh
+</PRE>
+</LI>
+<LI>If you do not have already, generate a couple of public+private keys on your
+workstation. ssh will be used by edg-installfe to run remotely edg-shellfe on
+the installation server(s). The following commands are for openssh using protocol version 2:
+<PRE>
+ssh-keygen -t dsa
+scp ~/.ssh/id_dsa.pub aii@HOSTNAME:.ssh/authorized_keys2
+</PRE>
+Of course replace HOSTNAME with the hostname of your target server.
+</LI>
+<LI>You can now disable the `standard' login of the aii user on the server with:
+<PRE>
+usermod -L aii
+</PRE>
+</LI>
+</OL>
+
+<P>
+
+<H1><A NAME="SECTION00280000000000000000"></A><A NAME="frontend"></A>
+<BR>
+8 Install and configure edg-aii-installfe on your machine
+</H1>
+Download and install on your machine the package edg-aii-frontend:
+<BR><TT><A NAME="tex2html2"
+  HREF="http://datagrid.in2p3.fr/distribution/datagrid/wp4/install-r3 ??">http://datagrid.in2p3.fr/distribution/datagrid/wp4/install-r3 ??</A></TT>
+<BR>
+Edit the file <TT>/opt/edg/etc/edg-installfe.conf</TT> and set in the
+variable <I>servers</I> the hosts that have to be updated via ssh.
+In you are using the "all-in-one" setup, so you can write something like
+<PRE>
+servers = aii@HOSTNAME
+</PRE>
+where HOSTNAME is your installation server. If you have more servers
+you should write something like:
+<PRE>
+servers = aii@dhcp.asdf.fi aii@nbp.asdf.fi aii@osinstaller.asdf.fi
+</PRE>
+
+<P>
+
+<H1><A NAME="SECTION00300000000000000000">
+3 ``Big'' site setup</A>
+</H1>
+If you want to spread services in more nodes, you should do manually
+part of the steps done by the script on each of them. A possible scenario is the following:
+
+<UL>
+<LI>1 server for CDB (already installed)
+</LI>
+<LI>1 server for DHCP + NBP (TFTP server) + receive acknowledge from the install process
+</LI>
+<LI>1 servers for OS installation
+</LI>
+</UL>
+
+<DIV ALIGN="CENTER"><A NAME="fig:arch"></A><A NAME="94"></A>
+<TABLE>
+<CAPTION ALIGN="BOTTOM"><STRONG>Figure 3.1:</STRONG>
+Automated Installation Infrastructure: subsystem overview.</CAPTION>
+<TR><TD>
+<DIV ALIGN="CENTER">
+<IMG
+ WIDTH="853" HEIGHT="582" ALIGN="BOTTOM" BORDER="0"
+ SRC="/home/ferro/aii/src/doc//aii-multi.png"
+ ALT="Image /home/ferro/aii/src/doc//aii-multi.png">
+  
+</DIV></TD></TR>
+</TABLE>
+</DIV>
+
+<P>
+This possibility is just an example, e.g. you can have more DHCP servers or
+you can split the TFTP and the DHCP server. If you change the layout you should update
+accordingly:
+
+<UL>
+<LI>The HLD files on the CDB (aii.tpl, see chapter <A HREF="aii.html#nodesinstall">4</A>)
+</LI>
+<LI>The HLD configuration file (adding all the servers to be notified)
+</LI>
+<LI>The configuration file of edg-installfe (which hosts are
+      installation servers: edg-installfe executes edg-shellfe via
+      SSH. See the man page for more details).
+</LI>
+</UL>
+
+<P>
+
+<H1><A NAME="SECTION00310000000000000000">
+1 Configure the DHCP + TFTP server</A>
+</H1>
+
+<H2><A NAME="SECTION00311000000000000000">
+1 Install some RedHat packages</A>
+</H2> Download and install these packages from a RedHat 7.3 mirror; check in the 'updates' section
+for the latest version.
+
+<UL>
+<LI>For DHCP: dhcp
+</LI>
+<LI>For TFTP: xinetd and tftp-server
+</LI>
+<LI>For remote execution: openssh, openssh-server, sudo
+</LI>
+</UL>
+A mirror:
+<BR><TT><A NAME="tex2html4"
+  HREF="http://rm.mirror.garr.it/mirrors/RedHat/7.3/en/os/i386/RedHat/RPMS/">http://rm.mirror.garr.it/mirrors/RedHat/7.3/en/os/i386/RedHat/RPMS/</A></TT>
+<BR><TT><A NAME="tex2html5"
+  HREF="http://rm.mirror.garr.it/mirrors/redhat-updates/7.3/en/os/i386/">http://rm.mirror.garr.it/mirrors/redhat-updates/7.3/en/os/i386/</A></TT>
+<P>
+
+<H2><A NAME="SECTION00312000000000000000">
+2 Install AII package and required libraries</A>
+</H2> See <A HREF="aii.html#packages">2.1.</A>
+
+<P>
+
+<H2><A NAME="SECTION00313000000000000000"></A><A NAME="path"></A>
+<BR>
+3 Update $PATH
+</H2> If not already configured, udpate the PATH environment variable to include $EDG_LOCATION binary
+directories by adding in <TT>/etc/profile</TT> the lines:
+<PRE>
+PATH=$PATH:/opt/edg/sbin:/opt/edg/bin
+export PATH
+</PRE>
+Of course this is in case of $EDG_LOCATION=/opt/edg
+Log out and log in again to get the path updated.
+
+<P>
+
+<H2><A NAME="SECTION00314000000000000000"></A><A NAME="dhcp"></A>
+<BR>
+4 Configure DHCP
+</H2> The package edg-aii provides an example of <TT>dhcpd.conf</TT>: complete all network parameters
+needed by your site. Enable dhcpd server and start it.
+<PRE>
+cp /opt/edg/share/doc/edg-aii-*/dhcpd.conf.example /etc/dhcpd.conf
+vi /etc/dhcpd.conf
+/sbin/chkconfig --level 2345 dhcpd on
+/sbin/service dhcpd restart
+</PRE>
+Please note that AII tools will manage  <B>only</B> the <I>host</I> declarations,
+so you have to prepare the file with <B>all other declarations</B> (subnet, DNS, gateway, etc...).
+Of course you can add manually other host declarations that does not conflict with the
+ones inserted automatically by the AII tool edg-dhcp.
+
+<P>
+
+<H2><A NAME="SECTION00315000000000000000">
+5 Configure SSH</A>
+</H2> See <A HREF="aii.html#ssh">2.7.</A>
+
+<P>
+
+<H2><A NAME="SECTION00316000000000000000"></A> <A NAME="sudo"></A>
+<BR>
+6 Configure sudo
+</H2> sudo is used to permit to a normal user to run a particular command with administrative
+privileges. Run <TT>visudo</TT> and add:
+<PRE>
+aii    ALL=NOPASSWD:/opt/edg/sbin/edg-shellfe
+apache ALL=NOPASSWD:/opt/edg/sbin/edg-installfe --boot * --nodhcp --noosinstall
+</PRE>
+
+<P>
+The first line is needed to execute the user commands coming from edg-installfe
+frontend installed on <I>your workstation</I> (see <A HREF="aii.html#frontend">2.8.</A>).
+The second line is needed by edg-installack.cgi to run as root edg-installfe
+installed on <I>this node</I>. This is needed because you could have more NBP servers
+that have to be notified (e.g. two NBP servers, mirrored for redundancy), so in that
+situation edg-installfe is used to run in more servers edg-shellfe, and it should
+be configured as described in <A HREF="aii.html#frontend">2.8.</A>. But in our simpler
+example, edg-installfe will be just a wrapper to execute locally edg-shellfe and
+you do not need to modify its configuration file <TT>edg-installfe.conf</TT>.
+
+<P>
+
+<H2><A NAME="SECTION00317000000000000000">
+7 Configure CGI script to get acknowledges</A>
+</H2> Copy the script in cgi-bin directory and start the web server:
+<PRE>
+cp -f /opt/edg/sbin/edg-installack.cgi /var/www/cgi-bin/
+/sbin/service httpd restart
+/sbin/chkconfig --level 2345 httpd on
+</PRE>
+
+<P>
+
+<H2><A NAME="SECTION00318000000000000000">
+8 Install pxelinux and TFTP server</A>
+</H2> Install latest version of syslinux (unfortunately the version provided by RedHat does
+not include the loader pxelinux.0) and copy the loader in a directory that will be
+readable by the TFTP server:
+<PRE>
+rpm -Uvh ftp://ftp.kernel.org/pub/linux/utils/boot/syslinux/RPMS/syslinux-2.04-1.i386.rpm
+mkdir -p /osinstall/nbp/pxelinux.cfg
+cp /usr/lib/syslinux/pxelinux.0 /osinstall/nbp
+</PRE>
+Enable TFTP server and start it:
+<PRE>
+cp -f /opt/edg/share/doc/edg-aii-*/tftp.example /etc/xinetd.d/tftp
+/sbin/chkconfig --level 2345 xinetd on
+/sbin/service xinetd restart
+</PRE>
+
+<P>
+
+<H2><A NAME="SECTION00319000000000000000">
+9 Configure AII tools</A>
+</H2> See <A HREF="aii.html#confaii">2.5.</A>
+
+<P>
+
+<H2><A NAME="SECTION003110000000000000000">
+10 Configure edg-nch</A>
+</H2> See <A HREF="aii.html#nch">2.6.</A>
+
+<P>
+
+<H1><A NAME="SECTION00320000000000000000">
+2 Configure OS installation server</A>
+</H1>
+
+<H2><A NAME="SECTION00321000000000000000">
+1 Install AII packages and libraries</A>
+</H2> See <A HREF="aii.html#packages">2.1.</A>
+
+<P>
+
+<H2><A NAME="SECTION00322000000000000000">
+2 Update $PATH</A>
+</H2> See <A HREF="aii.html#path">3.1.3.</A>
+
+<P>
+
+<H2><A NAME="SECTION00323000000000000000">
+3 Configure SSH</A>
+</H2> See <A HREF="aii.html#ssh">2.7.</A>
+
+<P>
+
+<H2><A NAME="SECTION00324000000000000000"></A> <A NAME="sudo2"></A>
+<BR>
+4 Configure sudo
+</H2> Run <TT>visudo</TT> to edit sudo configuration and add this line:
+<PRE>
+aii ALL=NOPASSWD:/opt/edg/sbin/edg-shellfe
+</PRE>
+See <TT>man sudoers</TT> for more details about sudo options.
+
+<P>
+
+<H2><A NAME="SECTION00325000000000000000"></A> <A NAME="osinstall"></A>
+<BR>
+5 Configure RedHat installer
+</H2> Copy the contents of all RedHat 7.3 CDs in /osinstall/rh73:
+<PRE>
+mkdir -p /osinstall/rh73
+mkdir -p /osinstall/ks
+mount /mnt/cdrom
+cp -r /mnt/cdrom/* /osinstall/rh73
+umount /mnt/cdrom
+</PRE>
+Copy from RedHat 7.3 the kernel and initrd images needed by PXE installations:
+<PRE>
+mkdir -p /osinstall/nbp/rh73
+cp /osinstall/rh73/images/pxeboot/* /osinstall/nbp/rh73
+</PRE>
+We propose to use NFS do distribute software packages for the first installation.
+It is possible to use also HTTP (see <A HREF="aii.html#nodesinstall">4</A>). Download and install
+RedHat packages:
+
+<UL>
+<LI>portmap
+</LI>
+<LI>nfs-utils
+</LI>
+</UL>
+Run these commands to configure NFS service:
+<PRE>
+cp -f /opt/edg/share/doc/edg-aii-*/exports.example /etc/exports
+/sbin/service portmap restart
+/sbin/service nfs restart
+/sbin/service nfslock restart
+/sbin/chkconfig --level 2345 portmap on
+/sbin/chkconfig --level 345 nfs on
+/sbin/chkconfig --level 345 nfslock on
+</PRE>
+
+<P>
+
+<H2><A NAME="SECTION00326000000000000000">
+6 Configure AII tools</A>
+</H2>  See <A HREF="aii.html#confaii">2.5.</A>
+
+<P>
+
+<H2><A NAME="SECTION00327000000000000000">
+7 Configure edg-nch</A>
+</H2> See <A HREF="aii.html#nch">2.6.</A>
+
+<P>
+
+<H1><A NAME="SECTION00330000000000000000">
+3 Install and configure edg-aii-frontend on your machine</A>
+</H1>
+See <A HREF="aii.html#frontend">2.8.</A>
+
+<P>
+
+<H1><A NAME="SECTION00400000000000000000"></A> <A NAME="nodesinstall"></A>
+<BR>
+4 Nodes installation
+</H1>
+
+<H1><A NAME="SECTION00410000000000000000">
+1 Profiles setup</A>
+</H1>
+Once completed the software setup on the server, you have to prepare the
+nodes profiles in the CDB. The file <TT>/opt/edg/share/doc/edg-aii-*/aii.tpl</TT>
+provides a Pan template with configuration data needed by AII tools.
+It mainly tries to ``recycle'' parameters already defined in the Global Schema [1].
+
+<P>
+All data needed by AII tools are included in the branch <TT>/system/aii</TT>.
+
+<P>
+
+<H2><A NAME="SECTION00411000000000000000">
+1 General options</A>
+</H2>
+If you are using an `all-in-one' server:
+
+<UL>
+<LI><TT>aii_server</TT>: write here its FQDN.
+</LI>
+</UL>
+
+<P>
+If you have more installation servers:
+
+<UL>
+<LI><TT>/system/aii/server_osinstall</TT>: the FQDN of your OS installation server.
+</LI>
+<LI><TT>/system/aii/osinstall_protocol</TT>: protocol used for the OS installation.
+      Default value is "nfs". If you want, you can select "http". In this case you have to
+      
+<UL>
+<LI>configure your web server so <TT>/osinstall</TT> is readable via web and
+      the CGI script edg-ainstallack.cgi is executable (its URL is stored in
+      /system/aii/osinstall/ks/ackurl).
+</LI>
+<LI>you can skip the NFS configuration described in <A HREF="aii.html#osinstall">3.2.5.</A>
+      
+</LI>
+</UL>
+</LI>
+<LI><TT>/system/aii/server_ack</TT>: FQDN of the server that is receiving
+      with the CGI script edg-installack.cgi the acknowledges of the end of install.
+</LI>
+<LI><TT>/system/aii/ip_server_tftp</TT>: IP address (<I>not</I> the FQDN) of the
+      TFTP server. Needed <I>only</I> if your TFTP server is different from the DHCP server.
+</LI>
+</UL>
+
+<P>
+
+<H2><A NAME="SECTION00412000000000000000">
+2 OS install branch (/system/aii/osinstall/)</A>
+</H2>
+
+<UL>
+<LI>osinstall/kstemplate: kickstart template to be used (it should be present in the OS
+      installation server in the directory <TT>$EDG_LOCATION/lib/aii/osinstall</TT>).
+</LI>
+<LI>osinstall/ks/*: Kickstart options used to fill the
+      template file (keyboard layout, language, ...).
+</LI>
+</UL>
+
+<P>
+
+<H2><A NAME="SECTION00413000000000000000">
+3 NBP branch (/system/aii/nbp/)</A>
+</H2>
+
+<UL>
+<LI>nbp/template: template of pxelinux configuration file to use (it should be
+      present in the NBP server <TT> EDG_LOCATION/lib/aii/nbp</TT>).
+</LI>
+<LI>nbp/options/*: pxelinux options used to fill the template file (kernel, initial ram disk
+      image, ...).
+</LI>
+</UL>
+
+<P>
+
+<H2><A NAME="SECTION00414000000000000000">
+4 DHCP branch (/system/aii/dhcp/)</A>
+</H2>
+
+<UL>
+<LI>dhcp/mac: MAC address of the network boot card
+</LI>
+<LI>dhcp/ip: IP address associated to the network boot card
+</LI>
+<LI>dhcp/tftpserver: TFTP server IP address (default: just
+      the value already declared in /system/aii/ip_server_tftp
+</LI>
+<LI>dhcp/addoptions: additional DHCP options (optional). Warning: they will be added
+      in the host declaration of dhcpd.conf file, so do not forget ';' at the end of
+      your parameter(s).
+</LI>
+</UL>
+
+<P>
+
+<H1><A NAME="SECTION00500000000000000000"></A> <A NAME="installingnodes"></A>
+<BR>
+5 Using AII tools
+</H1>
+
+<H1><A NAME="SECTION00510000000000000000">
+1 Select nodes with edg-installfe</A>
+</H1>
+edg-installfe is the frontend to select via command line the nodes to install.
+Once installed and configured the package edg-aii-installfe on your
+workstation (see <A HREF="aii.html#frontend">2.8.</A>), if you already setup the nodes grid001 and grid002
+with CDB, to install both:
+<PRE>
+edg-installfe --install grid001
+edg-installfe --install grid002
+</PRE>
+or you can use Perl regular expressions like:
+<PRE>
+edg-installfe --install 'grid0.+'
+</PRE>
+You can specify the complete name:
+<PRE>
+edg-installfe --install grid001.supergrid.org
+</PRE>
+To deactivate the installation of grid001:
+<PRE>
+edg-installfe --boot grid001
+</PRE>
+To see the status of grid001 (if it is ready to be installed or not):
+<PRE>
+edg-installfe --status grid001
+</PRE>
+To see the status of all nodes <I>configured in the CDB</I> you can use the regexp:
+<PRE>
+edg-installfe --status .+
+</PRE>
+Normally addition and removal of nodes are managed via the notification coming from
+the  DB. Anyway you can do both operation manually; to force the addition of grid001
+<PRE>
+edg-installfe --configure grid001
+</PRE>
+while to remove all grid* nodes:
+<PRE>
+edg-installfe --remove 'grid.*'
+</PRE>
+
+<P>
+For more details see the man page of edg-installfe.
+
+<P>
+
+<H1><A NAME="SECTION00520000000000000000">
+2 Using edg-shellfe in the installation servers</A>
+</H1> edg-installfe is just a wrapper to remotely execute on different installation servers
+edg-shellfe, so in the installation servers you can execute edg-shellfe with the
+command line parameters described for edg-installfe.
+
+<P>
+For more details see the man page of edg-shellfe.
+
+<P>
+
+<H1><A NAME="SECTION00600000000000000000"></A>
+<A NAME="edg-dhcp"></A>
+<BR>
+6 Software man pages
+</H1>
+
+<H1><A NAME="SECTION00610000000000000000"></A><A NAME="edg-dhcp"></A><A NAME="351"></A>
+<BR>
+1 edg-dhcp
+</H1>
+
+<P>
+Add/remove host entries to an ISC DHCP server.
+
+<P>
+
+<H2><A NAME="SECTION00611000000000000000"></A><A NAME="edg-dhcp_SYNOPSIS"></A><A NAME="353"></A>
+<BR>
+SYNOPSIS
+</H2>
+<PRE>
+ edg-dhcp [options] &lt;--configure &lt;hostname&gt; &lt;mac&gt; |
+                     --configurelist &lt;filename&gt;   |
+                     --remove &lt;hostname&gt;          |
+                     --removelist &lt;filename&gt;      |
+                     --removeall &gt;
+</PRE>
+<H2><A NAME="SECTION00612000000000000000"></A><A NAME="edg-dhcp_DESCRIPTION"></A><A NAME="357"></A>
+<BR>
+DESCRIPTION
+</H2>
+
+<P>
+edg-dhcp is a command line tool to add/remove nodes specific entries to
+a ISC DHCP server. Already existing entries are preserved.
+The administrator has to prepare the DHCP server configuration file with
+all common network definitions and subnets declarations. The tool
+add/remove/update entries to the corresponding subnet and restart the
+DHCP server. A backup copy of the configuration file is created
+before updating it and restarting the DHCP server.
+
+<P>
+Command line options override default values in $EDG_LOCATION/etc/edg-dhcp.conf.
+
+<P>
+
+<H2><A NAME="SECTION00613000000000000000"></A><A NAME="edg-dhcp_COMMANDS"></A><A NAME="359"></A>
+<BR>
+COMMANDS
+</H2>
+<DL>
+<DT><STRONG>-configure &lt;hostname&gt; &lt;mac&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure &lt;hostname&gt; in the DHCP server with the physical &lt;mac&gt; address
+(syntax: XX:XX:XX:XX:XX:XX). If the node is present its
+configuration is removed and  replaced by the new one.
+
+<P>
+</DD>
+<DT><STRONG>-tftpserver &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+TFTP server (optional). Can be specified only with -configure.
+
+<P>
+</DD>
+<DT><STRONG>-addoptions &lt;text&gt;</STRONG></DT>
+<DD>
+
+<P>
+Additional DHCP options for the node that will be specified
+inside the entry host. Can be specified only with -configure;
+they should be specified between quotes, e.g.:
+ edg-dhcp -configure node002 -addoptions 'filename loader.bin;'
+
+<P>
+</DD>
+<DT><STRONG>-configurelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure hosts listed on &lt;filename&gt;. Hosts have to be listed one per line
+with the syntax &lt;hostname&gt; &lt;mac&gt; [tftpserver] [addoptions], where &lt;hostname&gt;
+and &lt;mac&gt; are mandatory. Lines with # are comment. If a different TFTP server
+should not be specified but there are additional options, use a ';'.
+Additional options are written exactly as they have to written in DHCP
+configuration file. An example:
+
+<P>
+<PRE>
+ # You can use both : and - in the MAC address
+ node1         00:80:45:6F:19:1A
+ node2.qwer.fi 00-80-45:6F-19-1B  bootserver
+ node3.qwer.fi 00:80:45:6F:19:1C  bootserver.qwer.fi filename "down.bin";
+ node3.qwer.fi 00-80-45-6F-19-1D  ;                  filename "down.bin";
+</PRE>
+
+<P>
+</DD>
+<DT><STRONG>-remove &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove &lt;hostname&gt; from the DHCP server configuration.
+
+<P>
+</DD>
+<DT><STRONG>-removelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove hosts listed on &lt;filename&gt; from the DHCP server. Hosts have to
+be listed one per line. Lines with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-removeall</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00614000000000000000"></A><A NAME="edg-dhcp_OPTIONS"></A><A NAME="372"></A>
+<BR>
+OPTIONS
+</H2>
+<DL>
+<DT><STRONG>-cfgfile &lt;path&gt;</STRONG></DT>
+<DD>
+
+<P>
+Use the as configuration file &lt;path&gt; instead of default
+$EDG_LOCATION/etc/edg-dhcp.conf
+
+<P>
+</DD>
+<DT><STRONG>-dhcpconf &lt;path&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configuration file for DHCP server (default: /etc/dhcpd.conf)
+
+<P>
+</DD>
+<DT><STRONG>-restartcmd &lt;command&gt;</STRONG></DT>
+<DD>
+
+<P>
+Command to be used to restart the server (default: /sbin/service
+dhcpd restart). Should be provided between quotes, e.g.
+ edg-dhcp -configurelist list -restartcmd '/sbin/mydhcpd -restart'.
+
+<P>
+</DD>
+<DT><STRONG>-norestart</STRONG></DT>
+<DD>
+
+<P>
+Update the configuration file but do not restart the server.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00615000000000000000"></A><A NAME="edg-dhcp_CONFIGURATION_FILE"></A><A NAME="380"></A>
+<BR>
+CONFIGURATION FILE
+</H2>
+
+<P>
+Default values of command lines options can be specified in the file
+$EDG_LOCATION/etc/edg-dhcp.conf using syntax:
+
+<P>
+<PRE>
+ &lt;option&gt; = &lt;value&gt;
+</PRE>
+
+<P>
+e.g.:
+
+<P>
+<PRE>
+ dhcpconf = /etc/my_dhcpd.conf
+</PRE>
+<H2><A NAME="SECTION00616000000000000000"></A><A NAME="edg-dhcp_AUTHORS"></A><A NAME="386"></A>
+<BR>
+AUTHORS
+</H2>
+
+<P>
+Enrico Ferro &lt;enrico.ferro@pd.infn.it&gt;
+<A NAME="edg-nbp"></A>
+<H1><A NAME="SECTION00620000000000000000"></A><A NAME="edg-nbp"></A><A NAME="550"></A>
+<BR>
+2 edg-nbp
+</H1>
+
+<P>
+Create/remove entries for pxelinux
+
+<P>
+
+<H2><A NAME="SECTION00621000000000000000"></A><A NAME="edg-nbp_SYNOPSIS"></A><A NAME="552"></A>
+<BR>
+SYNOPSIS
+</H2>
+<PRE>
+ edg-nbp [options] &lt;--boot &lt;hostname&gt;          |
+                    --bootlist &lt;filename&gt;      |
+                    --configure &lt;hostname&gt; &lt;template&gt; [n1=v1] ... |
+                    --configurelist &lt;filename&gt; |
+                    --install &lt;hostname&gt;       |
+                    --installlist &lt;filename&gt;   |
+                    --remove &lt;hostname&gt;        |
+                    --removelist &lt;filename&gt;    |
+                    --removeall                |
+                    --status &lt;hostname&gt;        |
+                    --statuslist &lt;filename&gt; &gt;
+</PRE>
+<H2><A NAME="SECTION00622000000000000000"></A><A NAME="edg-nbp_DESCRIPTION"></A><A NAME="556"></A>
+<BR>
+DESCRIPTION
+</H2>
+
+<P>
+edg-nbp manage configuration the Network Boot Program (NBP) pxelinux.
+It creates the required configuration/symlink for an host to prepare it for
+the installation or for normal; it can also remove previously added hosts.
+
+<P>
+It is normally executed by edg-shellfe but it can be run as stand-alone. Input data
+can be specified via command line (for just 1 host) or via text file (for more hosts).
+
+<P>
+Command line line options override default values in $EDG_LOCATION/etc/edg-nbp.conf.
+
+<P>
+
+<H2><A NAME="SECTION00623000000000000000"></A><A NAME="edg-nbp_COMMANDS"></A><A NAME="558"></A>
+<BR>
+COMMANDS
+</H2>
+<DL>
+<DT><STRONG>-boot &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Enable for &lt;hostname&gt; the boot from local disk (i.e do not reinstall
+the OS).
+
+<P>
+</DD>
+<DT><STRONG>-bootlist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Enable for hosts listed on &lt;filename&gt; normal boot from local disk.
+
+<P>
+</DD>
+<DT><STRONG>-configure &lt;hostname&gt; &lt;template&gt;</STRONG></DT>
+<DD><B>[n1=v1] [n2=v2] ...</B>
+
+<P>
+Configure &lt;hostname&gt; for NBP using &lt;template&gt; as basic
+configuration files. If &lt;template&gt; is just a filename it will be
+read from the directory specied via -nbpdir (see below,
+default value: $EDG_LOCATION/lib/aii/nbp). The parameters to write
+are expressed as couples name=value, where name is an id that
+has to be present in the template (see the example at the end).
+
+<P>
+If the node is already present its configuration is simply
+replaced by the new one.
+
+<P>
+</DD>
+<DT><STRONG>-configurelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure hosts listed on &lt;filename&gt;. Hosts have to be listed one per line
+with the simple syntax &lt;hostname&gt; &lt;template&gt; [n1="v1"] [n2="v2"], where &lt;hostname&gt;
+and &lt;template&gt; are mandatory. Lines with # are comment.
+Values must be expressed between double (") quotes.
+An example:
+
+<P>
+<PRE>
+ # This is an unuseful comment
+ node2.qwer.fi rh73-template  label="Redhat 7.3" kernel="vmlinuz-2.4.18"
+ node2.qwer.fi rh90-template  label="Redhat 9.0" kernel="vmlinuz-2.4.20"
+</PRE>
+
+<P>
+</DD>
+<DT><STRONG>-install &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Enable OS installation via network for &lt;hostname&gt;.
+
+<P>
+</DD>
+<DT><STRONG>-installlist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Enable OS installation via network for hosts listed on &lt;filename&gt;.
+Hosts have to be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-remove &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configuration file for &lt;hostname&gt;.
+
+<P>
+</DD>
+<DT><STRONG>-removelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-removeall</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+<P>
+</DD>
+<DT><STRONG>-status &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for &lt;hostname&gt;.
+
+<P>
+</DD>
+<DT><STRONG>-statuslist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for hosts listed
+on &lt;filename&gt;. Hosts have to be listed one per line. Lines starting
+with # are comment.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00624000000000000000"></A><A NAME="edg-nbp_OPTIONS"></A><A NAME="575"></A>
+<BR>
+OPTIONS
+</H2>
+<DL>
+<DT><STRONG>-bootconfig &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Generic "boot from local disk" NBP configuration file (default:
+localboot.cfg). It must be present in 'templatedir' (see below).
+It is "symlinked" by edg-nbp script into 'nbpdir' (see below).
+
+<P>
+</DD>
+<DT><STRONG>-cfgfile &lt;path&gt;</STRONG></DT>
+<DD>
+
+<P>
+Use as configuration file &lt;path&gt; instead of the default
+configuration file $EDG_LOCATION/etc/edg-nbp.conf.
+
+<P>
+</DD>
+<DT><STRONG>-nbpdir &lt;directory&gt;</STRONG></DT>
+<DD>
+
+<P>
+Directory where the NBP configuration files have to be stored
+(default: /osinstall/nbp/pxelinux.cfg). If it does not exist, it will
+be automatically created.
+
+<P>
+</DD>
+<DT><STRONG>-templatedir &lt;directory&gt;</STRONG></DT>
+<DD>
+
+<P>
+Directory where there the template files are present
+(default: /opt/edg/lib/aii/nbp).
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00625000000000000000"></A><A NAME="edg-nbp_CONFIGURATION_FILE"></A><A NAME="583"></A>
+<BR>
+CONFIGURATION FILE
+</H2>
+
+<P>
+Default values of command lines options can be specified in the file
+$EDG_LOCATION/etc/edg-nbp.conf using syntax:
+
+<P>
+<PRE>
+ &lt;option&gt; = &lt;value&gt;
+</PRE>
+
+<P>
+e.g.:
+
+<P>
+<PRE>
+ nbpdir = /my/personal/nbp
+</PRE>
+<H2><A NAME="SECTION00626000000000000000"></A><A NAME="edg-nbp_AUTHORS"></A><A NAME="589"></A>
+<BR>
+AUTHORS
+</H2>
+
+<P>
+Enrico Ferro &lt;enrico.ferro@pd.infn.it&gt;
+
+<P>
+
+<H2><A NAME="SECTION00627000000000000000"></A><A NAME="edg-nbp_MORE_INFORMATION"></A><A NAME="591"></A>
+<BR>
+MORE INFORMATION
+</H2>
+
+<P>
+Pxelinux: http://syslinux.zytor.com.
+<A NAME="edg-osinstall"></A>
+<H1><A NAME="SECTION00630000000000000000"></A><A NAME="edg-osinstall"></A><A NAME="828"></A>
+<BR>
+3 edg-osinstall
+</H1>
+
+<P>
+Create/remove configuration files of the OS installer
+
+<P>
+
+<H2><A NAME="SECTION00631000000000000000"></A><A NAME="edg-osinstall_SYNOPSIS"></A><A NAME="830"></A>
+<BR>
+SYNOPSIS
+</H2>
+<PRE>
+ edg-osinstall [options] &lt;--configure &lt;hostname&gt;     |
+                          --configurelist &lt;filename&gt; |
+                          --remove &lt;hostname&gt;        |
+                          --removelist &lt;filename&gt;    |
+                          --removeall &gt;
+</PRE>
+<H2><A NAME="SECTION00632000000000000000"></A><A NAME="edg-osinstall_DESCRIPTION"></A><A NAME="834"></A>
+<BR>
+DESCRIPTION
+</H2>
+
+<P>
+edg-osinstall manages configuration files required by the OS installation. Currently
+supports RedHat Kickstart files. It access via CCM to the local caches, created
+by edg-shellfe, and it is executed by edg-shellfe. Input date
+can be specified via command line (for just 1 host) or via text files (for more hosts).
+
+<P>
+Currently it supports RedHat 7.3 kickstart files.
+
+<P>
+Command line line options override default values in $EDG_LOCATION/etc/edg-osinstall.conf.
+
+<P>
+
+<H2><A NAME="SECTION00633000000000000000"></A><A NAME="edg-osinstall_COMMANDS"></A><A NAME="836"></A>
+<BR>
+COMMANDS
+</H2>
+<DL>
+<DT><STRONG>-configure &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure &lt;hostname&gt; for the installation. The kickstart template and the
+parameters required to fill the template are read directly from the local caches
+previously downloaded by edg-shellfe.
+
+<P>
+</DD>
+<DT><STRONG>-configurelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure hosts listed on &lt;filename&gt;. Hosts have to be listed one per line.
+Lines starting with # are comment. An example:
+
+<P>
+</DD>
+<DT><STRONG>-remove &lt;hostname&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configuration file for &lt;hostname&gt;.
+
+<P>
+</DD>
+<DT><STRONG>-removelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-removeall</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00634000000000000000"></A><A NAME="edg-osinstall_OPTIONS"></A><A NAME="845"></A>
+<BR>
+OPTIONS
+</H2>
+<DL>
+<DT><STRONG>-cfgfile &lt;path&gt;</STRONG></DT>
+<DD>
+
+<P>
+Use as configuration file &lt;path&gt; instead of the default
+configuration file $EDG_LOCATION/etc/edg-osinstall.conf.
+
+<P>
+</DD>
+<DT><STRONG>-templatedir &lt;directory&gt;</STRONG></DT>
+<DD>
+
+<P>
+Directory where the template files for the OS installation have to be present
+(default value: $EDG_LOCATION/lib/aii/osinstall). A template file is
+provided by the package itself.
+
+<P>
+</DD>
+<DT><STRONG>-osinstalldir &lt;directory&gt;</STRONG></DT>
+<DD>
+
+<P>
+Directory where the configuration files are written
+(default: /osinstall/ks). For Kickstart files the filenames are in the form &lt;FQDN&gt;.ks
+(e.g. node002.qwer.fi.ks). The directory has to be available via NFS or HTTP.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00635000000000000000"></A><A NAME="edg-osinstall_CONFIGURATION_FILE"></A><A NAME="852"></A>
+<BR>
+CONFIGURATION FILE
+</H2>
+
+<P>
+Default values of command lines options can be specified in the file
+$EDG_LOCATION/etc/edg-osinstall.conf using syntax:
+
+<P>
+<PRE>
+ &lt;option&gt; = &lt;value&gt;
+</PRE>
+
+<P>
+e.g.:
+
+<P>
+<PRE>
+ osinstalldir = /my/personal/osinstall
+</PRE>
+<H2><A NAME="SECTION00636000000000000000"></A><A NAME="edg-osinstall_AUTHORS"></A><A NAME="858"></A>
+<BR>
+AUTHORS
+</H2>
+
+<P>
+Enrico Ferro &lt;enrico.ferro@pd.infn.it&gt;
+<A NAME="edg-shellfe"></A>
+<H1><A NAME="SECTION00640000000000000000"></A><A NAME="edg-shellfe"></A><A NAME="982"></A>
+<BR>
+4 edg-shellfe
+</H1>
+
+<P>
+Shell wrapper for edg-dhcp, edg-nbp, edg-osinstall
+
+<P>
+
+<H2><A NAME="SECTION00641000000000000000"></A><A NAME="edg-shellfe_SYNOPSIS"></A><A NAME="984"></A>
+<BR>
+SYNOPSIS
+</H2>
+<PRE>
+ edg-shellfe [options] &lt;--boot &lt;hostname|regexp&gt;      |
+                        --bootlist &lt;filename&gt;         |
+                        --configure &lt;hostname|regexp&gt; |
+                        --configurelist &lt;filename&gt;    |
+                        --install &lt;hostname|regexp&gt;   |
+                        --installlist &lt;filename&gt;      |
+                        --notify                      |
+                        --remove &lt;hostname|regexp&gt;    |
+                        --removelist &lt;filename&gt; &gt;     |
+                        --removeall                   |
+                        --status &lt;hostname|regexp&gt;    |
+                        --statuslist &lt;filename&gt; &gt;
+</PRE>
+<H2><A NAME="SECTION00642000000000000000"></A><A NAME="edg-shellfe_DESCRIPTION"></A><A NAME="988"></A>
+<BR>
+DESCRIPTION
+</H2>
+
+<P>
+edg-shellfe is a wrapper normally executed remotely by edg-installfe
+or locally by the CDB notification client to update
+dhcp, nbp and the os installation. It executes edg-dhcp, edg-nbp and edg-osinstall.
+It supports Perl regular expressions (see EXAMPLES).
+
+<P>
+
+<H2><A NAME="SECTION00643000000000000000"></A><A NAME="edg-shellfe_COMMANDS"></A><A NAME="990"></A>
+<BR>
+COMMANDS
+</H2>
+<DL>
+<DT><STRONG>-boot &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select the boot from local disk for &lt;hostname&gt; or for all hostnames
+that match the Perl regular expression &lt;regexp&gt;
+
+<P>
+</DD>
+<DT><STRONG>-bootlist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select boot from local disk for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-configure &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure &lt;hostname&gt; or all hostnames that match the Perl regular
+expression &lt;regexp&gt;
+
+<P>
+</DD>
+<DT><STRONG>-configurelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-notify</STRONG></DT>
+<DD>
+
+<P>
+edg-shellfe should be executed with this parameter by CDB notification
+client, i.e. whenever the CDB changes.
+
+<P>
+</DD>
+<DT><STRONG>-remove &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove the configuration for &lt;hostname&gt; or all hostnames that match the Perl regular
+expression &lt;regexp&gt;
+
+<P>
+</DD>
+<DT><STRONG>-removelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-removeall</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+<P>
+</DD>
+<DT><STRONG>-status &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for &lt;hostname&gt; or
+for all hostnames that match the Perl regular expression &lt;regexp&gt;
+
+<P>
+</DD>
+<DT><STRONG>-statuslist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for hosts listed
+on &lt;filename&gt;. Hosts have to be listed one per line. Lines starting
+with # are comment.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00644000000000000000"></A><A NAME="edg-shellfe_OPTIONS"></A><A NAME="1004"></A>
+<BR>
+OPTIONS
+</H2>
+<DL>
+<DT><STRONG>-nodhcp</STRONG></DT>
+<DD>
+
+<P>
+Do not update DHCP configuration.
+
+<P>
+</DD>
+<DT><STRONG>-nonbp</STRONG></DT>
+<DD>
+
+<P>
+Do not update NBP configurations.
+
+<P>
+</DD>
+<DT><STRONG>-noosinstall</STRONG></DT>
+<DD>
+
+<P>
+Do not update OS installer configurations.
+
+<P>
+</DD>
+<DT><STRONG>-localnclcache</STRONG></DT>
+<DD>
+
+<P>
+Local cache to store list of last profiles + their timestamp
+(default: /tmp/aii_ncl_cache)
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00645000000000000000"></A><A NAME="edg-shellfe_CONFIGURATION_FILE"></A><A NAME="1012"></A>
+<BR>
+CONFIGURATION FILE
+</H2>
+
+<P>
+Default values of command lines options can be specified in the file
+$EDG_LOCATION/etc/edg-nbp.conf using syntax:
+
+<P>
+<PRE>
+ &lt;option&gt; = &lt;value&gt;
+</PRE>
+
+<P>
+e.g.:
+
+<P>
+<PRE>
+ nbpdir = /my/personal/nbp
+</PRE>
+<H2><A NAME="SECTION00646000000000000000"></A><A NAME="edg-shellfe_EXAMPLES"></A><A NAME="1018"></A>
+<BR>
+EXAMPLES
+</H2>
+
+<P>
+E.g. to get the status of all nodes:
+
+<P>
+<PRE>
+ edg-shellfe --status .+
+</PRE>
+
+<P>
+To prepare configuration files for grid001, grid002, grid005:
+
+<P>
+<PRE>
+ edg-shellfe --configure grid00[125]
+</PRE>
+
+<P>
+To set as "to be installed" grid001 and grid002:
+
+<P>
+<PRE>
+ edg-shellfe --install grid00[12]
+</PRE>
+<H2><A NAME="SECTION00647000000000000000"></A><A NAME="edg-shellfe_AUTHORS"></A><A NAME="1026"></A>
+<BR>
+AUTHORS
+</H2>
+
+<P>
+Enrico Ferro &lt;enrico.ferro@pd.infn.it&gt;
+<A NAME="edg-installfe"></A>
+<H1><A NAME="SECTION00650000000000000000"></A><A NAME="edg-installfe"></A><A NAME="1219"></A>
+<BR>
+5 edg-installfe
+</H1>
+
+<P>
+AII command line installation frontend
+
+<P>
+
+<H2><A NAME="SECTION00651000000000000000"></A><A NAME="edg-installfe_SYNOPSIS"></A><A NAME="1221"></A>
+<BR>
+SYNOPSIS
+</H2>
+<PRE>
+ edg-installfe [options] &lt;--boot &lt;hostname|regexp&gt;      |
+                          --bootlist &lt;filename&gt;         |
+                          --configure &lt;hostname|regexp&gt; |
+                          --configurelist &lt;filename&gt;    |
+                          --install &lt;hostname|regexp&gt;   |
+                          --installlist &lt;filename&gt;      |
+                          --remove &lt;hostname|regexp&gt;    |
+                          --removeall                   |
+                          --removelist &lt;filename&gt; &gt;     |
+                          --status &lt;hostname|regexp&gt;    |
+                          --statuslist &lt;filename&gt; &gt;
+</PRE>
+<H2><A NAME="SECTION00652000000000000000"></A><A NAME="edg-installfe_DESCRIPTION"></A><A NAME="1225"></A>
+<BR>
+DESCRIPTION
+</H2>
+
+<P>
+This module provides a command line interface to AII tools to 1.
+select if a node has to be installed or not 2. add/update nodes
+3. remove nodes.  It receives as input from the user
+a lists of nodes and their installation status (to be installed/booted from local disk).
+It executes the frontend edg-installfe on all installation servers.
+
+<P>
+Regular expressions can be used to specify hostnames.
+
+<P>
+Servers can listed in the configuration file (see below).
+
+<P>
+
+<H2><A NAME="SECTION00653000000000000000"></A><A NAME="edg-installfe_COMMANDS"></A><A NAME="1227"></A>
+<BR>
+COMMANDS
+</H2>
+<DL>
+<DT><STRONG>-boot &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select the boot from local disk for &lt;hostname&gt;. Perl regular
+expressions can be used (e.g node00[1-9], node.*).
+
+<P>
+</DD>
+<DT><STRONG>-bootlist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select boot from local disk for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-configure &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure &lt;hostname&gt;. Perl regular expressions can be used.
+
+<P>
+</DD>
+<DT><STRONG>-configurelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Configure hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-install &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select the installation for &lt;hostname&gt;. Perl regular expressions
+can be used.
+
+<P>
+</DD>
+<DT><STRONG>-installlist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Select installation for the hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-remove &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove the configuration for &lt;hostname&gt;. Perl regular expressions
+can be used.
+
+<P>
+</DD>
+<DT><STRONG>-removelist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for hosts listed on &lt;filename&gt;. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+<P>
+</DD>
+<DT><STRONG>-removeall</STRONG></DT>
+<DD>
+
+<P>
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+<P>
+</DD>
+<DT><STRONG>-status &lt;hostname|regexp&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for &lt;hostname&gt; or
+for all hostnames that match the regular expression &lt;regexp&gt;
+
+<P>
+</DD>
+<DT><STRONG>-statuslist &lt;filename&gt;</STRONG></DT>
+<DD>
+
+<P>
+Report the boot status (boot from local disk/install) for hosts listed
+on &lt;filename&gt;. Hosts have to be listed one per line. Lines starting
+with # are comment.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00654000000000000000"></A><A NAME="edg-installfe_OPTIONS"></A><A NAME="1242"></A>
+<BR>
+OPTIONS
+</H2>
+<DL>
+<DT><STRONG>-servers &lt;user1@server1 user2@server2</STRONG></DT>
+<DD><B>...&gt;</B>
+
+<P>
+Installation servers to be updated remotely via ssh. Use'@'
+to select the remote user to use. E.g:
+
+<P>
+<PRE>
+ servers = john@install-1.asdf.fi
+</PRE>
+
+<P>
+If there are more servers, use ' ' to separate them:
+
+<P>
+<PRE>
+ servers = john@install-1.asdf.fi john@install-2.asdf.fi
+</PRE>
+
+<P>
+If you are running *all* tools (edg-dhcp, edg-nbp, edg-osinstall)
+on *this* machine, use just:
+
+<P>
+<PRE>
+ server = localhost
+</PRE>
+
+<P>
+They will be executed *directly* (no ssh required). Of course you can mix:
+
+<P>
+<PRE>
+ servers = localhost john@install-1.asdf.fi
+</PRE>
+
+<P>
+Default value: localhost
+
+<P>
+</DD>
+<DT><STRONG>-nodhcp</STRONG></DT>
+<DD>
+
+<P>
+Run do not update DHCP configuration.
+
+<P>
+</DD>
+<DT><STRONG>-nonbp</STRONG></DT>
+<DD>
+
+<P>
+Do not update NBP configuration.
+
+<P>
+</DD>
+<DT><STRONG>-noosinstall</STRONG></DT>
+<DD>
+
+<P>
+Do not update OS installer configurations.
+
+<P>
+</DD>
+</DL>
+<H2><A NAME="SECTION00655000000000000000"></A><A NAME="edg-installfe_CONFIGURATION_FILE"></A><A NAME="1258"></A>
+<BR>
+CONFIGURATION FILE
+</H2>
+
+<P>
+Default values of command lines options can be specified in the file
+$EDG_LOCATION/etc/edg-nbp.conf using syntax:
+
+<P>
+<PRE>
+ &lt;option&gt; = &lt;value&gt;
+</PRE>
+<H2><A NAME="SECTION00656000000000000000"></A><A NAME="edg-installfe_AUTHORS"></A><A NAME="1262"></A>
+<BR>
+AUTHORS
+</H2>
+
+<P>
+Enrico Ferro &lt;enrico.ferro@pd.infn.it&gt;
+
+<P>
+<BR><HR>
+
+</BODY>
+</HTML>
