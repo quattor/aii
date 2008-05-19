@@ -229,6 +229,10 @@ use LC::Exception qw (SUCCESS throw_error);
 
 use strict;
 use vars qw(@ISA);
+use MSDW::Version 
+  'Parallel-Queue' => '1.9.1'
+;
+use Parallel::Queue;
 
 @ISA= qw(CAF::Application CAF::Reporter);
 
@@ -377,6 +381,7 @@ package main;
 
 use LC::Exception qw (SUCCESS throw_error);
 use File::Basename;
+use Sys::Hostname;
 
 use strict;
 use vars qw($this_app %SIG);
@@ -386,6 +391,7 @@ use vars qw($this_app %SIG);
 #
 
 my ($Options, $Files);
+my $localhost = hostname();
 my (@Servers);
 
 $Options = "";
@@ -399,6 +405,8 @@ $Files   = "";
 #
 sub run_remotely ($) {
 
+# we're being run by parallel::queue, which means that a rtn code of 0 is bad.
+
     my $user_at_host = shift;
     my ($user, $host);
 
@@ -410,7 +418,7 @@ sub run_remotely ($) {
     if ($user eq '' || $host eq '') {
         $this_app->error("aii-installfe: bad remote user/server "
                          . "specified ($user_at_host)");
-        return(1);
+        return(0);
     }
 
     $host = (gethostbyname($host))[0];
@@ -427,7 +435,7 @@ sub run_remotely ($) {
             if (system("$scp $Files $user_at_host:")) {
                 $this_app->error("installfe: failed execution of "
                                  . "\"$scp $Files $user_at_host:\"");
-                return(1);
+                return(0);
             }
         }
     }
@@ -447,11 +455,11 @@ sub run_remotely ($) {
             $this_app->error("installfe: failed execution of "
                         . "\"$ssh $user_at_host /usr/bin/sudo "
                         . "@QTTR_SBIN@/aii-shellfe $Options\"");
-            return(1);
+            return(0);
         }
     }
 
-    return(0);
+    return("true");
 
 }
 
@@ -573,28 +581,57 @@ if ($Options eq '') {
 #
 
 @Servers = split(/\s+/, $this_app->option('servers'));
-
 $this_app->verbose("aii-installfe: servers = " . @Servers);
 
-# Pass cmdline data to the node
-foreach $server (@Servers) {
+my ($local_server) = grep { /\blocalhost\b/ } split(/\s+/, $this_app->option('servers'));
+my @remote_servers = grep { !/\blocalhost\b/ } split(/\s+/, $this_app->option('servers'));
 
-    $this_app->debug(1, "aii-installfe: server: $server");
+my $errcount = 0;
 
-    if ($server eq 'localhost') {
-        if (run_locally()) {
-            $this_app->error("aii-installfe: failed to run "
-                             . "aii-shellfe locally");
-            exit(1);
-        }
-    } else {
-        if (run_remotely($server)) {
-            $this_app->error("aii-installfe: failed to run "
-                             . "aii-shellfe remotely");
-            exit(1);
-        }
+if ($local_server) {
+    $this_app->debug(1, "aii-installfe: server: $local_server");
+    if (run_locally()) {
+	$this_app->error("aii-installfe: failed to run "
+			 . "aii-shellfe locally on $localhost");
+	$errcount++;
     }
+}
 
+if (@remote_servers) {
+    my $q = Parallel::Queue->new();
+    $q->setList(@remote_servers);
+    $q->setWidth(10);
+    $q->setTimeLimit("1h");
+    $q->setAction(\&run_remotely);
+    my $result = $q->run();
+
+    for my $index ( 0 .. $#remote_servers ) {
+	my $host = $remote_servers[$index];
+	my $status = $result->getStatus($index);
+	if ($status eq "fail") {
+	    $this_app->error("aii-installfe: failed to run "
+                             . "aii-shellfe remotely on $host");
+	    $errcount++;
+	} elsif ($status eq "nofork") {
+	    $this_app->error("aii-installfe: failed to fork "
+			    . " to run aii-shellfe remotely");
+	    $errcount++;
+	} elsif ($status eq "notime") {
+	    $this_app->error("aii-installfe: ran out of time "
+			    . "before we could process $host");
+	    $errcount++;
+	} else {
+	    foreach my $line ( split(/n+/,$result->getOutput($index))) {
+		print "[$host] $line\n";
+	    }
+	}
+    }
+}
+
+if ($errcount == scalar(@Servers)) {
+    $this_app->error("aii-installfe: failed to run "
+		    . "aii-shellfe on any defined servers");
+    exit(1);
 }
 
 exit (0);

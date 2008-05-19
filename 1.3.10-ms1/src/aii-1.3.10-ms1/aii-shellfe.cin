@@ -500,6 +500,7 @@ use HTTP::Request;
 use XML::Simple;
 use Fcntl ':flock';  # import LOCK_* constants
 use File::Path;
+use Sys::Hostname;
 
 use strict;
 use vars qw($this_app %SIG);
@@ -519,6 +520,8 @@ my (@NTC, @NTR, @NTB, @NTI, @NTS, @NTE);
 @NTI = (); # Nodes To Install
 @NTS = (); # Nodes To get Status
 @NTE = (); # Nodes To Rescue
+
+my $this_host = hostname();
 
 #
 # read_cdb()
@@ -1468,7 +1471,7 @@ if (scalar(@NTC) || scalar(@NTR)) {
 # modified by Cesar Lobo (cesar.lobo@uam.es)
 # 
 if(scalar(@NTC) || scalar(@NTR) || scalar(@NTB) || scalar(@NTE) || scalar(@NTI)) {
-    $this_app->info('aii-shellfe: changes: '
+    $this_app->info('aii-shellfe: [$this_host] changes: '
                     . scalar(@NTC) . ' added '
                     . scalar(@NTR) . ' removed '
                     . scalar(@NTB) . ' hdboot '
