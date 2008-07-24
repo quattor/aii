@@ -498,7 +498,7 @@ use LWP::Simple;
 use LWP::UserAgent;
 use HTTP::Request;
 use XML::Simple;
-use XML::SAX;
+use XML::Parser;
 use Fcntl ':flock';  # import LOCK_* constants
 use File::Path;
 use Sys::Hostname;
