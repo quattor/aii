@@ -1,0 +1,159 @@
+\section{edg-shellfe\label{edg-shellfe}\index{edg-shellfe}}
+
+
+Shell wrapper for edg-dhcp, edg-nbp, edg-osinstall
+
+\subsection*{SYNOPSIS\label{edg-shellfe_SYNOPSIS}\index{edg-shellfe!SYNOPSIS}}
+\begin{verbatim}
+ edg-shellfe [options] <--boot <hostname|regexp>      |
+                        --bootlist <filename>         |
+                        --configure <hostname|regexp> |
+                        --configurelist <filename>    |
+                        --install <hostname|regexp>   |
+                        --installlist <filename>      |
+                        --notify                      |
+                        --remove <hostname|regexp>    |
+                        --removelist <filename> >     |
+                        --removeall                   |
+                        --status <hostname|regexp>    |
+                        --statuslist <filename> >
+\end{verbatim}
+\subsection*{DESCRIPTION\label{edg-shellfe_DESCRIPTION}\index{edg-shellfe!DESCRIPTION}}
+
+
+edg-shellfe is a wrapper normally executed remotely by edg-installfe
+or locally by the CDB notification client to update
+dhcp, nbp and the os installation. It executes edg-dhcp, edg-nbp and edg-osinstall.
+It supports Perl regular expressions (see EXAMPLES).
+
+\subsection*{COMMANDS\label{edg-shellfe_COMMANDS}\index{edg-shellfe!COMMANDS}}
+\begin{description}
+
+\item[--boot $<$hostname$|$regexp$>$] \mbox{}
+
+Select the boot from local disk for $<$hostname$>$ or for all hostnames
+that match the Perl regular expression $<$regexp$>$
+
+
+\item[--bootlist $<$filename$>$] \mbox{}
+
+Select boot from local disk for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--configure $<$hostname$|$regexp$>$] \mbox{}
+
+Configure $<$hostname$>$ or all hostnames that match the Perl regular
+expression $<$regexp$>$
+
+
+\item[--configurelist $<$filename$>$] \mbox{}
+
+Configure hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--notify] \mbox{}
+
+edg-shellfe should be executed with this parameter by CDB notification
+client, i.e. whenever the CDB changes.
+
+
+\item[--remove $<$hostname$|$regexp$>$] \mbox{}
+
+Remove the configuration for $<$hostname$>$ or all hostnames that match the Perl regular
+expression $<$regexp$>$
+
+
+\item[--removelist $<$filename$>$] \mbox{}
+
+Remove configurations for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--removeall] \mbox{}
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+
+\item[--status $<$hostname$|$regexp$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for $<$hostname$>$ or
+for all hostnames that match the Perl regular expression $<$regexp$>$
+
+
+\item[--statuslist $<$filename$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for hosts listed
+on $<$filename$>$. Hosts have to be listed one per line. Lines starting
+with \# are comment.
+
+\end{description}
+\subsection*{OPTIONS\label{edg-shellfe_OPTIONS}\index{edg-shellfe!OPTIONS}}
+\begin{description}
+
+\item[--nodhcp] \mbox{}
+
+Do not update DHCP configuration.
+
+
+\item[--nonbp] \mbox{}
+
+Do not update NBP configurations.
+
+
+\item[--noosinstall] \mbox{}
+
+Do not update OS installer configurations.
+
+
+\item[--localnclcache] \mbox{}
+
+Local cache to store list of last profiles + their timestamp
+(default: /tmp/aii\_ncl\_cache)
+
+\end{description}
+\subsection*{CONFIGURATION FILE\label{edg-shellfe_CONFIGURATION_FILE}\index{edg-shellfe!CONFIGURATION FILE}}
+
+
+Default values of command lines options can be specified in the file
+\$EDG\_LOCATION/etc/edg-nbp.conf using syntax:
+
+\begin{verbatim}
+ <option> = <value>
+\end{verbatim}
+
+
+e.g.:
+
+\begin{verbatim}
+ nbpdir = /my/personal/nbp
+\end{verbatim}
+\subsection*{EXAMPLES\label{edg-shellfe_EXAMPLES}\index{edg-shellfe!EXAMPLES}}
+
+
+E.g. to get the status of all nodes:
+
+\begin{verbatim}
+ edg-shellfe --status .+
+\end{verbatim}
+
+
+To prepare configuration files for grid001, grid002, grid005:
+
+\begin{verbatim}
+ edg-shellfe --configure grid00[125]
+\end{verbatim}
+
+
+To set as "to be installed" grid001 and grid002:
+
+\begin{verbatim}
+ edg-shellfe --install grid00[12]
+\end{verbatim}
+\subsection*{AUTHORS\label{edg-shellfe_AUTHORS}\index{edg-shellfe!AUTHORS}}
+
+
+Enrico Ferro $<$enrico.ferro@pd.infn.it$>$
+

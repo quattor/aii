@@ -1,0 +1,173 @@
+\section{edg-nbp\label{edg-nbp}\index{edg-nbp}}
+
+
+Create/remove entries for pxelinux
+
+\subsection*{SYNOPSIS\label{edg-nbp_SYNOPSIS}\index{edg-nbp!SYNOPSIS}}
+\begin{verbatim}
+ edg-nbp [options] <--boot <hostname>          |
+                    --bootlist <filename>      |
+                    --configure <hostname> <template> [n1=v1] ... |
+                    --configurelist <filename> |
+                    --install <hostname>       |
+                    --installlist <filename>   |
+                    --remove <hostname>        |
+                    --removelist <filename>    |
+                    --removeall                |
+                    --status <hostname>        |
+                    --statuslist <filename> >
+\end{verbatim}
+\subsection*{DESCRIPTION\label{edg-nbp_DESCRIPTION}\index{edg-nbp!DESCRIPTION}}
+
+
+edg-nbp manage configuration the Network Boot Program (NBP) pxelinux.
+It creates the required configuration/symlink for an host to prepare it for
+the installation or for normal; it can also remove previously added hosts.
+
+
+
+It is normally executed by edg-shellfe but it can be run as stand-alone. Input data
+can be specified via command line (for just 1 host) or via text file (for more hosts).
+
+
+
+Command line line options override default values in \$EDG\_LOCATION/etc/edg-nbp.conf.
+
+\subsection*{COMMANDS\label{edg-nbp_COMMANDS}\index{edg-nbp!COMMANDS}}
+\begin{description}
+
+\item[--boot $<$hostname$>$] \mbox{}
+
+Enable for $<$hostname$>$ the boot from local disk (i.e do not reinstall
+the OS).
+
+
+\item[--bootlist $<$filename$>$] \mbox{}
+
+Enable for hosts listed on $<$filename$>$ normal boot from local disk.
+
+
+\item[--configure $<$hostname$>$ $<$template$>$] \textbf{[n1=v1] [n2=v2] ...}
+
+Configure $<$hostname$>$ for NBP using $<$template$>$ as basic
+configuration files. If $<$template$>$ is just a filename it will be
+read from the directory specied via --nbpdir (see below,
+default value: \$EDG\_LOCATION/lib/aii/nbp). The parameters to write
+are expressed as couples name=value, where name is an id that
+has to be present in the template (see the example at the end).
+
+
+
+If the node is already present its configuration is simply
+replaced by the new one.
+
+
+\item[--configurelist $<$filename$>$] \mbox{}
+
+Configure hosts listed on $<$filename$>$. Hosts have to be listed one per line
+with the simple syntax $<$hostname$>$ $<$template$>$ [n1="v1"] [n2="v2"], where $<$hostname$>$
+and $<$template$>$ are mandatory. Lines with \# are comment.
+Values must be expressed between double (") quotes.
+An example:
+
+\begin{verbatim}
+ # This is an unuseful comment
+ node2.qwer.fi rh73-template  label="Redhat 7.3" kernel="vmlinuz-2.4.18"
+ node2.qwer.fi rh90-template  label="Redhat 9.0" kernel="vmlinuz-2.4.20"
+\end{verbatim}
+
+\item[--install $<$hostname$>$] \mbox{}
+
+Enable OS installation via network for $<$hostname$>$.
+
+
+\item[--installlist $<$filename$>$] \mbox{}
+
+Enable OS installation via network for hosts listed on $<$filename$>$.
+Hosts have to be listed one per line. Lines starting with \# are comment.
+
+
+\item[--remove $<$hostname$>$] \mbox{}
+
+Remove configuration file for $<$hostname$>$.
+
+
+\item[--removelist $<$filename$>$] \mbox{}
+
+Remove configurations for hosts listed on $<$filename$>$. Hosts have to
+be listed one per line. Lines starting with \# are comment.
+
+
+\item[--removeall] \mbox{}
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+
+\item[--status $<$hostname$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for $<$hostname$>$.
+
+
+\item[--statuslist $<$filename$>$] \mbox{}
+
+Report the boot status (boot from local disk/install) for hosts listed
+on $<$filename$>$. Hosts have to be listed one per line. Lines starting
+with \# are comment.
+
+\end{description}
+\subsection*{OPTIONS\label{edg-nbp_OPTIONS}\index{edg-nbp!OPTIONS}}
+\begin{description}
+
+\item[--bootconfig $<$filename$>$] \mbox{}
+
+Generic "boot from local disk" NBP configuration file (default:
+localboot.cfg). It must be present in 'templatedir' (see below).
+It is "symlinked" by edg-nbp script into 'nbpdir' (see below).
+
+
+\item[--cfgfile $<$path$>$] \mbox{}
+
+Use as configuration file $<$path$>$ instead of the default
+configuration file \$EDG\_LOCATION/etc/edg-nbp.conf.
+
+
+\item[--nbpdir $<$directory$>$] \mbox{}
+
+Directory where the NBP configuration files have to be stored
+(default: /osinstall/nbp/pxelinux.cfg). If it does not exist, it will
+be automatically created.
+
+
+\item[--templatedir $<$directory$>$] \mbox{}
+
+Directory where there the template files are present
+(default: /opt/edg/lib/aii/nbp).
+
+\end{description}
+\subsection*{CONFIGURATION FILE\label{edg-nbp_CONFIGURATION_FILE}\index{edg-nbp!CONFIGURATION FILE}}
+
+
+Default values of command lines options can be specified in the file
+\$EDG\_LOCATION/etc/edg-nbp.conf using syntax:
+
+\begin{verbatim}
+ <option> = <value>
+\end{verbatim}
+
+
+e.g.:
+
+\begin{verbatim}
+ nbpdir = /my/personal/nbp
+\end{verbatim}
+\subsection*{AUTHORS\label{edg-nbp_AUTHORS}\index{edg-nbp!AUTHORS}}
+
+
+Enrico Ferro $<$enrico.ferro@pd.infn.it$>$
+
+\subsection*{MORE INFORMATION\label{edg-nbp_MORE_INFORMATION}\index{edg-nbp!MORE INFORMATION}}
+
+
+Pxelinux: http://syslinux.zytor.com.
+

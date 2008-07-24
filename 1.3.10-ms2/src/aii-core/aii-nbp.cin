@@ -1,0 +1,890 @@
+#!@PERL_EXECUTABLE@ -w
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+#
+# @SELF@      Automatic NBP Configuration
+#
+################################################################################
+
+=pod
+
+=head1 NAME
+
+aii-nbp - manage configuration entries for PXElinux
+
+=head1 SYNOPSIS
+
+aii-nbp [options] <--boot <hostname>          |
+                   --bootlist <filename>      |
+                   --configure <hostname>     |
+                   --configurelist <filename> |
+                   --install <hostname>       |
+                   --installlist <filename>   |
+                   --remove <hostname>        |
+                   --removelist <filename>    |
+                   --removeall                |
+                   --rescue                   |
+                   --rescuelist               |
+                   --status <hostname>        |
+                   --statuslist <filename> >
+
+
+=head1 DESCRIPTION
+
+aii-nbp manage the configuration of Network Boot Program (NBP) PXElinux.
+It creates the required configuration/symlink to prepare a host
+for its installation or for a normal boot; it can also remove
+previously added hosts.
+
+aii-nbp is normally executed by aii-shellfe but it can be run stand-alone
+as well. Input data can be specified via command line (for just one host)
+or via a text file (for more than one host).
+
+Note that you have to configure (command --configure) the nodes
+before to mark them for the installation or to boot from local disk.
+
+Command line line options override default values in configuration file
+@QTTR_ETC@/aii-nbp.conf.
+
+=head1 COMMANDS
+
+=over 4
+
+=item --boot <hostname>
+
+Enable <hostname> to boot from local disk (i.e do not re-install
+the OS).
+
+=item --bootlist <filename>
+
+Enable the hosts listed on <filename> to boot from local disk.
+Hosts have to be listed one per line. Lines starting with # are comments.
+
+=item --configure <hostname>
+
+Configure <hostname> to be managed by PXE Linux.
+If the node is already present its configuration is simply
+replaced by the new one.
+
+=item --configurelist <filename>
+
+Configure hosts listed on <filename> to be managed by PXE Linux.
+Hosts have to be listed one per line. Lines starting with # are comments.
+If the node is already present its configuration is simply
+replaced by the new one.
+
+=item --install <hostname>
+
+Enable OS installation via network for <hostname>.
+
+=item --installlist <filename>
+
+Enable OS installation via network for hosts listed on <filename>.
+Hosts have to be listed one per line. Lines starting with # are comments.
+
+=item --remove <hostname>
+
+Remove configuration file for <hostname>.
+
+=item --removelist <filename>
+
+Remove configurations for hosts listed on <filename>. Hosts have to
+be listed one per line. Lines starting with # are comments.
+
+=item --removeall
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test.
+
+=item --status <hostname>
+
+Report the boot status (boot from local disk/install) for <hostname>.
+
+=item --statuslist <filename>
+
+Report the boot status (boot from local disk/install) for hosts listed
+on <filename>. Hosts have to be listed one per line. Lines starting
+with # are comments.
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item --bootconfig <filename>
+
+Generic "boot from local disk" NBP configuration file (default:
+localboot.cfg). It must be present in 'templatedir' directory (see below).
+It is "symlinked" by aii-nbp script into 'nbpdir' directory (see below).
+
+=item --nbpdir <directory>
+
+Directory where the NBP configuration files have to be stored
+(default: /osinstall/nbp/pxelinux.cfg).
+
+=item --templatedir <directory>
+
+Directory where there the configuration file templates are present.
+
+=back
+
+=head2 Other Options
+
+=over
+
+=item --help
+
+Displays a help message with all options and default settings.
+
+=item --version
+
+Displays program version information.
+
+=item --verbose
+
+Print verbose details on operations.
+
+=item --debug <1..5>
+
+Set the debugging level to <1..5>.
+
+=item --cfgfile <path>
+
+Use as configuration file <path> instead of the default
+configuration file @QTTR_ETC@/aii-nbp.conf.
+
+=item --logfile <file>
+
+Store and append log messages in <file>.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+=over 4
+
+Default values of command lines options can be specified in the file
+@QTTR_ETC@/aii-nbp.conf using syntax:
+
+ <option> = <value>
+
+e.g.:
+
+ nbpdir = /my/personal/nbp
+
+=back
+
+=head1 AUTHORS
+
+Enrico Ferro <enrico.ferro@pd.infn.it>
+Rafael A. Garcia Leiva <angel.leiva@uam.es>
+
+=head1 MORE INFORMATION
+
+Pxelinux: http://syslinux.zytor.com
+
+=cut
+
+#
+# Standard Common Application Framework beginning sequence
+#
+
+#
+# Beginning sequence for EDG initialization
+#
+BEGIN {
+
+    # use perl libs in @QTTR_PERLLIB@
+    unshift(@INC, '@QTTR_PERLLIB@');
+    unshift(@INC,'/opt/edg/lib/perl');
+
+}
+
+
+#------------------------------------------------------------
+# Application
+#------------------------------------------------------------
+
+package aii_nbp;
+
+use CAF::Application;
+use CAF::Reporter;
+use LC::Exception qw (SUCCESS throw_error);
+use EDG::WP4::CCM::CacheManager;
+use NCM::Template;
+
+use strict;
+use vars qw(@ISA);
+
+@ISA = qw(CAF::Application CAF::Reporter NCM::Template);
+
+
+#
+# Public Methods/Functions for CAF
+#
+
+sub app_options {
+
+    # these options complement the ones defined in CAF::Application
+    push(my @array,
+
+        # aii-nbp specific options
+
+        { NAME    => 'boot=s',
+          HELP    => 'Set a node to boot from local disk',
+          DEFAULT => undef },
+
+        { NAME    => 'bootlist=s',
+          HELP    => 'File with the nodes to boot from local disk',
+          DEFAULT => undef },
+
+        { NAME    => 'rescue=s',
+          HELP    => 'Set a node to be rescued',
+          DEFAULT =>  undef },
+
+        { NAME    => 'rescuelist=s',
+          HELP    => 'Set a node to be rescued',
+          DEFAULT =>  undef },
+
+        { NAME    => 'configure=s',
+          HELP    => 'Configure a node to be used with the NBP',
+          DEFAULT => undef },
+
+        { NAME    => 'configurelist=s', 
+          HELP    => 'File with the nodes to be configured', 
+          DEFAULT => undef },
+
+        { NAME    => 'install=s',
+          HELP    => 'Set a node to be installed', 
+          DEFAULT => undef },
+
+        { NAME    => 'installlist=s',
+          HELP    => 'File with the nodes to be installed',
+          DEFAULT => undef },
+
+        { NAME    => 'remove=s',
+          HELP    => 'Remove the configuration of a node',
+          DEFAULT => undef },
+
+        { NAME    => 'removelist=s',
+          HELP    => 'File with the nodes to be removed',
+          DEFAULT => undef },
+
+        { NAME    => 'removeall',
+          HELP    => 'Remove ALL nodes configured',
+          DEFAULT => undef },
+
+        { NAME    => 'status=s',
+          HELP    => 'Report current boot/install status for a node',
+          DEFAULT => undef },
+
+        { NAME    => 'statuslist=s',
+          HELP    => 'File with the nodes to report boot/install status',
+          DEFAULT => undef },
+
+        # options for PXElinux configuration
+
+        { NAME    => 'templatedir=s',
+          HELP    => 'Directory containing NBP config file templates',
+          DEFAULT => "@QTTR_LIB@/aii/nbp"},
+
+        { NAME    => 'nbpdir=s',
+          HELP    => 'base directory for NBP configuration files',
+          DEFAULT => '/osinstall/nbp/pxelinux.cfg' },
+
+        { NAME    => 'bootconfig=s',
+          HELP    => 'Generic "boot from local disk" NBP configuration file',
+          DEFAULT => 'localboot.cfg' },
+
+        { NAME    => 'rescueconfig=s',
+          HELP    => 'Generic "boot from local disk" NBP configuration file',
+          DEFAULT => 'rescue.cfg' },
+
+        # other common options
+
+        { NAME    => 'logfile=s',
+          HELP    => 'path/filename to use for program logs',
+          DEFAULT => "@QTTR_LOG@/aii-nbp.log" },
+
+        { NAME    => 'cfgfile=s',
+          HELP    => 'configuration file for program defaults',
+          DEFAULT => "@QTTR_ETC@/aii-nbp.conf" }
+
+        # options inherited from CAF
+        #   --help
+        #   --version
+        #   --verbose
+        #   --debug
+        #   --quiet
+
+        );
+
+    return(\@array);
+
+}
+
+sub _initialize {
+
+    my $self = shift;
+
+    #
+    # define application specific data.
+    #
+
+    # external version number
+    $self->{'VERSION'} ='1.0';
+
+    # show setup text
+    $self->{'USAGE'} = "Usage: aii-nbp [options] [node]\n";
+
+    #
+    # log file policies
+    #
+
+    # append to logfile, do not truncate
+    $self->{'LOG_APPEND'} = 1;
+
+    # add time stamp before every entry in log
+    $self->{'LOG_TSTAMP'} = 1;
+
+    # 
+    # start initialization of CAF::Application
+    #
+    unless ($self->SUPER::_initialize(@_)) {
+        return(undef);
+    }
+
+    # start using log file
+    $self->set_report_logfile($self->{'LOG'});
+
+    return(SUCCESS);
+
+}
+
+#############################################################
+# aii-nbp main program
+#############################################################
+
+package main;
+
+use LC::Exception qw (SUCCESS throw_error);
+
+use strict;
+use vars qw($this_app);
+
+# initialize exception context
+my $ec = LC::Exception::Context->new->will_store_errors;
+
+#
+# Global Attributes:
+#
+
+my (@NTC, @NTR, @NTB, @NTI, @NTS, @NTE);
+my ($NBPDir, $BootConfig, $TemplateDir, $Rescue);
+
+@NTC = (); # NodesToConfig
+@NTR = (); # NodesToRemove
+@NTB = (); # NodesToBoot (from local disk)
+@NTI = (); # NodesToInstall
+@NTS = (); # NodesToGetStatus
+@NTE = (); # NodesToRescue
+
+
+#
+# get_hex_ip($hostname)
+#
+# Get the hostname or an IP address and return the IP address in
+# hex (as required by pxelinux)
+#
+sub get_hex_ip($) {
+
+    my $hostname = shift;
+    my @all_address;
+
+    # The 4th field is an array of the IP address of this node
+    @all_address = (gethostbyname($hostname))[4];
+    if ($#all_address < 0) { # The array is empty
+        $this_app->warn("aii-nbp: Hex. conversion failed:" . 
+                        " bad IP or hostname: $hostname");
+        return(undef);
+    }
+
+    # We unpack the IP address
+    my @tmp_address = unpack('C4',$all_address[0]);
+    my $result = sprintf ("%02X%02X%02X%02X", $tmp_address[0], $tmp_address[1],
+                                              $tmp_address[2], $tmp_address[3]);
+
+    $this_app->debug(4, "aii-nbp: Hex. num. for $hostname is $result");
+
+    return($result);
+
+}
+
+#
+# safe_link($existing, $link)
+#
+# create a symlink and check if it REALLY working
+#
+sub safe_symlink {
+
+    my $existing = shift;
+    my $link = shift;
+
+    if (-e $existing && symlink ($existing, $link)) {
+        return (1);
+    }
+
+    $this_app->debug(4, "aii-nbp: Simlink $link -> $existing");
+    return (0);
+
+}
+
+#
+# report_nodes_status()
+#
+# report nodes status, given by NTS
+#
+sub report_nodes_status {
+
+    my ($item, $link);
+
+    # For each hex symlink, get the boot type
+    foreach $item (@NTS) {
+
+        $link = '';
+        $link = readlink($NBPDir . $item->{IP_HEX});
+
+        if (!$link || $link eq '') {
+            $this_app->info("aii-nb: $item->{FQDN} status: undefined");
+        } elsif ($link eq $this_app->option('bootconfig')) {
+            $this_app->info("aii-nb: $item->{FQDN} status: boot");
+        } elsif ($link eq $this_app->option('rescueconfig')) {
+            $this_app->info("aii-nb: $item->{FQDN} status: rescue");
+        } elsif ($link eq $item->{FQDN}.'.cfg') {
+            $this_app->info("aii-nb: $item->{FQDN} status: install");
+        } else {
+            $this_app->info("aii-nb: $item->{FQDN} status: error!");
+        }
+
+    }
+
+    return(0);
+
+}
+
+#
+# change_nodes_status()
+#
+# Update the node status (set boot/install/rescue)
+#
+# Implements commands:
+#   --boot
+#   --bootlist
+#   --install
+#   --installlist
+#   --rescue
+#   --rescuelist
+#
+sub change_nodes_status {
+
+    my ($item, $cwd);
+
+    $cwd = `pwd`;
+    chdir($NBPDir);
+
+    foreach $item (@NTB) {
+
+        $this_app->debug(2, 'aii-nbp: boot: '. $NBPDir. $item->{IP_HEX}
+                            . ' => ' . $BootConfig);
+
+        unlink ($NBPDir.$item->{IP_HEX});
+        if (!safe_symlink ($BootConfig, $item->{IP_HEX})) {
+            $this_app->debug(2, "aii-nbp: symlink $NBPDir " . $item->{IP_HEX}
+                            . " => $BootConfig failed");
+	    $this_app->error("aii-nbp: failed to mark BOOT host $item->{FQDN}");
+        }
+
+    }
+
+    foreach $item (@NTE) {
+
+        $this_app->debug(2, 'aii-nbp: rescue: '. $NBPDir. $item->{IP_HEX}
+                            . ' => ' . $Rescue);
+
+        unlink ($NBPDir.$item->{IP_HEX});
+        if (!safe_symlink ($Rescue, $item->{IP_HEX})) {
+            $this_app->debug(2, "aii-nbp: symlink $NBPDir " . $item->{IP_HEX}
+                            . " => $Rescue failed");
+            $this_app->error("aii-nbp: failed to mark RESCUE host $item->{FQDN}");
+        }
+
+    }
+
+
+    foreach $item (@NTI) {
+
+        $this_app->debug(2, 'aii-nbp: install: ' . $item->{IP_HEX} . ' => '
+                           . $item->{FQDN} . '.cfg');
+
+        unlink ($NBPDir.$item->{IP_HEX});
+        if (!safe_symlink ($item->{FQDN}.'.cfg', $item->{IP_HEX})) {
+            $this_app->debug(2, 'aii-nbp: symlink ' . $item->{IP_HEX} . ' => ' .
+                            $item->{FQDN} . '.cfg failed');
+	    $this_app->error("aii-nbp: failed to mark INSTALL host $item->{FQDN}");
+        }
+    }
+
+    chdir($cwd);
+
+    return(0);
+
+}
+
+#
+# remove_nbp_config()
+#
+# Remove NBP configuration files
+#
+# Implement commands:
+#   --remove
+#   --removelist
+#   --removeall
+#
+sub remove_nbp_config {
+
+    my (@to_delete);
+    my ($item);
+
+    #
+    # Support 'removeall' case
+    #
+    if ($this_app->option('removeall')) {
+
+        $this_app->debug(2, "aii-nbp: removing all config files");
+
+        opendir(DIR, $NBPDir);
+        @to_delete = (grep(/(\.cfg$)|(^[A-F0-9]{8}$)/i, readdir(DIR)));
+        closedir(DIR);
+
+        # but do not remove bootlocal.cfg!
+        @to_delete = grep( !/^$BootConfig$/, @to_delete);
+
+        chdir($NBPDir);
+        unlink (@to_delete);
+
+        $this_app->warn('aii-nbp: removing all config files');
+
+        return(0);
+
+    }
+
+    #
+    # Remove entries contained in NTR array
+    #
+
+    foreach $item (@NTR) {
+        $this_app->debug(2, 'aii-nbp: removing config files for $item->{FQDN}');
+        unlink ($NBPDir . $item->{IP_HEX});
+        unlink ($NBPDir . $item->{FQDN} . '.cfg');
+    }
+
+    return(0);
+
+}
+
+#
+# add_nbp_config()
+#
+# Add new configuration files for those entries contained in NTC array
+#
+# Implement commands:
+#   --configure
+#   --configurelist
+#
+sub add_nbp_config() {
+
+    my ($cm, $cred, $cfg, $element);
+    my ($fname, $template, $path);
+    my (@lines, @fields);
+    my ($item, $value, $cwd);
+
+    NTC:
+    foreach $item (@NTC) {
+
+        $this_app->debug(2, "aii-nbp: adding configuration for host $item");
+
+        # Open the node's fake Cache Manager
+        # (there must be one CCM for each node to configure)
+        $this_app->debug(3, "aii-nbp: opening node's CCM: "
+                            . "@QTTR_TMP@/aii/$item->{FQDN}");
+        $cm = EDG::WP4::CCM::CacheManager->new("@QTTR_TMP@/aii/$item->{FQDN}");
+        unless ($cm) {
+            $this_app->error($ec->error);
+            $ec->ignore_error;
+            return(1);
+        }		
+
+        # get (locked) current configuration
+        $cred = 0;
+        $cfg = $cm->getLockedConfiguration($cred);
+        unless ($cfg) {
+            $this_app->error($ec->error);
+            $ec->ignore_error;
+            return(1);
+        }
+
+        # get name of NBP configuration file template
+        $element = $cfg->getElement('/system/aii/nbp/template');
+		unless ($element) {
+            $this_app->error($ec->error);
+            $ec->ignore_error;
+            return(1);
+		}
+        $fname   = $element->getValue();
+
+        #
+        # 02/06/2005
+        # ----------
+        #
+        # Process the configuration template using the quattor template processor library
+        # Changes made by Cesar Lobo (cesar.lobo@uam.es)
+        #
+
+        $this_app->debug(3, "aii-nbp: processing the configuration template");
+
+        unless($this_app->Substitute($cfg,"$NBPDir$item->{FQDN}.cfg",undef,"$TemplateDir$fname")) {
+
+            $this_app->error("aii-nbp: error processing the configuration template");
+            return(1);
+
+        }
+
+        #
+        # Create the link to "local boot" (only if it was missing!)
+        #
+
+        $this_app->debug(3, "aii-nbp: creating symlink");
+
+        $cwd = `pwd`;
+        chdir($NBPDir);
+
+        if (! -l $NBPDir.$item->{IP_HEX}) {
+            if (!safe_symlink ($BootConfig, $item->{IP_HEX})) {
+                $this_app->warn('aii-nbp: symlink ' . $item->{IP_HEX} . ' => '
+                                . " $BootConfig failed");
+            }
+        }
+
+        chdir($cwd);
+
+    }
+
+    return(0);
+
+}
+
+#
+# new_entry($host, $mode)
+#
+# Check and add a node to the arrays @NTC (NodesToConfig),
+# @NTR (NodesToRemove), @NTB (NodesToBoot),
+# @NTI (NodesToInstall), @NTS (NodesToGetStatus)
+#
+# Return true in case of error
+#
+sub new_entry($$) {
+
+    my $host = shift;
+    my $mode = shift;
+
+    $this_app->debug(3, "aii-nbp: new entry: $mode host = $host");
+
+    if (!defined($host) || $host eq '') {
+        $this_app->warn("aii-nbp: $mode node: missing hostname");
+        return(1);
+    }
+
+    my ($fqdn, @all_address) = (gethostbyname($host))[0,4];
+    if ($#all_address < 0) {
+        # The array is empty => invalid name
+        $this_app->warn("aii-nbp: invalid hostname to $mode ($host)");
+        return(1);
+    }
+ 
+    $this_app->debug(3, "aii-nbp: $mode $host");
+
+    push(@NTC, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'configure');
+    push(@NTI, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'install');
+    push(@NTB, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'boot');
+    push(@NTE, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'rescue');
+    push(@NTR, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'remove');
+    push(@NTS, {FQDN => $fqdn, IP_HEX => get_hex_ip($fqdn)})
+        if ($mode eq 'status');
+
+    return(0);
+
+}
+
+#
+# read_input()
+#
+# Read from command line and/or file lists the hostnames involved
+# and save them in @NTC (NodesToConfig), @NTR (NodesToRemove),
+# @NTB (NodesToBoot), @NTI (NodesToInstall), @NTS (NodesToGetStatus)
+#
+sub read_input() {
+
+    my ($opt, $item);
+    my ($filename, @nodelist);
+
+    for $opt ('configure', 'boot', 'install', 'status', 'remove', 'rescue') {
+
+        # just one node (from command line)
+        if ($this_app->option($opt)) {
+            $this_app->debug(2, "aii-nbp: new entry: $opt " .
+                                $this_app->option($opt));
+            new_entry($this_app->option($opt), $opt);
+            next;
+        }
+
+        # more than one node (from a text file)
+        if ($this_app->option($opt.'list')) {
+
+            $filename = $this_app->option($opt.'list');
+            if (!open(FILE, "< $filename" )) {
+                $this_app->warn("aii-nbp: $opt node list error:" .
+                                " file access error: $filename");
+                next;
+            }
+
+            $this_app->debug(2, "aii-nbp: reading nodes from file: $filename");
+            @nodelist = <FILE>;
+            close (FILE);
+
+            foreach $item (@nodelist) {
+                $item =~ s/[\s\n]//g; # remove spaces and \n
+                if ( ($item ne "")  && ($item !~ /^\s*\#/) ) {
+                    $this_app->debug(2, "aii-nbp: new entry: $opt $item");
+                    new_entry($item, $opt);
+                }
+            }
+
+        }
+
+    }
+
+    return(0);
+
+}
+
+#------------------------------------------------------------
+# main loop
+#------------------------------------------------------------
+
+# fix umask
+umask (022);
+
+# unbuffer STDOUT & STDERR
+autoflush STDOUT 1;
+autoflush STDERR 1;
+
+# initialize the main class
+unless ($this_app = aii_nbp->new($0, @ARGV)) {
+    throw_error('aii-nbp: cannot start application');
+}
+
+$NBPDir      = $this_app->option('nbpdir');
+$NBPDir      =~ s/\/?$/\//;
+$BootConfig  = $this_app->option('bootconfig');
+$Rescue      = $this_app->option('rescueconfig');
+$TemplateDir = $this_app->option('templatedir');
+$TemplateDir =~ s/\/?$/\//;
+
+#
+# Verify that path/filenames are good
+#
+
+if (! -d $NBPDir) {
+    $this_app->error( "aii-nbp: invalid NBP configuration directory: $NBPDir");
+    exit(1);
+}
+
+if (! -f $TemplateDir.$BootConfig) {
+    $this_app->error("aii-nbp: default NBP boot file missing: "
+                     . $TemplateDir.$BootConfig);
+    exit(1);
+}
+
+if (! -f $NBPDir.$BootConfig ) {
+    $this_app->debug(1, "aii-nbp: file $NBPDir$BootConfig does not exists, "
+                        . "copying");
+    if (system("cp -f $TemplateDir$BootConfig $NBPDir$BootConfig")) {
+        $this_app->error("aii-nbp: failed to copy "
+                         . "$TemplateDir$BootConfig => $NBPDir$BootConfig");
+        exit(1);
+    }
+
+}
+
+# process command line options
+$this_app->debug(1, "aii-nbp: reading cmd line or input files");
+if (read_input()) {
+    $this_app->error("aii-nbp: failed to process cmd line or input files");
+    exit(1);
+}
+
+# create/remove configuration files
+if( scalar(@NTC) > 0 || scalar(@NTR) > 0 ) {
+    $this_app->debug(1, "aii-nbp: updating NBP configuration");
+    if (add_nbp_config()){
+        $this_app->error("aii-nbp: failed to add new NBP config files");
+        exit(1);
+    }
+    if (remove_nbp_config()){
+        $this_app->error("aii-nbp: failed to remove NBP config files");
+        exit(1);
+    }
+} else {
+    $this_app->debug(1, "aii-nbp: no NBP configuration files to update");
+}
+
+# change nodes status (boot/install/rescue)
+if( scalar(@NTB) > 0 || scalar(@NTE) > 0 ||scalar(@NTI) > 0 ) {
+    $this_app->debug(1, "aii-nbp: changing nodes status");
+    if (change_nodes_status()) {
+        $this_app->error("aii-nbp: failed to change nodes status");
+        exit(1);
+    }
+} else {
+    $this_app->debug(1, "aii-nbp: no hosts to change status");
+}
+
+# report node status
+if( scalar(@NTS) > 0 ) {
+    $this_app->debug(1, "aii-nbp: reporting nodes status");
+    if (report_nodes_status()) {
+        $this_app->error("aii-nbp: failed to report nodes estatus\n");
+        exit(1);
+    }
+} else {
+    $this_app->debug(1, "aii-nbp: no hosts to report its status");
+}
+
+exit (0);
+

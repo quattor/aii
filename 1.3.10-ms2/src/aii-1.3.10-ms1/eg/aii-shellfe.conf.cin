@@ -1,0 +1,19 @@
+#
+# aii-shellfe.conf	configuration file
+# 
+# Enrico Ferro <enrico.ferro@pd.infn.it>
+# Rafael A. Garcia Leiva <angel.leiva@uam.es>
+#
+# Copyright (c) 2003 EU DataGrid.
+# For license conditions see http://www.eu-datagrid.org/license.html
+#
+
+# URL where XML profiles are available
+# REPLACE 'quattor_server' by your server name and uncomment that line!
+
+# cdburl = http://quattor_server/profiles
+
+# Prefix for the host profiles
+# The default is profile_ for backward compatibility
+# Comment this out when not prefix is needed
+profile_prefix = profile_

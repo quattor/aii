@@ -1,0 +1,85 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+
+declaration template quattor/aii/schema;
+
+include quattor/schema;
+
+type structure_service_@COMP@_dhcp_options = {
+    "dhcpoptions"  ? string[]
+    "tftpserver"   ? string
+    "addoptions"   ? string
+};
+
+type structure_service_@COMP@_dhcp = {
+    "options"   ? structure_service_@COMP@_dhcp_options
+    
+};
+
+type structure_service_@COMP@_nbp_options = {
+    "initrd"      : string
+    "kernel"      : string
+    "ksdevice"    : string
+    "kslocation"  : string
+    "label"       ? string
+};
+
+type structure_service_@COMP@_nbp = {
+    "template"  ? string
+    "options"   ? structure_service_@COMP@_nbp_options
+};
+
+type structure_service_@COMP@_osinstall_options = {
+    "ackurl"              : string
+    "auth"                ? string
+    "bootloader_location" : string = 'mbr'
+    "clearmbr"            : string = 'true'
+    "clearpart"           : string = 'true'
+    "email_success"       : string = 'false'
+    "firewall"            ? string
+    "installtype"         : string
+    "keyboard"            : string = 'us'
+    "lang"                : string = 'en_US'
+    "langsupp"            ? string = 'en_US'
+    "mouse"               : string = 'none'
+    "packages"            : string
+    "node_profile"        : string
+    "osinstall_protocol"  : string
+    "post_install_script" ? string
+    "post_reboot_script"  ? string
+    "rootpw"              : string
+    "selinux"			  ? string
+    "timezone"            ? string
+    "xwindows"            ? string
+};
+
+type structure_service_@COMP@_osinstall = {
+    "template"  ? string
+    "options"   ? structure_service_@COMP@_osinstall_options
+};
+
+type structure_service_@COMP@ = {
+
+#    DHCP server
+    "dhcp"          ? structure_service_aii_dhcp
+
+#   Network Bootstrap Program
+    "nbp"           : structure_service_aii_nbp
+
+#   OS Installer
+    "osinstall"     : structure_service_aii_osinstall
+
+};
+
+type "/system/aii" = structure_service_@COMP@;
+

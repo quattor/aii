@@ -1,0 +1,234 @@
+% datagrid.sty: v1.1-APM-0.1 2002-05-08 Frohner Ákos <Akos.Frohner@cern.ch>
+% Modifications by Paul Millar (& Norman Gray) <paulm@astro.gla.ac.uk>
+\ProvidesPackage{datagrid}[2002/06/13 European DataGrid LaTeX style]
+\typeout{EDG LaTeX style -- 2002/06/13}
+
+% Neccessary packages:
+\RequirePackage{lastpage}
+\RequirePackage{tabularx}
+\RequirePackage{pslatex}
+\RequirePackage{times}
+\RequirePackage{verbatim}
+\RequirePackage{geometry}
+
+\RequirePackage{graphicx}
+\RequirePackage{color}
+
+
+\RequirePackage{url}
+
+\RequirePackage[pagestyles]{titlesec}
+\RequirePackage{titletoc}
+
+\RequirePackage{hyperref}		% hyperref is best last
+
+
+% image file extensions respective to the output format
+\ifx\pdfoutput\undefined
+	\DeclareGraphicsExtensions{.eps}
+\else
+	\DeclareGraphicsExtensions{.jpg,.pdf,.png}
+\fi
+
+\ifx\pdfoutput\undefined \else
+	\pdfcompresslevel=9
+	\pdfinfo{ /Title (\jobname) }
+\fi
+
+\geometry{a4paper,margin=0.98in,headheight=0.72in}
+
+\renewpagestyle{plain}[\small]{
+	\headrule%
+	\sethead{\DataGridLogo}%
+		{%
+			\raisebox{0.4in}{%
+				\parbox{2.6in}{%
+				\begin{center}%
+				\textbf{\textsc{\@title}} \\%
+				\textbf{\@Subtitle}%
+				\end{center}%
+				}%
+			}%
+		}%
+		{%
+			\raisebox{0.4in}{%
+				\begin{tabular}{r}%
+				\emph{Doc. Identifier:}\\%
+				\textbf{\@DocIdentifier}\\[2mm]%
+				\emph{Date:} \textbf{\@date}\\%
+				\end{tabular}%
+			}%
+		}%
+	\footrule%
+	\setfoot{\ISTNumber}%
+		{\colorbox{yellow}{\@Dissemination}}%
+		{{\thepage}/\pageref{LastPage}}%
+}
+\newpagestyle{titleps}[\small]{
+	\sethead{\DataGridLogo}{}{\ISTLogo}%
+	\footrule%
+	\setfoot{\ISTNumber}%
+		{\colorbox{yellow}{\@Dissemination}}%
+		{{\thepage}/\pageref{LastPage}}%
+}
+
+%
+% EDG style small-capital section titles.
+%
+% The numbering is aligned with the WinWord style, 
+% although it is not common in the english typography...
+%
+\newcommand{\sectionbreak}{\newpage}
+\renewcommand{\thesection}{\arabic{section}.}
+\titleformat{\section}{\Large\bfseries\sffamily\scshape}{\thesection}{1em}{}
+\titlecontents{section} [2em] {\vspace*{4pt}}
+	{\large \sc \bfseries \contentslabel{2em}}
+	{\large \sc \bfseries \hspace*{-2em}}
+	{\large \textbf{\titlerule*[1ex]{.}\contentspage}} [\vspace*{4pt}]
+
+\renewcommand{\thesubsection}{\thesection\arabic{subsection}.}
+\titleformat{\subsection}{\large\bfseries\sffamily\scshape}{\thesubsection}{1em}{}
+\titlecontents{subsection} [5em] {}
+	{\sc \contentslabel{3em}}
+	{\sc \hspace*{-3em}}
+	{\titlerule*[1ex]{.}\contentspage} 
+
+\renewcommand{\thesubsubsection}{\thesubsection\arabic{subsubsection}.}
+\titleformat{\subsubsection}{\normalsize\bfseries\sffamily}{}{1em}{}
+%\titleformat{\subsubsection}{\normalsize\bfseries\sffamily}{\thesubsubsection}{1em}{}
+
+%
+% common constants
+%
+\def\DataGrid{DataGrid}
+\def\ISTNumber{IST-2000-25182}
+\def\DataGridLogo{\includegraphics[width=1.4in,height=0.72in]{datagrid}}
+\def\ISTLogo{\includegraphics[width=1in,height=0.75in]{ist}}
+
+%
+% parameters to be supplied by the author
+%
+\def\Subtitle#1{\gdef\@Subtitle{#1}}
+\gdef\@Subtitle{\@latex@warning@no@line{No \noexpand\Subtitle given}}
+
+\def\DocIdentifier#1{\gdef\@DocIdentifier{#1}}
+\gdef\@DocIdentifier{\@latex@warning@no@line{No \noexpand\DocIdentifier given %
+	(e.g. DataGrid-01-TEN-0109-1-0)}}
+
+\def\EDMSid#1{\gdef\@EDMSid{#1}}
+\gdef\@EDMSid{\@latex@warning@no@line{No \noexpand\EDMSid given %
+	(e.g. 3738)}}
+
+\def\WorkPackage#1{\gdef\@WorkPackage{#1}}
+\gdef\@WorkPackage{\@latex@warning@no@line{No \noexpand\WorkPackage given %
+	(e.g. WP2 Data Management)}}
+
+\def\Partner#1{\gdef\@Partner{#1}}
+\gdef\@Partner{\@latex@warning@no@line{No \noexpand\Partner given %
+	(e.g. CERN, INFN)}}
+
+\def\LeadPartner#1{\gdef\@LeadPartner{#1}}
+\gdef\@LeadPartner{\@latex@warning@no@line{No \noexpand\LeadPartner given %
+	(e.g. CERN)}}
+
+\def\DocStatus#1{\gdef\@DocStatus{#1}}
+\gdef\@DocStatus{\@latex@warning@no@line{No \noexpand\DocStatus given %
+	(e.g. DRAFT, WORKING, DELIVERED)}}
+
+\def\Dissemination#1{\gdef\@Dissemination{#1}}
+\gdef\@Dissemination{\@latex@warning@no@line{No \noexpand\Dissemination given %
+	(e.g. PUBLIC, INTERNAL, ...)}}
+
+\long\def\Abstract#1{\gdef\@Abstract{#1}}
+\gdef\@Abstract{\@latex@warning@no@line{No \noexpand\Abstract given}}
+
+%
+% beginning of the document
+%  (it can only be hooked to \begin{document}, if we redefine the article class)
+%
+\long\def\premable{
+\pagestyle{titleps}
+%\vspace*{3cm}
+\vspace*{1cm}
+\vfil
+\begin{center}
+	\huge\textbf{\sf\DataGrid}\\[15mm]
+	\LARGE\textsc{\sf\@title}\\[5mm]
+        \ifx\@Subtitle\@empty\else
+	    \Large\textsc{\sf\@Subtitle}\\[5mm]
+        \fi
+\end{center}
+\vfil
+\begin{flushright}%
+	\vline width 11cm height 2pt
+
+	\textsf{%
+	\begin{tabularx}{11cm}{lX}
+		Document identifier: & \textbf{\@DocIdentifier}\\[3mm]
+		EDMS id: & \textbf{\@EDMSid}\\[3mm]
+		Date: & \textbf{\@date}\\[3mm]
+		Work package:& \textbf{\@WorkPackage}\\[3mm]
+		Partner(s): & \textbf{\@Partner}\\[3mm]
+		Lead Partner: & \textbf{\@LeadPartner}\\[3mm]
+		Document status: & \textbf{\@DocStatus}\\[3mm]
+		Author(s): & \@author \\[3mm]
+		File: & \textbf{\jobname} \\[3mm]
+	\end{tabularx}%
+	}
+	%\vline width 110mm height 2pt
+\end{flushright}
+\vfil
+\noindent \textsf{Abstract: \it \@Abstract}
+\vfil
+\vspace*{1cm}
+% end of the first page
+\newpage
+
+\pagestyle{plain}
+
+\setcounter{tocdepth}{2}
+\tableofcontents
+
+}
+
+% 
+% Include emails and URLs in the text. A hyperlink is also created
+% using the hyperref package, so the pdf output will have them as
+% active links.
+
+%
+% We use the URL package, which does this nicely. The old way (\HTTP) was
+% a bit buggy as it had problems with `~'s
+% We define \HTTP and \HTTPtilde to emit warnings, so people know to switch
+% to the much simpler method.
+%
+\newcommand{\Email}[1]{\href{mailto:#1}{#1}}
+%\newcommand{\HTTP}[1]{\href{#1}{\textsf{#1}}}
+%\newcommand{\HTTPtilde}[2]{\href{#1/~#2}{\textsf{#1/\~{}#2}}}
+\newcommand{\HTTP}{\@latex@warning@no@line{The use of \noexpand\HTTP is no longer supported. Use \noexpand\url instead}}
+\newcommand{\HTTPtilde}{\@latex@warning@no@line{The use of \noexpand\HTTPtilde is no longer supported. Use \noexpand\url with the full URL instead}}
+
+
+%
+% Include an image as a floating figure.
+%
+% Use with the file name without the extension, thus the appropriate
+% can be selected for the format: eps for latex and (jpg/pdf/png) for 
+% pdflatex.
+% Parameters:
+%     width (relative to textwidth), default is 0.9
+%     filename
+%     caption text
+% Example:
+%     \Image[0.2]{datagrid}{DataGrid logo}
+% You may refer to the image using the \ref{figure:filename} reference.
+%
+\newcommand{\Image}[3][0.9]{%
+	\begin{figure}[htbp]
+	\begin{center}
+	\includegraphics[width=#1\textwidth,height=0.9\textheight,keepaspectratio]{#2}
+	\caption{\label{figure:#2} #3}
+	\end{center}
+	\end{figure}
+}
+
