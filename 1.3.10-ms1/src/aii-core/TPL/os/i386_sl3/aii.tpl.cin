@@ -1,0 +1,76 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+#
+# This example file contains the AII specific options for the platform
+#    Scientific Linux 3 i386
+#
+################################################################################
+
+template os/i386_sl3/aii;
+
+
+##################################################
+# KickStart configuration (SL3 specific options)
+##################################################
+
+#
+# KickStart configuration template to be used.
+#
+# You may copy this template and create your own customized version
+# of it if required.
+#
+"/system/aii/osinstall/template" = "sl_ks.conf";
+
+#
+# Path where the Scientific linux 3 distribution is found on the server
+#
+variable AII_OSINSTALL_PATH = "/i386_sl3";
+
+
+########################################################################
+# End of KickStart configuration (Scientific Linux 3 specific options)
+########################################################################
+
+
+############################################################
+# NBP configuration (Scientific Linux 3 specific options)
+############################################################
+
+#
+# pxelinux configuration template to be used.
+#
+"/system/aii/nbp/template" = "sl_pxe.conf";
+
+#
+# Label for the boot loader
+#
+"/system/aii/nbp/options/label" = "Scientific Linux 3";
+
+#
+# Relative path (from /tftpboot) of the kernel
+#
+"/system/aii/nbp/options/kernel" = "i386_sl3/vmlinuz";
+
+#
+# Relative path (from /tftpboot) of the initial ram disk
+#
+"/system/aii/nbp/options/initrd" = "i386_sl3/initrd.img";
+
+######################################################################
+# End of the NBP configuration (Scientific Linux 3 specific options)
+######################################################################
+
+
+# include the site-wide configuration of AII
+include site/aii;
+
