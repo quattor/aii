@@ -11,6 +11,6 @@ use MSDW::Version
         'elfms/perl-CAF' => '1.4.11',
 #       'elfms/ncm-template' => '1.0.61-1',
 #       '@METAPROJ@/@PROJECT@'  => '@RELEASE@',
-#	'XML-Parser' => '2.36-2.0.1',
+	'XML-Parser' => '2.36-2.0.1',
 	'XML-Simple' => '2.13',
 ;
