@@ -545,7 +545,8 @@ sub new_remove_entry($) {
         return(1);
     } else {
         $host = $fqdn;
-        $host =~ s/([^.]+)(.*)/$1/;
+# why remove the domain name?
+#        $host =~ s/([^.]+)(.*)/$1/;
     }
 
     #
@@ -629,7 +630,8 @@ sub new_configure_entry {
     my $ip = Socket::inet_ntoa($all_address[0]);
 
     $host = $fqdn;
-    $host =~ s/([^.]+)(.*)/$1/;
+# why remove the fqdn ?
+#    $host =~ s/([^.]+)(.*)/$1/;
 
     # check if the host entry already exists
     foreach $item (@NTC) {
