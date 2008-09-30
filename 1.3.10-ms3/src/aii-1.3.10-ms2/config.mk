@@ -7,7 +7,7 @@ COMP=aii
 NAME=$(COMP)
 DESCR=AII is the Automated Installation Infrastructure
 VERSION=1.3.10
-RELEASE=1
+RELEASE=ms3
 
 AUTHOR=Enrico Ferro, Cristina Aiftimei, Rafael Garcia, Cesar Lobo, Ronald Starink
 
