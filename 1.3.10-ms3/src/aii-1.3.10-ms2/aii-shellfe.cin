@@ -1132,7 +1132,7 @@ sub get_notification{
     foreach $key (keys(%profiles)) {
         $key=~s/\.xml$//;
         new_entry($key, 'configure');
-        new_entry($key, 'install');
+        new_entry($key, 'boot');
     }
 
     $this_app->debug(2, "aii-shellfe: checking for modified profiles");
