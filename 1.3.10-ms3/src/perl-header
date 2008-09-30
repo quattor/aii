@@ -1,0 +1,16 @@
+#!/ms/dist/perl5/bin/perl5.8
+
+use MSDW::Version
+#	'Compress-Zlib' => '1.41',
+	'DB_File' => '1.808-4.1.25',
+        'Proc-ProcessTable'     => '0.39', # used by CAF when locking
+	'libwww' => '5.805',
+	'URI'    => '1.35',
+        'elfms/ccm' => '2.0',
+        'elfms/perl-LC' => '1.0.11',
+        'elfms/perl-CAF' => '1.4.11',
+#       'elfms/ncm-template' => '1.0.61-1',
+#       '@METAPROJ@/@PROJECT@'  => '@RELEASE@',
+	'XML-Parser' => '2.36-2.0.1',
+	'XML-Simple' => '2.13',
+;

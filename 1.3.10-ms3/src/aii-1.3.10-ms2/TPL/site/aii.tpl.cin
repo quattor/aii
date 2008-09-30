@@ -1,0 +1,77 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+#
+# This file contains the site-specific settings for AII.
+# DO NOT use this file as is! 
+# It is just an example and will NOT work by default!!
+#
+################################################################################
+
+template site/aii;
+
+
+# site-specific settings for AII
+
+
+#
+# OS installation server
+# It is mandatory to set this variable!
+#
+variable AII_OSINSTALL_SRV = "osinstallserver.yourdomain.xx";
+
+#
+# The following variables could be used to change the AII server config:
+#    AII_CDB_SRV        : server containing the node profiles
+#                         defaults to AII_OSINSTALL_SRV
+#    AII_PROFILE_PATH   : directory on AII_CDB_SRV containing the node profiles
+#                         defaults to /profiles
+#    AII_KS_SRV         : server containing the Kickstart profiles
+#                         defaults to AII_OSINSTALL_SRV
+#    AII_KS_PATH        : path on AII_KS_SRV containing the Kickstart profiles
+#                         defaults to /ks for http or /osinstall/ks for nfs
+#    AII_ACK_SRV        : server for PXE (= DHCP + TFTP)
+#                         defaults to AII_OSINSTALL_SRV
+#    AII_ACK_CGI        : path on AII_ACK_SRV containing the acknowledgement script
+#                         defaults to /cgi-bin/aii-installack.cgi
+#
+# The quattor/aii/config template sets useful defaults for all of the above
+#
+
+#
+# Language during installation process
+#
+"/system/aii/osinstall/options/lang" = "en_US";
+
+#
+# Language installed
+#
+"/system/aii/osinstall/options/langsupp" = "en_US";
+
+
+#
+# Keyboard layout
+#
+"/system/aii/osinstall/options/keyboard" = "us";
+
+
+#
+# Time zone
+#
+"/system/aii/osinstall/options/timezone" = "Europe/Paris";
+
+
+#
+# generic settings
+#
+
+include quattor/aii/config;

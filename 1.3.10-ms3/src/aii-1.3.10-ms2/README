@@ -1,0 +1,5 @@
+AII Automated Installation Infrastructure
+-----------------------------------------
+
+The "official" Linux kickstart template is sl_ks.conf . It works for
+amd64 and i386, and for SL3 and SL4.
