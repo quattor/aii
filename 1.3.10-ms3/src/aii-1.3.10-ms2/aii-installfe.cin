@@ -428,11 +428,11 @@ sub run_remotely ($) {
 	my $scp = $this_app->option('sshdir') . "/scp";
         if ($this_app->option('noaction')) {
             $this_app->info("aii-installfe: run: "
-                             . "\"$scp $Files $user_at_host:\"");
+                             . "\"$scp -q $Files $user_at_host:\"");
         } else {
             $this_app->debug(2, "aii-installfe: copy node lists: "
                                 . "\"$scp $Files $user_at_host:\"");
-            if (system("$scp $Files $user_at_host:")) {
+            if (system("$scp -q $Files $user_at_host:")) {
                 $this_app->error("installfe: failed execution of "
                                  . "\"$scp $Files $user_at_host:\"");
                 return(0);
@@ -444,13 +444,13 @@ sub run_remotely ($) {
     my $ssh = $this_app->option('sshdir') . "/ssh";
     if ($this_app->option('noaction')) {
         $this_app->info("aii-installfe: run: "
-                        . "\"$ssh $user_at_host /usr/bin/sudo "
+                        . "\"$ssh -q $user_at_host /usr/bin/sudo "
                         . "@QTTR_SBIN@/aii-shellfe $Options\"");
     } else {
         $this_app->debug(2, "aii-installfe: run aii-shellfe remotely: "
                             . "\"$ssh $user_at_host /usr/bin/sudo "
                             . "@QTTR_SBIN@/aii-shellfe $Options\"");
-        if (system("$ssh $user_at_host /usr/bin/sudo "
+        if (system("$ssh -q $user_at_host /usr/bin/sudo "
                    . "@QTTR_SBIN@/aii-shellfe $Options 2>&1")) {
             $this_app->error("installfe: failed execution of "
                         . "\"$ssh $user_at_host /usr/bin/sudo "
