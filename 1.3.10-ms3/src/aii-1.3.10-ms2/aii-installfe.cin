@@ -599,6 +599,7 @@ if ($local_server) {
 
 if (@remote_servers) {
     my $q = Parallel::Queue->new();
+    $q->setTrapStdio(1);
     $q->setList(@remote_servers);
     $q->setWidth(10);
     $q->setTimeLimit("1h");
@@ -621,8 +622,10 @@ if (@remote_servers) {
 			    . "before we could process $host");
 	    $errcount++;
 	} else {
-	    foreach my $line ( split(/n+/,$result->getOutput($index))) {
-		print "[$host] $line\n";
+	    foreach my $line ( split(/\n+/,$result->getOutput($index))) {
+		my $h = $host;
+		$h =~ s{.*\@}{}; # remove username: we just care about hostname
+		print "[$h] $line\n";
 	    }
 	}
     }

@@ -466,15 +466,15 @@ sub report_nodes_status {
         $link = readlink($NBPDir . $item->{IP_HEX});
 
         if (!$link || $link eq '') {
-            $this_app->info("aii-nb: $item->{FQDN} status: undefined");
+            $this_app->info("aii-nbp: $item->{FQDN} status: undefined");
         } elsif ($link eq $this_app->option('bootconfig')) {
-            $this_app->info("aii-nb: $item->{FQDN} status: boot");
+            $this_app->info("aii-nbp: $item->{FQDN} status: boot");
         } elsif ($link eq $this_app->option('rescueconfig')) {
-            $this_app->info("aii-nb: $item->{FQDN} status: rescue");
+            $this_app->info("aii-nbp: $item->{FQDN} status: rescue");
         } elsif ($link eq $item->{FQDN}.'.cfg') {
-            $this_app->info("aii-nb: $item->{FQDN} status: install");
+            $this_app->info("aii-nbp: $item->{FQDN} status: install");
         } else {
-            $this_app->info("aii-nb: $item->{FQDN} status: error!");
+            $this_app->info("aii-nbp: $item->{FQDN} status: error!");
         }
 
     }
