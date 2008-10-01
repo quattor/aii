@@ -1472,7 +1472,7 @@ if (scalar(@NTC) || scalar(@NTR)) {
 # modified by Cesar Lobo (cesar.lobo@uam.es)
 # 
 if(scalar(@NTC) || scalar(@NTR) || scalar(@NTB) || scalar(@NTE) || scalar(@NTI)) {
-    $this_app->info('aii-shellfe: ' . [$this_host] . 'changes: '
+    $this_app->info("aii-shellfe: [$this_host] changes: "
                     . scalar(@NTC) . ' added '
                     . scalar(@NTR) . ' removed '
                     . scalar(@NTB) . ' hdboot '
