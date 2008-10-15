@@ -804,19 +804,14 @@ EOF
 
     my @acklist;
     if ($config->elementExists (ACKLIST) ) {
-	@acklist = $config->getElement (ACKLIST)->getTree();
-    }
-    my $ackurl = $config->getElement (ACKURL)->getValue;
-
-    if (@acklist) {
-	for my $url in (@acklist) {
-	    print <<EOF;
-wget -q --output-document=- '$url'
-EOF
-	}
+	@acklist = @{$config->getElement (ACKLIST)->getTree()};
     } else {
-	print <<EOF;
-wget -q --output-document=- '$ackurl'
+	@acklist = ($config->getElement (ACKURL)->getValue);
+    }
+
+    foreach my $url (@acklist) {
+        print <<EOF;
+wget -q --output-document=- '$url'
 EOF
     }
 
