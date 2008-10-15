@@ -595,7 +595,7 @@ hostname $hostname.$domain
     fail "Last installation went wrong. Aborting. See logfile"
 
 exec &> /root/ks-post-install.log
-tail -f /root/ks-post-install.log &>/dev/tty7 &
+tail -f /root/ks-post-install.log &>/dev/console &
 
 EOF
 }
