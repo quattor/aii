@@ -583,7 +583,7 @@ success() {
     sendmail -t <<End_of_sendmail
 From: root\@$hostname
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor instalation on $hostname succeeded
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname succeeded
 
 Node $hostname successfully installed.
 .
@@ -799,7 +799,8 @@ EOF
     print <<EOF;
 
 chmod +x /etc/rc.d/init.d/ks-post-reboot
-ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
+/etc/rc.d/init.d/ks-post-reboot
+#ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
 EOF
 
     my @acklist;
