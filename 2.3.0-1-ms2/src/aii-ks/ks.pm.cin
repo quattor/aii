@@ -253,6 +253,7 @@ EOF
 	print "skipx\n" unless exists $tree->{xwindows};
     }
 
+    print "key $tree->{installnumber}" if exists $tree->{installnumber};
     print "auth ";
     print "--$_ " foreach @{$tree->{auth}};
     print "\n";
