@@ -235,6 +235,10 @@ use strict;
 
 our @ISA= qw(CAF::Application CAF::Reporter);
 
+use MSDW::Version
+    'Parallel-Queue' => '1.9.1',
+;
+use Parallel::Queue;
 
 #
 # Public Methods/Functions for CAF
@@ -390,8 +394,6 @@ package main;
 
 use LC::Exception qw (SUCCESS throw_error);
 use File::Basename;
-
-use Parallel::Jobs;
 
 use strict;
 use vars qw($this_app %SIG);
