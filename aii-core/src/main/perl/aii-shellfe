@@ -755,7 +755,7 @@ sub nodelist
     #	$rx =~ s/^([^.]+).*/$1/ unless $fqdn;
     $rx =~ m{^([^.]*)(.*)};
     $rx = $1;
-    $rx .= "($2)?" if $fqdn;
+    $rx .= "($2)" if $fqdn;
     my @nl;
     foreach (@{$profiles_info->{profile}}) {
 	if ($_->{content} =~ m/$prefix($rx)\b/) {
@@ -807,7 +807,7 @@ sub fetch_profiles
         print FILE "cache_root $ccmdir\n";
         close(FILE);
         # we use CDB_File, since it's the fastest
-        my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE=> $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
+        my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE_URL => $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
 	unless ($fh) {
 	    $self->error ("Error creating Fetch object for $url");
 	    $self->{status} = PARTERR_ST;
