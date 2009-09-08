@@ -27,6 +27,7 @@ specified in the profile.
                         --install <hostname|regexp>   |
                         --installlist <filename>      |
                         --notify                      |
+                        --filter <regex>              |
                         --remove <hostname|regexp>    |
                         --removelist <filename> >     |
                         --removeall                   |
@@ -44,9 +45,8 @@ C<--removeall>, is not ready yet.
 aii-shellfe is the user frontend for the quattor Automated
 Installation Infrastructure. aii-shellfe is used to automatically
 manage DHCP, the Network Bootstrap Program (NBP), and the OS
-installer. It wraps aii-dhcp for DHCP configuration. It instantiates
-and configures NCM components for configuring the NBP and OS
-installer.
+installer. It instantiates
+and configures NCM components for configuring these systems.
 
 aii-shellfe can be used locally, or remotely called with
 aii-installfe.  aii-shellfe can be called by the CDB notification
@@ -106,6 +106,12 @@ host name. Lines starting with a # are comment lines.
 aii-shellfe should be executed with this parameter by CDB
 notification client, i.e. whenever the content of CDB changes.
 
+=item --filter
+
+aii-shellfe should only notify against hosts that match this filter. A
+filter for only hosts within a specific domain would look like
+"\.foo\.com$".
+
 =item --remove <hostname|regexp>
 
 Remove the configuration for <hostname> or all hostnames that match
@@ -159,7 +165,7 @@ with a # are comment lines.
 
 =over 4
 
-=item --nodhcp
+=item --nodiscovery
 
 Do not update DHCP configuration. Valid only with --configure command.
 
@@ -298,11 +304,9 @@ our $profiles_info = undef;
 use constant MODULEBASE	=> 'NCM::Component::';
 use constant USEMODULE	=> "use " . MODULEBASE;
 use constant PROFILEINFO => 'profiles-info.xml';
-use constant NODHCP	=> 'nodhcp';
-use constant NONBP	=> 'nonbp';
-use constant NOOSINSTALL=> 'noosinstall';
 use constant OSINSTALL	=> '/system/aii/osinstall';
 use constant NBP	=> '/system/aii/nbp';
+use constant DISCOVERY  => '/system/aii/discovery';
 use constant CDBURL	=> 'cdburl';
 use constant PREFIX	=> 'profile_prefix';
 use constant HOSTNAME	=> '/system/network/hostname';
@@ -322,15 +326,6 @@ use constant REMOVEMETHOD	=> 'Unconfigure';
 use constant STATUSMETHOD	=> 'Status';
 use constant RESCUEMETHOD	=> 'Rescue';
 use constant FIRMWAREMETHOD     => 'Firmware';
-# Constants for aii-dhcp. These should be improved, and probably we
-# should get rid of aii-dhcp at all.
-use constant MACADDR	=> '/hardware/cards/nic/eth0/hwaddr';
-use constant HWCARDS	=> '/hardware/cards/nic';
-# we don't want an abs path for aii-dhcp
-use constant DHCPCFG	=> "/ms/dist/elfms/PROJ/aii/prod/sbin/aii-dhcp";
-use constant DHCPOPTION => '/system/aii/dhcp/options';
-use constant DHCPPATH	=> '/system/aii/dhcp';
-use constant MAC	=> '--mac';
 use constant CAFILE	=> 'ca_file';
 use constant CADIR	=> 'ca_dir';
 use constant KEY	=> 'key_file';
@@ -394,6 +389,10 @@ sub app_options
 	 HELP    => 'Executed by CDB client whenever nodes config changed',
 	 DEFAULT => undef },
 
+       { NAME    => 'filter=s',
+	 HELP    => 'only notify hosts that match this filter',
+	 DEFAULT => undef },
+
        { NAME    => 'status=s',
 	 HELP    => 'Report current boot/install status for the node ' .
 	 '(can be a regexp)',
@@ -422,16 +421,16 @@ sub app_options
 
 	 # aii-* parameters
 
-       { NAME    => 'nodhcp',
-	 HELP    => 'Do not update DHCP configuration',
+       { NAME    => 'nodiscovery|nodhcp',
+	 HELP    => 'Do not update discovery (e.g. dhcp) configuration',
 	 DEFAULT => undef },
 
        { NAME    => 'nonbp',
-	 HELP    => 'Do not update NBP configuration',
+	 HELP    => 'Do not update Network Boot Protocol (e.g. pxe) configuration',
 	 DEFAULT => undef },
 
        { NAME    => 'noosinstall',
-	 HELP    => 'Do not update OS installer configuration',
+	 HELP    => 'Do not update OS installer (e.g. kickstart) configuration',
 	 DEFAULT => undef },
 
 	 # other common options
@@ -464,6 +463,15 @@ sub app_options
        { NAME    => 'osinstalldir=s',
 	 HELP    => 'Directory where Kickstart files will be installed',
 	 DEFAULT => '/osinstall/ks' },
+
+	 # Options for DISCOVERY plug-ins
+	 { NAME => 'dhcpconf=s',
+	   HELP => 'name of dhcp configuration file',
+	   DEFAULT => '/etc/dhcpd.conf' },
+
+	 { NAME => 'restartcmd=s',
+	   HELP => 'how to restart the dhcp daemon',
+	   DEFAULT => 'service dhcpd restart' },
 
 	 # Options for NBP plug-ins
        { NAME    => 'nbpdir=s',
@@ -567,6 +575,7 @@ sub run_plugin
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
     my %rm = $st->{configuration}->getElement ($path)->getHash;
+    # XXX: This method of getting the modulename is... fragile.
     my $modulename = (keys (%rm))[0];
     if ($modulename !~ m/^[a-zA-Z_]\w+$/) {
 	$self->error ("Invalid Perl identifier specified as a plug-in. ",
@@ -575,25 +584,43 @@ sub run_plugin
 	return;
     }
 
-    $self->debug (4, "Loading module $modulename");
-    eval (USEMODULE .  $modulename);
-    if ($@) {
-	$self->error ("Couldn't load $modulename for path $path: $@");
-	$self->{status} = PARTERR_ST;
-	return;
+    if (!exists $self->{plugins}->{$modulename}) {
+	$self->debug (4, "Loading module $modulename");
+	eval (USEMODULE .  $modulename);
+	if ($@) {
+	    $self->error ("Couldn't load $modulename for path $path: $@");
+	    $self->{status} = PARTERR_ST;
+	    return;
+	}
+	$self->debug (4, "Instantiating $modulename");
+	my $class = MODULEBASE.$modulename;
+	my $module = $class->new($modulename);
+	if ($@) {
+	    $self->error ("Couldn't call 'new' on $modulename: $@");
+	    $self->{status} = PARTERR_ST;
+	    return;
+	}
+	$self->{plugins}->{$modulename} = $module;
     }
-    $self->debug (4, "Instantiating $modulename");
-    my $module = eval (MODULEBASE . $modulename . '->new($modulename)');
-    if ($@) {
-	$self->error ("Couldn't call 'new' on $modulename: $@");
-	$self->{status} = PARTERR_ST;
-	return;
+    my $plug = $self->{plugins}->{$modulename};
+    if ($plug->can($method)) {
+	$self->debug (4, "Running $modulename -> $method");
+	if (!$plug->$method ($st->{configuration})) {
+	    $self->error ("Failed to execute module's $modulename $method method");
+	    $self->{status} = PARTERR_ST;
+	}
+    } else {
+	$self->debug(4, "no method $method available for plugin $modulename");
     }
+}
 
-    $self->debug (4, "Running $modulename -> $method");
-    if (!$module->$method ($st->{configuration})) {
-	$self->error ("Failed to execute module's $modulename $method method");
-	$self->{status} = PARTERR_ST;
+sub iter_plugins {
+    my ($self, $st, $hook) = @_;
+    foreach my $plug ('osinstall', 'nbp', 'discovery') {
+	my $path = "/system/aii/$plug";
+	if (!$self->option("no$plug")) {
+	    $self->run_plugin($st, $path, $hook);
+	}
     }
 }
 
@@ -601,12 +628,17 @@ sub configure_notified
 {
     my ($self, $notification) = @_;
 
-    my ($cache, $db) = $self->read_cache;
     my %h = $notification->getAllProfilesHash;
+
+    my $filter = $self->option('filter');
 
     while (my ($node, $time) = each (%h)) {
         $node =~ s{\.xml$}{}; # the profiles-info is a filename, we want node
-	if (!exists ($cache->{$node}) || $cache->{$node} < $time) {
+	if ($filter && $node !~ m{$filter}) {
+	    $self->debug(6, "ignoring $node due to filter");
+	    next;
+	}
+	if ($self->get_cache_time($node) < $time) {
             if ($self->option('noaction')) {
                 $self->debug(1, "Would configure (notify): $node");
                 next;
@@ -619,61 +651,7 @@ sub configure_notified
                 next;
             }
 	    $self->configure (%hn);
-            $cache->{$node} = $when;
-            $self->write_cache($cache, $db);
 	}
-    }
-}
-
-sub read_cache {
-    my ($self) = @_;
-    my %cache = ();
-    my $db = undef;
-    # Allow for old style plain text file, and for DB file.
-    # If we see a DB file, then we'll use that in preference.
-    my $file = $self->option(LOCALCACHE);
-    my $dbfile = $file . ".db";
-    # We need to tie first, then read into array using compat
-    # so check if compat needed first (i.e. before we create an
-    # empty file)
-    my $compat = 0;
-    if (!-f $dbfile || (-f $file && (stat($dbfile))[9] < (stat($file))[9])) {
-        $compat = 1;
-    }
-    my $inf = DB_File::HASHINFO->new;
-    $inf->{cachesize} = 102400;
-    $db = tie(%cache, 'DB_File', $dbfile, &O_RDWR|&O_CREAT, 0640, $inf);
-    if (!$db) {
-        $self->error("failed to open db cache file ($dbfile): $!");
-    }
-
-    if ($compat) {
-    	if (open (FH, "<$file")) {
-	    while (my $entry = <FH>) {
-	        chomp ($entry);
-	        my ($k, $v) = split (':', $entry);
-		$k =~ s{\.xml$}{}; # silently upgrade
-	        $cache{$k} = $v;
-	    }
-	    close (FH);
-    	}
-    }
-    return (\%cache, $db);
-}
-
-sub write_cache {
-    my ($self, $cache, $db) = @_;
-    # If we're operating without a DB file for the cache,
-    # then we must re-write the file on every reconfigure.
-    # If we're using the DB file, then this becomes a no-op
-    if (!$db) {
-        open (FH, ">" . $self->option (LOCALCACHE));
-        while (my ($k, $v) = each (%$cache)) {
-	    print FH "$k:$v\n";
-        }
-        close (FH);
-    } else {
-        $db->sync;
     }
 }
 
@@ -769,6 +747,21 @@ sub nodelist
     return @nl;
 }
 
+sub cachedir {
+    my ($self, $node) = @_;
+    my $basedir = $self->option("cachedir");
+    my $cachedir = $basedir;
+    if ($self->option('use_fqdn') and $node =~ m{\.(.*)}) {
+	# break out hosts into subdirectories based on domain
+	# so long as there are less than 30,000 hosts per domain,
+	# this should give sufficient hashing to avoid any problems
+	# with directory size.
+	$cachedir .= "/$1";
+    }
+    $cachedir .= "/$node";
+    return $cachedir;
+}
+
 # Returns a hash with the node names given as arguments as keys and
 # the pair { fetch, cachemanager } objects associated to their
 # profiles as values.
@@ -779,27 +772,18 @@ sub fetch_profiles
 
     my $cdb = $self->option (CDBURL);
     my $prefix = $self->option (PREFIX) || '';
-    my $basedir = $self->option("cachedir");
 
     foreach my $node (@nl) {
 	next if exists $h{node};
-        my $cachedir = $basedir;
-        if ($self->option('use_fqdn') and $node =~ m{\.(.*)}) {
-            # break out hosts into subdirectories based on domain
-            # so long as there are less than 30,000 hosts per domain,
-            # this should give sufficient hashing to avoid any problems
-            # with directory size.
-            $cachedir .= "/$1";
-        }
+	my $ccmdir = $self->cachedir($node);
 	my $url = "$cdb/$prefix$node.xml";
 	$self->debug (1, "Fetching profile: $url");
-        
-        my $ccmdir = "$cachedir/$node";
+
         if ((!-d $ccmdir) && !mkpath($ccmdir)) {
                 $self->error("failed to create directory $ccmdir: $!");
                 next;
         }
-        my $config = "$cachedir/$node/ccm.conf";
+        my $config = "$ccmdir/ccm.conf";
         if (!open(FILE, ">$config")) {
                 $self->error("failed to create config file $config: $!");
                 next;
@@ -830,56 +814,6 @@ sub fetch_profiles
     return %h;
 }
 
-# Adds extra options to aii-dhcp configuration. This is the only part
-# of the core AII that has to explicitly look at the profile's values.
-# This part may be removed at a later version, when we have a proper
-# DHCP plug-in or component.
-sub dhcpcfg
-{
-    my ($self, $node, $cmd, $st, $mac) = @_;
-
-    my @dhcpop = (DHCPCFG, "--$cmd", "$node", MAC, "$mac");
-    if ("$cmd" eq 'configure') {
-	my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
-	## check for tftpserver option
-	push(@dhcpop,'--tftpserver',$opts->{tftpserver})
-	  if (exists($opts->{tftpserver}));
-	## check for addoptions
-	## addoptions is a single string
-	push(@dhcpop,'--addoptions','\''.$opts->{addoptions}.'\'')
-	  if (exists($opts->{addoptions}));
-    }
-    # Pass debug option
-    if ( $self->option('debug') ) {
-      push(@dhcpop,'--debug', $self->option('debug'));
-    } 
-    return @dhcpop;
-}
-
-# Runs aii-dhcp on the configuration object received as argument. It
-# uses the MAC of the first card marked with "boot"=true.
-sub dhcp
-{
-    my ($self, $node, $st, $cmd) = @_;
-
-    return unless $st->{configuration}->elementExists (DHCPPATH);
-    my $mac;
-    my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
-    foreach my $cfg (values (%$cards)) {
-	if ($cfg->{boot}) {
-	    $mac = $cfg->{hwaddr};
-	    last;
-	}
-    }
-
-    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
-    $self->debug (4, "Going to run: " .join (" ",@commands));
-    execute (\@commands) unless $self->option ('noaction');
-    if ($?) {
-	$self->error ("Error when configuring $node");
-	$self->{status} = PARTERR_ST;
-    }
-}
 
 # Runs the Install method of the NBP plugins of the nodes given as
 # arguments.
@@ -960,7 +894,6 @@ sub remove
 {
     my ($self, %nl) = @_;
 
-    my ($cache, $db) = $self->read_cache;
     while (my ($node, $st) = each (%nl)) {
         if ($self->option('noaction')) {
             $self->debug(1, "Would remove: $node");
@@ -972,14 +905,10 @@ sub remove
 	    $self->error("aii-shellfe: couldn't acquire lock on $node for remove");
 	    exit(1);
 	}
-	$self->run_plugin ($st, OSINSTALL, REMOVEMETHOD)
-	  unless $self->option (NOOSINSTALL);
-	$self->run_plugin ($st, NBP, REMOVEMETHOD)
-	  unless $self->option (NONBP);
-	$self->dhcp ($node, $st, 'remove') unless $self->option (NODHCP);
-	
-        delete $cache->{$node};
-        $self->write_cache($cache, $db);
+
+	$self->iter_plugins($st, REMOVEMETHOD);
+
+	$self->remove_cache_node($node);
     }
 }
 
@@ -1004,13 +933,12 @@ sub rescue
     }
 }
 
-# Configures DHCP, OSINSTALL and NBP on the nodes received as
+# Configures DISCOVERY, OSINSTALL and NBP on the nodes received as
 # arguments.
 sub configure
 {
     my ($self, %nl) = @_;
 
-    my ($cache, $db) = $self->read_cache;
     while (my ($node, $st) = each (%nl)) {
         if ($self->option('noaction')) {
             $self->debug(1, "Would configure: $node");
@@ -1023,14 +951,31 @@ sub configure
 	    $self->error("aii-shellfe: couldn't acquire lock on $node for configure");
 	    exit(1);
 	}
-	$self->run_plugin ($st, OSINSTALL, CONFIGURE)
-	  unless $self->option (NOOSINSTALL);
-	$self->run_plugin ($st, NBP, CONFIGURE)
-	  unless $self->option (NONBP);
-	$self->dhcp ($node, $st, 'configure') unless $self->option (NODHCP);
-        $cache->{$node} = $when;
-        $self->write_cache($cache, $db);
+	$self->iter_plugins($st, CONFIGURE);
+	$self->set_cache_time($node, $when);
     }
+}
+
+sub get_cache_time {
+    my ($self, $node) = @_;
+
+    my $cachedir = $self->cachedir($node);
+    return (stat("$cachedir/aii-configured"))[9] || 0;
+}
+
+sub set_cache_time {
+    my ($self, $node, $when) = @_;
+    my $cachedir = $self->cachedir($node);
+    if (!open(TOUCH, ">$cachedir/aii-configured")) {
+	$self->error("aii-shellfe: failed to update state for $node: $!");
+    }
+    close(TOUCH);
+}
+
+sub remove_cache_node {
+    my ($self, $node) = @_;
+    my $cachedir = $self->cachedir($node);
+    rmtree($cachedir);
 }
 
 # Runs all the commands
@@ -1061,6 +1006,16 @@ sub cmds
     }
 }
 
+sub finish {
+    my ($self) = @_;
+    $self->debug(5, "closing down");
+    foreach my $plugin (keys %{$self->{plugins}}) {
+	if ($self->{plugins}->{$plugin}->can("finish")) {
+	    $self->debug(5, "invoking finish for $plugin");
+	    $self->{plugins}->{$plugin}->finish();
+	}
+    }
+}
 
 package main;
 
@@ -1073,4 +1028,5 @@ our %SIG;
 our $ec = LC::Exception::Context->new->will_store_errors;
 
 $this_app->cmds;
+$this_app->finish;
 exit ($this_app->{status});
