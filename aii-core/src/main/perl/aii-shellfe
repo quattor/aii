@@ -594,7 +594,7 @@ sub run_plugin
 	}
 	$self->debug (4, "Instantiating $modulename");
 	my $class = MODULEBASE.$modulename;
-	my $module = $class->new($modulename);
+	my $module = eval { $class->new($modulename) };
 	if ($@) {
 	    $self->error ("Couldn't call 'new' on $modulename: $@");
 	    $self->{status} = PARTERR_ST;
@@ -605,10 +605,15 @@ sub run_plugin
     my $plug = $self->{plugins}->{$modulename};
     if ($plug->can($method)) {
 	$self->debug (4, "Running $modulename -> $method");
-	if (!$plug->$method ($st->{configuration})) {
+	if (!eval { $plug->$method ($st->{configuration}) }) {
 	    $self->error ("Failed to execute module's $modulename $method method");
 	    $self->{status} = PARTERR_ST;
 	}
+        if ($@) {
+	    $self->error ("Errors running module $modulename $method method: $@");
+	    $self->{status} = PARTERR_ST;
+	    return;
+        }
     } else {
 	$self->debug(4, "no method $method available for plugin $modulename");
     }
