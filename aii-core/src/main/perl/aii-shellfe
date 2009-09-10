@@ -624,7 +624,6 @@ sub run_plugin
 	    $self->error ("Errors running module $modulename $method method: $@");
 	    $self->{status} = PARTERR_ST;
         }
-        $ec->clear_error;
 	return;
     } else {
 	$self->debug(4, "no method $method available for plugin $modulename");
