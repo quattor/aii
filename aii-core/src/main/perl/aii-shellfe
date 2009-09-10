@@ -578,7 +578,7 @@ sub run_plugin
 {
     my ($self, $st, $path, $method) = @_;
     my $ec = LC::Exception::Context->new;
-    $ec->error_handler(\&plugin_handler);
+    $ec->will_store_errors;
 
     return unless $st->{configuration}->elementExists ($path);
     # This is here because CacheManager and Fetch objects may have
