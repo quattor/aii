@@ -1,22 +1,14 @@
-################################################################################
-# This is '@SELF@', a @NAME@'s file
-################################################################################
-#
-# VERSION:    @VERSION@, @DATE@
-# AUTHOR:     @AUTHOR@
-# MAINTAINER: @MAINTAINER@
-# LICENSE:    @LICENSE@
-#
-################################################################################
-# Coding style: emulate <TAB> characters with 4 spaces, thanks!
-################################################################################
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
 # Structure for the component generating kickstart files.
 
-unique template quattor/aii/@COMP@/schema;
+unique template quattor/aii/ks/schema;
 
 # X configuration on the KS file. Might deserve a component for
 # itself.
-type structure_@COMP@_ksxinfo = {
+type structure_ks_ksxinfo = {
 	"card"		? string # Graphics card driver
 	"monitor"	? string #
 	"noprobe"	? string
@@ -32,7 +24,7 @@ type structure_@COMP@_ksxinfo = {
 type string_ksservice = string with match (SELF, "^(ssh|telnet|smtp|http|ftp)$");
 
 # Information needed for configuring the firewall at installation-time.
-type structure_@COMP@_ksfirewall = {
+type structure_ks_ksfirewall = {
 	"enabled"	: boolean = true
 	"trusted"	? string []
 	"services"	: string_ksservice[] = list ("ssh")
@@ -40,7 +32,7 @@ type structure_@COMP@_ksfirewall = {
 };
 
 # Information needed for creating the Kickstart file
-type structure_@COMP@_ks_info = {
+type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
 	"auth"		: string[] = list ("enableshadow", "enablemd5")
 	"bootloader_location" : string = "mbr"
@@ -49,7 +41,7 @@ type structure_@COMP@_ks_info = {
 	"clearpart"	? string []
 	"driverdisk"	? type_absoluteURI[]
 	"email_success" : boolean = false
-	"firewall"	? structure_@COMP@_ksfirewall
+	"firewall"	? structure_ks_ksfirewall
 	"installtype"	: string
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"	
@@ -66,15 +58,15 @@ type structure_@COMP@_ks_info = {
 	"post_reboot_script" ? type_absoluteURI
 	"timezone"	: string
 	"selinux"	? string with match (SELF, "disabled|enforcing|permissive")
-	"xwindows"	? structure_@COMP@_ksxinfo
+	"xwindows"	? structure_ks_ksxinfo
 	"disable_service" ? string[]
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
-	# Hooks for user customization are under: /system/@COMP@/hooks/{pre_install,
+	# Hooks for user customization are under: /system/ks/hooks/{pre_install,
 	# post_install, post_reboot and install}. They
 	# are optional.
 
 };
 
-bind "/system/aii/osinstall/@COMP@" = structure_@COMP@_ks_info;
+bind "/system/aii/osinstall/ks" = structure_ks_ks_info;

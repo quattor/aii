@@ -1,22 +1,14 @@
-################################################################################
-# This is 'TPL/config.tpl', a aii-ks's file
-################################################################################
-#
-# VERSION:    @VERSION@, @DATE@
-# AUTHOR:     @AUTHOR@
-# MAINTAINER: @MAINTAINER@
-# LICENSE:    @LICENSE@
-#
-################################################################################
-# Coding style: emulate <TAB> characters with 4 spaces, thanks!
-################################################################################
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
 
 # Template containing the Kickstart-related configuration and default
 # values.
 
-template quattor/aii/@COMP@/config;
+template quattor/aii/ks/config;
 
-include {'quattor/aii/@COMP@/schema'};
+include {'quattor/aii/ks/schema'};
 
 variable AII_DOMAIN ?= value('/system/network/domainname');
 variable AII_HOSTNAME ?= value('/system/network/hostname');

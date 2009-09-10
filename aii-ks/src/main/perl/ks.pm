@@ -1,26 +1,18 @@
-################################################################################
-# This is '@SELF@', a @NAME@'s file
-################################################################################
-#
-# VERSION:    @VERSION@, @DATE@
-# AUTHOR:     @AUTHOR@
-# MAINTAINER: @MAINTAINER@
-# LICENSE:    @LICENSE@
-#
-################################################################################
-# Coding style: emulate <TAB> characters with 4 spaces, thanks!
-################################################################################
-# File: @COMP@.pm
-# Implementation of ncm-@COMP@
-# Author: @AUTHOR@
-# Version: @VERSION@ : @DATE@
-# @MSG@
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+# File: ks.pm
+# Implementation of ncm-ks
+# Author: Luis Fernando Muñoz Mejías
+# Version: 1.1.16 : 03/07/08 20:35
+#  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
 # $self->$method ($config) way, unless explicitly stated.
 
-#package NCM::Component::@COMP@;
-package NCM::Component::@COMP@;
+#package NCM::Component::ks;
+package NCM::Component::ks;
 
 use strict;
 use warnings;
@@ -49,8 +41,8 @@ our @EXPORT_OK = qw (kspkglist kspkgurl ksuserhooks ksinstall_rpm);
 use constant { KS		=> "/system/aii/osinstall/ks",
 	       HOSTNAME		=> "/system/network/hostname",
 	       DOMAINNAME	=> "/system/network/domainname",
-	       FS		=> "@PAN_PATH_FS@",
-	       PART		=> "@PAN_PATH_DEV@partitions",
+	       FS		=> "/system/filesystems/",
+	       PART		=> "/system/blockdevices/partitions",
 	       REPO		=> "/software/repositories",
 	       PRESCRIPT	=> "/system/aii/osinstall/ks/pre_install_script",
 	       PREHOOK		=> "/system/aii/hooks/pre_install",

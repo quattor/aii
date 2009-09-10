@@ -1,15 +1,7 @@
-################################################################################
-# This is '@SELF@', a @NAME@'s file
-################################################################################
-#
-# VERSION:    @VERSION@, @DATE@
-# AUTHOR:     @AUTHOR@
-# MAINTAINER: @MAINTAINER@
-# LICENSE:    @LICENSE@
-#
-################################################################################
-# Coding style: emulate <TAB> characters with 4 spaces, thanks!
-################################################################################
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
 
 =pod
 
