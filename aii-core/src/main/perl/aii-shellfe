@@ -577,8 +577,6 @@ print STDERR "GOT ERROR $e\n";
 sub run_plugin
 {
     my ($self, $st, $path, $method) = @_;
-    my $ec = LC::Exception::Context->new;
-    $ec->will_store_errors;
 
     return unless $st->{configuration}->elementExists ($path);
     # This is here because CacheManager and Fetch objects may have
@@ -614,6 +612,8 @@ sub run_plugin
     my $plug = $self->{plugins}->{$modulename};
     if ($plug->can($method)) {
 	$self->debug (4, "Running $modulename -> $method");
+        my $ec = LC::Exception::Context->new;
+        $ec->will_store_errors;
 	if (!eval { $plug->$method ($st->{configuration}) }) {
 	    $self->error ("Failed to execute module's $modulename $method method");
 	    $self->{status} = PARTERR_ST;
@@ -621,8 +621,9 @@ sub run_plugin
         if ($@) {
 	    $self->error ("Errors running module $modulename $method method: $@");
 	    $self->{status} = PARTERR_ST;
-	    return;
         }
+        $ec->clear_error;
+	return;
     } else {
 	$self->debug(4, "no method $method available for plugin $modulename");
     }
