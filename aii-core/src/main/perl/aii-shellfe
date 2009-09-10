@@ -612,9 +612,10 @@ sub run_plugin
     my $plug = $self->{plugins}->{$modulename};
     if ($plug->can($method)) {
 	$self->debug (4, "Running $modulename -> $method");
-        my $ec = LC::Exception::Context->new;
+        local $__EC__ = LC::Exception::Context->new;
         $ec->error_handler(\&plugin_handler);
         $ec->will_store_errors;
+
 	if (!eval { $plug->$method ($st->{configuration}) }) {
 	    $self->error ("Failed to execute module's $modulename $method method");
 	    $self->{status} = PARTERR_ST;
