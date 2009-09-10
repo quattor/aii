@@ -566,6 +566,7 @@ sub plugin_handler {
     my ($ec, $e) = @_;
 print STDERR "GOT ERROR $e\n";
     $e->has_been_reported(1);
+    $e->clear_error();
     return;
 }
 
