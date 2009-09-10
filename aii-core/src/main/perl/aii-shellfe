@@ -563,10 +563,10 @@ sub report
 }
 
 sub plugin_handler {
-    my ($ec, $e) = @_;
-print STDERR "GOT ERROR $e\n";
+    my ($self, $plugin, $ec, $e) = @_;
+    $self->error("$plugin: $e");
+    $self->{STATUS} = PARTERR_ST;
     $e->has_been_reported(1);
-    $e->clear_error();
     return;
 }
 
@@ -614,8 +614,9 @@ sub run_plugin
     if ($plug->can($method)) {
 	$self->debug (4, "Running $modulename -> $method");
         $aii_shellfev2::__EC__ = LC::Exception::Context->new;
-        $aii_shellfev2::__EC__->error_handler(\&plugin_handler);
-        #__EC__->will_store_errors;
+        $aii_shellfev2::__EC__->error_handler(sub {
+            $self->plugin_handler($modulename, @_);
+        });
 
 	if (!eval { $plug->$method ($st->{configuration}) }) {
 	    $self->error ("Failed to execute module's $modulename $method method");
@@ -625,7 +626,6 @@ sub run_plugin
 	    $self->error ("Errors running module $modulename $method method: $@");
 	    $self->{status} = PARTERR_ST;
         }
-        $aii_shellfev2::__EC__->clear_error();
 	return;
     } else {
 	$self->debug(4, "no method $method available for plugin $modulename");
