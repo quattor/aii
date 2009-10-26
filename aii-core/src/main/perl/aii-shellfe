@@ -897,7 +897,7 @@ sub firmware
             next;
         }
 	$self->debug (1, "Updating firmware of $node");
-	my $lock = $self->lock($node);
+	my $lock = $self->lock_node($node);
 	if (! $lock) {
 	    $self->error("aii-shellfe: couldn't acquire lock on $node for firmware");
 	    exit(1);
