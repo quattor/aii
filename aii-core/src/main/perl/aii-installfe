@@ -394,6 +394,7 @@ package main;
 
 use LC::Exception qw (SUCCESS throw_error);
 use File::Basename;
+use FindBin qw($Bin);
 
 use strict;
 use vars qw($this_app %SIG);
@@ -454,16 +455,16 @@ sub run_remotely ($) {
     if ($this_app->option('noaction')) {
         $this_app->info("aii-installfe: run: "
                         . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                        . "/usr/sbin/aii-shellfe $Options\"");
+                        . "$Bin/aii-shellfe $Options\"");
     } else {
         $this_app->debug(2, "aii-installfe: run aii-shellfe remotely: "
                             . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                            . "/usr/sbin/aii-shellfe $Options\"");
+                            . "$Bin/aii-shellfe $Options\"");
         if (system("$ssh -q $user_at_host /usr/bin/sudo "
-                   . "/usr/sbin/aii-shellfe $Options 2>&1")) {
+                   . "$Bin/aii-shellfe $Options 2>&1")) {
             $this_app->error("installfe: failed execution of "
                         . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                        . "/usr/sbin/aii-shellfe $Options\"");
+                        . "$Bin/aii-shellfe $Options\"");
             return(0);
         }
     }
@@ -481,13 +482,13 @@ sub run_locally {
 
     if ($this_app->option('noaction')) {
         $this_app->info("aii-installfe: run localy: ".
-                        "/usr/sbin/aii-shellfe $Options");
+                        "$Bin/aii-shellfe $Options");
     } else {
         $this_app->debug(2, "aii-installfe: running localy: "
-                            . "/usr/sbin/aii-shellfe $Options");
-        if (system("/usr/sbin/aii-shellfe $Options 2>&1")) {
+                            . "$Bin/aii-shellfe $Options");
+        if (system("$Bin/aii-shellfe $Options 2>&1")) {
             $this_app->error("aii-installfe: failed execution of "
-                             . "/usr/sbin/aii-shellfe $Options");
+                             . "$Bin/aii-shellfe $Options");
             return(1);
         }
     }
