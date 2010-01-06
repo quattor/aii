@@ -30,7 +30,6 @@ use Exporter;
 use Sys::Hostname;
 
 our @ISA = qw (NCM::Component Exporter);
-our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
@@ -66,6 +65,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       CCM_CERT		=> "/software/components/ccm/cert_file",
 	       CCM_CA		=> "/software/components/ccm/ca_file",
 	       CCM_WORLDR	=> "/software/components/ccm/world_readable",
+               CCM_DBFORMAT     => "/software/components/ccm/dbformat",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
 	   };
@@ -83,6 +83,7 @@ use constant QUATTOR_LIST	=> qw (perl-Compress-Zlib
 				       perl-LC
 				       perl-AppConfig-caf
 				       perl-Proc-ProcessTable
+                                       perl-IO-String
 				       perl-CAF
 				       ccm
 				       ncm-template
@@ -111,8 +112,11 @@ sub ksopen
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
 
-    open (KS, ">$ksdir/$host.$domain.ks") or
+    if (!open (KS, ">$ksdir/$host.$domain.ks")) {
       throw_error ("Couldn't open file $host.$domain.ks");
+      # LC::Exception will end up continuing if the error is handled.
+      return 0;
+    }
     select KS;
 }
 
@@ -856,11 +860,12 @@ sub Configure
 	return 1;
     }
 
-    $self->ksopen ($config);
-    $self->install ($config);
-    $self->pre_install_script ($config);
-    $self->post_install_script ($config);
-    $self->ksclose;
+    if ($self->ksopen ($config)) {
+        $self->install ($config);
+        $self->pre_install_script ($config);
+        $self->post_install_script ($config);
+        $self->ksclose;
+    }
     return 1;
 }
 
