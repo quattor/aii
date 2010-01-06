@@ -68,8 +68,8 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       CCM_WORLDR	=> "/software/components/ccm/world_readable",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
-	       LOCALHOST        => hostname(),
 	   };
+my $localhost = hostname();
 
 # Base package path for user hooks.
 use constant   MODULEBASE	=> "";
@@ -221,11 +221,21 @@ sub kscommands
 
     my $tree = $config->getElement(KS)->getTree;
 
+    my $installtype = $tree->{installtype};
+    if ($installtype =~ /http/) {
+        my ($proxyhost, $proxyport) = proxy($config);
+        if ($proxyhost) {
+            if ($proxyport) {
+                $proxyhost .= ":$proxyport";
+            }
+            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+        }
+    }
     print <<EOF;
 install
 text
 reboot
-$tree->{installtype}
+$installtype
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 bootloader  --location=$tree->{bootloader_location}
@@ -463,25 +473,39 @@ sub ksinstall_rpm
     my @pkglist = kspkglist ($config, @pkgs);
     my $proxy_opts = "";
 
+    my ($proxyhost, $proxyport) = proxy($config);
+    if ($proxyhost) {
+        $proxy_opts = "--httpproxy $proxyhost ";
+        if ($proxyport) {
+            $proxy_opts .= "-- httpport $proxyport ";
+        }
+    }
+    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
+      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
+	foreach @pkglist;
+}
+
+sub proxy {
+    my ($config) = @_;
+    my ($proxyhost, $proxyport);
     if ($config->elementExists (SPMAPROXY)) {
 	my $spma = $config->getElement (SPMA)->getTree;
 	my $proxy_host = $spma->{proxyhost};
 	my @proxies = split /,/,$proxy_host;
 	if (scalar(@proxies) == 1) {
 	    # there's only one proxy specified
-	    $proxy_opts = "--httpproxy $spma->{proxyhost} ";
+            $proxyhost = $spma->{proxyhost};
 	} elsif (scalar(@proxies) > 1) {
 	    # optimize by picking the responding server as the proxy
-	    my ($me) = grep { /\bLOCALHOST\b/ } @proxies;
+	    my ($me) = grep { /\b$localhost\b/ } @proxies;
 	    $me ||= $proxies[0];
-	    $proxy_opts = "--httpproxy $me ";
+            $proxyhost = $me;
 	}
-	$proxy_opts .= "--httpport $spma->{proxyport} "
-	  if exists $spma->{proxyport};
+        if (exists $spma->{proxyport}) {
+            $proxyport = $spma->{proxyport};
+        }
     }
-    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
-      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
-	foreach @pkglist;
+    return ($proxyhost, $proxyport);
 }
 
 # Prints the Bash code to install all the kernels specified in the
