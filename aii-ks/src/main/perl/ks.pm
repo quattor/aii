@@ -654,6 +654,8 @@ EOF
       if $config->elementExists (CCM_CA);
     print "world_readable ", $config->getElement (CCM_WORLDR)->getValue, "\n"
       if $config->elementExists (CCM_WORLDR);
+    print "dbformat ", $config->getElement (CCM_DBFORMAT)->getValue, "\n"
+      if $config->elementExists (CCM_DBFORMAT);
     print "End_Of_CCM_Conf\n";
 
     print <<EOF;
