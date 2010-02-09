@@ -283,7 +283,10 @@ EOF
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     print "zerombr yes\n" if $tree->{clearmbr};
 
-    print "%packages --resolvedeps --ignoremissing\n",
+    my $pkgswitches = $tree->{package_switches} ?
+      join(" ", @{$tree->{package_switches}}) : "--resolvedeps --ignoremissing";
+	  $this_app->debug (3, "Setting %package switches to '${pkgswitches}'");
+    print "%packages ${pkgswitches}\n",
       join ("\n", @{$tree->{packages}}), "\n";
 
 }

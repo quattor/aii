@@ -134,6 +134,12 @@ List of additional packages needed to have the node running, before
 the SPMA actually runs. For instance, Xen kernels or special mkinitrd
 packages should be placed here.
 
+=item * package_switches ? string[]
+
+List of switches to add to the kickstart "%packages" line.
+Defaults to "--resolvedeps --ignoremissing"; you probably
+want to keep those in the list.
+
 =item * firewall
 
 See below
@@ -367,7 +373,7 @@ or OpenVZ kernels, or mkinitrd packages needed by them.
 =head2 Customizing KS generation
 
 L<aii-hooks(8)> describes how to write a hook to add your own scripts
-to the generated kicstart files.
+to the generated kickstart files.
 
 =head2 SEE ALSO
 
