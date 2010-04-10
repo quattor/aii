@@ -230,6 +230,7 @@ package aii_installfe;
 use CAF::Application;
 use CAF::Reporter;
 use LC::Exception qw (SUCCESS throw_error);
+use IPC::Run;
 
 use strict;
 
@@ -403,12 +404,9 @@ use vars qw($this_app %SIG);
 # Global Attributes:
 #
 
-my ($Options, $Files);
-my (@Servers);
-
-$Options = "";
-$Files   = "";
-@Servers = ();
+my (@Options) = ();
+my (@Servers) = ();
+my ($Content) = "";
 
 #
 # run_remotely($user_at_host)
@@ -433,68 +431,55 @@ sub run_remotely ($) {
 
     $host = (gethostbyname($host))[0];
 
-    # remote copy files with node lists to AII server
-    my $scp = $this_app->option('sshdir') . "/scp";
-    if ($Files ne "") {
-        if ($this_app->option('noaction')) {
-            $this_app->info("aii-installfe: run: "
-                             . "\"$scp -q $Files $user_at_host:\"");
-        } else {
-            $this_app->debug(2, "aii-installfe: copy node lists: "
-                                . "\"$scp -q $Files $user_at_host:\"");
-            if (system("$scp -q $Files $user_at_host:")) {
-                $this_app->error("installfe: failed execution of "
-                                 . "\"$scp -q $Files $user_at_host:\"");
-                return(0);
-            }
-        }
-    }
-
     # remote run aii-shellfe on AII server
     my $ssh = $this_app->option('sshdir') . "/ssh";
-    if ($this_app->option('noaction')) {
-        $this_app->info("aii-installfe: run: "
-                        . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                        . "$Bin/aii-shellfe $Options\"");
-    } else {
-        $this_app->debug(2, "aii-installfe: run aii-shellfe remotely: "
-                            . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                            . "$Bin/aii-shellfe $Options\"");
-        if (system("$ssh -q $user_at_host /usr/bin/sudo "
-                   . "$Bin/aii-shellfe $Options 2>&1")) {
-            $this_app->error("installfe: failed execution of "
-                        . "\"$ssh -q $user_at_host /usr/bin/sudo "
-                        . "$Bin/aii-shellfe $Options\"");
-            return(0);
-        }
-    }
+    my @cmd = ($ssh, "-q", "$user_at_host", "/usr/bin/sudo",
+               "$Bin/aii-shellfe", @Options);
+    return(run_cmd('remotely', @cmd));
 
     return(1);
 
 }
 
 #
-# run_localy()
+# run_locally()
 #
 # run aii-shellfe on the local host
 #
 sub run_locally {
+    my @cmd = ("$Bin/aii-shellfe", @Options);
+    $this_app->debug(2, "aii-installfe: run aii-shellfe locally: "
+    return(run_cmd('locally', @cmd));
 
-    if ($this_app->option('noaction')) {
-        $this_app->info("aii-installfe: run localy: ".
-                        "$Bin/aii-shellfe $Options");
-    } else {
-        $this_app->debug(2, "aii-installfe: running localy: "
-                            . "$Bin/aii-shellfe $Options");
-        if (system("$Bin/aii-shellfe $Options 2>&1")) {
-            $this_app->error("aii-installfe: failed execution of "
-                             . "$Bin/aii-shellfe $Options");
-            return(1);
+    return(0);
+}
+
+sub run_cmd {
+    my ($style, @cmd) = @_;
+
+    my $content = "";
+    if (keys %$Content) {
+        push(@cmd, '--file', '-');
+        while (my ($opt, $block) = each %$Content) {
+            $content .= $block;
         }
     }
 
-    return(0);
-
+    if ($this_app->option('noaction')) {
+        $this_app->info("aii-installfe: would run $style: " . join(" ", @cmd));
+    } else {
+        eval {
+            if (!IPC::Run::run(\@cmd, \$content, '2>&1')) {
+                $this_app->error("installfe: failed execution of " .  join(" ", @cmd));
+                return(1);
+            }
+        };
+        if ($@) {
+            $this_app->error("installfe: failed invocation of " .  join(" ", @cmd) . "\n$@");
+            return(1);
+        }
+    }
+    return 0;
 }
 
 #
@@ -510,41 +495,46 @@ sub parse_options {
     # retrieve options for shellfe
     #
 
-    $Options = '';
+    push(@Options, '--nodhcp')      if $this_app->option('nodhcp');
+    push(@Options, '--nonbp')       if $this_app->option('nonbp');
+    push(@Options, '--noosinstall') if $this_app->option('noosinstall');
 
-    $Options .= ' --nodhcp'      if $this_app->option('nodhcp');
-    $Options .= ' --nonbp'       if $this_app->option('nonbp');
-    $Options .= ' --noosinstall' if $this_app->option('noosinstall');
-
-    $Options .= ' --verbose'     if $this_app->option('verbose');
-    $Options .= ' --quiet'       if $this_app->option('quiet');
+    push(@Options, '--verbose')     if $this_app->option('verbose');
+    push(@Options, '--quiet')       if $this_app->option('quiet');
 
     if ($this_app->option('debug')) {
-        $Options .= ' --debug ' . $this_app->option('debug');
+        push(@Options, '--debug', $this_app->option('debug'));
     }
 
     if ($this_app->option('removeall'))   {
-        $Options .= ' --removeall';
+        push(@Options, '--removeall');
         $this_app->warn('aii-installfe: remove all option enabled');
     } else {
 
         for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware') {
 
             if ($this_app->option($item)) {
-                $Options .= " --$item '" . $this_app->option($item) . "'";
+                push(@Options, "--$item", $this_app->option($item));
             }
 
-            if ($this_app->option($item . 'list')) {
-                if (! -f $this_app->option($item . 'list')) {
-                    $this_app->error('aii-installfe: file not found ('
-                               . $this_app->option($item . 'list') . ')');
+            my $listoption = "${item}list";
+            if ($this_app->option($listoption)) {
+                my $filename = $this_app->option($listoption);
+                $filename =~ s{[^\w_-:~]}{_}g; # we don't want to pass shell meta to open
+                my $content = "";
+                if (!open(LIST, $filename)) {
+                    $this_app->error('aii-installfe: $listoption '$filename' not readable: $!');
                     return(1);
                 }
-                $Options .= ' --' . $item . 'list ' .
-                            basename($this_app->option($item . 'list'));
-                $Files .= ' ' . $this_app->option($item . 'list');
+                foreach my $line (<LIST>) {
+                    chomp($line);
+                    $line =~ s{#.*}{};
+                    next if (!$line || $line =~ m{^\s*$};
+                    $content .= "$l,${item}\n";
+                }
+                $Content->{$listoption} = $content;
+                close(LIST);
             }
-
 
         }
 
@@ -580,7 +570,7 @@ if (parse_options()) {
     $this_app->error("aii-installfe: failed to process cmd line ");
     exit(1);
 }
-if ($Options eq '') {
+if (!@Options) {
     $this_app->warn('aii-installfe: no actions specified');
     exit(0);
 }

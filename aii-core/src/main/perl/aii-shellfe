@@ -37,6 +37,7 @@ specified in the profile.
                         --statuslist <filename> >     |
                         --firmware <hostname|regexp>  |
                         --firmwarelist <filename>     |
+                        --file <filename>
 
 C<--removeall>, is not ready yet.
 
@@ -158,6 +159,21 @@ that match the Perl regular expression <regexp>.
 Use the Rescue image (LOCATION) to boot the hosts listed in
 <filename>.  Each line should contain one host name. Lines starting
 with a # are comment lines.
+
+=item --file <filename>
+
+Read the actions and hosts from the specified file. This file
+allows you to specify both the action and the hostname at
+the same time.
+Each line should
+be of the form:
+   hostname,action[,argument]
+The action is one of the
+defined actions such as 'configure', 'install', etc. The
+optional argument is for the use of the specified action.
+The value of the filename may be '-' in which case stdin
+is used (this feature is not available on any of the other
+file-based options).
 
 =back
 
@@ -418,6 +434,10 @@ sub app_options
        { NAME    => 'localnclcache=s',
 	 HELP    => 'Local cache for NCL library',
 	 DEFAULT => '/usr/lib/aii/aii_ncl_cache' },
+
+       { NAME    => 'file=s',
+         HELP    => 'File with the nodes and the actions to perform',
+         DEFAULT => undef },
 
 	 # aii-* parameters
 
@@ -1001,11 +1021,38 @@ sub cmds
 {
     my $self = shift;
 
+    my $filecmds = {};
+    my $file = $self->option("file");
+    if ($file) {
+        my @content = ();
+        if ($file eq '-') {
+            @content = <>;
+        } else {
+            if (!open(FILE, $file)) {
+                $self->error("cannot open $file: $!");
+                return 0;
+            }
+            @content = <FILE>;
+            close(FILE);
+        }
+        foreach my $line (@content) {
+            chomp($line);
+            $line =~ s{#.*}{};
+            next if (!$line || $line =~ m{^\s*$});
+            my ($host, $cmd, $arg) = split(/,/, $line, 3);
+            $filecmds->{$cmd} ||= {};
+            $filecmds->{$cmd}->{$host} = $arg;
+        }
+    }
+
     foreach my $cmd (COMMANDS) {
 	my $rx;
 	my @nl = ();
 	@nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
 	  if ($rx = $self->option ($cmd));
+        if (exists $filecmds->{$cmd}) {
+            push(@nl, keys %{$filecmds->{$cmd}});
+        }
 	$self->debug (2, "Nodes for $cmd: ", join ("\t", @nl));
 	push (@nl, $self->filenodelist ($rx, $self->option ('use_fqdn')))
 	  if ($rx = $self->option ($cmd."list"));
