@@ -464,7 +464,7 @@ sub run_cmd {
     if ($this_app->option('noaction')) {
         $this_app->info("aii-installfe: would run $style: " . join(" ", @cmd));
     } else {
-        $this_app->info("aii-installfe: run $style: " . join(" ", @cmd));
+        $this_app->debug(2, "aii-installfe: run $style: " . join(" ", @cmd));
         my $err = "";
         if (!eval { IPC::Run::run(\@cmd, \$content, '2>', \$err) } || $@) {
             $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err\n$@");
