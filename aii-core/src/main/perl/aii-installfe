@@ -523,7 +523,7 @@ sub parse_options {
                 $filename =~ s{[^\w_:~-]}{_}g; # we don't want to pass shell meta to open
                 my $content = "";
                 if (!open(LIST, $filename)) {
-                    $this_app->error('aii-installfe: $listoption '$filename' not readable: $!');
+                    $this_app->error("aii-installfe: $listoption '$filename' not readable: $!");
                     return(1);
                 }
                 foreach my $line (<LIST>) {
