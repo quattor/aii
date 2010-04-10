@@ -530,7 +530,7 @@ sub parse_options {
                     chomp($line);
                     $line =~ s{#.*}{};
                     next if (!$line || $line =~ m{^\s*$});
-                    $content .= "$l,${item}\n";
+                    $content .= "$line,${item}\n";
                 }
                 $Content->{$listoption} = $content;
                 close(LIST);
