@@ -437,9 +437,6 @@ sub run_remotely ($) {
     my @cmd = ($ssh, "-q", "$user_at_host", "/usr/bin/sudo",
                "$Bin/aii-shellfe", @Options);
     return(run_cmd('remotely', @cmd));
-
-    return(1);
-
 }
 
 #
@@ -451,8 +448,6 @@ sub run_locally {
     my @cmd = ("$Bin/aii-shellfe", @Options);
     $this_app->debug(2, "aii-installfe: run aii-shellfe locally: ");
     return(run_cmd('locally', @cmd));
-
-    return(0);
 }
 
 sub run_cmd {
@@ -470,15 +465,9 @@ sub run_cmd {
         $this_app->info("aii-installfe: would run $style: " . join(" ", @cmd));
     } else {
         $this_app->info("aii-installfe: run $style: " . join(" ", @cmd));
-        eval {
-            my $err = "";
-            if (!IPC::Run::run(\@cmd, \$content, '2>', \$err)) {
-                $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err");
-                return(1);
-            }
-        };
-        if ($@) {
-            $this_app->error("installfe: failed invocation of " .  join(" ", @cmd) . "\n$@");
+        my $err = "";
+        if (!eval { IPC::Run::run(\@cmd, \$content, '2>', \$err) } || $@) {
+            $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err\n$@");
             return(1);
         }
     }
@@ -616,6 +605,11 @@ if (@remote_servers) {
     for my $index ( 0 .. $#remote_servers ) {
 	my $host = $remote_servers[$index];
 	my $status = $result->getStatus($index);
+        foreach my $line ( split(/\n+/,$result->getOutput($index))) {
+            my $h = $host;
+            $h =~ s{.*\@}{}; # remove username: we just care about hostname
+            print "[$h] $line\n";
+        }
 	if ($status eq "fail") {
 	    $this_app->error("aii-installfe: failed to run "
 			     . "aii-shellfe remotely on $host");
@@ -628,12 +622,6 @@ if (@remote_servers) {
 	    $this_app->error("aii-installfe: ran out of time "
 			     . "before we could process $host");
 	    $errcount++;
-	} else {
-	    foreach my $line ( split(/\n+/,$result->getOutput($index))) {
-		my $h = $host;
-		$h =~ s{.*\@}{}; # remove username: we just care about hostname
-		    print "[$h] $line\n";
-	    }
 	}
     }
 }
