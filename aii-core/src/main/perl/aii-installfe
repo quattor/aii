@@ -520,7 +520,7 @@ sub parse_options {
             my $listoption = "${item}list";
             if ($this_app->option($listoption)) {
                 my $filename = $this_app->option($listoption);
-                $filename =~ s{[^\w_-:~]}{_}g; # we don't want to pass shell meta to open
+                $filename =~ s{[^\w_:~-]}{_}g; # we don't want to pass shell meta to open
                 my $content = "";
                 if (!open(LIST, $filename)) {
                     $this_app->error('aii-installfe: $listoption '$filename' not readable: $!');
