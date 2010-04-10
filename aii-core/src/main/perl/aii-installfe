@@ -407,6 +407,7 @@ use vars qw($this_app %SIG);
 my (@Options) = ();
 my (@Servers) = ();
 my ($Content) = {};
+my $actions = 0;
 
 #
 # run_remotely($user_at_host)
@@ -509,12 +510,14 @@ sub parse_options {
     if ($this_app->option('removeall'))   {
         push(@Options, '--removeall');
         $this_app->warn('aii-installfe: remove all option enabled');
+        $actions++;
     } else {
 
         for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware') {
 
             if ($this_app->option($item)) {
                 push(@Options, "--$item", $this_app->option($item));
+                $actions++;
             }
 
             my $listoption = "${item}list";
@@ -534,6 +537,7 @@ sub parse_options {
                 }
                 $Content->{$listoption} = $content;
                 close(LIST);
+                $actions++;
             }
 
         }
@@ -570,7 +574,7 @@ if (parse_options()) {
     $this_app->error("aii-installfe: failed to process cmd line ");
     exit(1);
 }
-if (!@Options) {
+if (!$actions) {
     $this_app->warn('aii-installfe: no actions specified');
     exit(0);
 }
