@@ -406,7 +406,7 @@ use vars qw($this_app %SIG);
 
 my (@Options) = ();
 my (@Servers) = ();
-my ($Content) = "";
+my ($Content) = {};
 
 #
 # run_remotely($user_at_host)
