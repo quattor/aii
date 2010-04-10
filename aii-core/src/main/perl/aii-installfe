@@ -471,6 +471,7 @@ sub run_cmd {
     } else {
         $this_app->info("aii-installfe: run $style: " . join(" ", @cmd));
         eval {
+            my $err = "";
             if (!IPC::Run::run(\@cmd, \$content, '2>', \$err)) {
                 $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err");
                 return(1);
