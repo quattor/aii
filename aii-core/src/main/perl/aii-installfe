@@ -468,10 +468,10 @@ sub run_cmd {
         my $err = "";
         if (!eval { IPC::Run::run(\@cmd, \$content, '2>', \$err) } || $@) {
             $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err\n$@");
-            return(1);
+            return(0);
         }
     }
-    return 0;
+    return 1;
 }
 
 #
