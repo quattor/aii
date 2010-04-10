@@ -448,7 +448,7 @@ sub run_remotely ($) {
 #
 sub run_locally {
     my @cmd = ("$Bin/aii-shellfe", @Options);
-    $this_app->debug(2, "aii-installfe: run aii-shellfe locally: "
+    $this_app->debug(2, "aii-installfe: run aii-shellfe locally: ");
     return(run_cmd('locally', @cmd));
 
     return(0);
@@ -529,7 +529,7 @@ sub parse_options {
                 foreach my $line (<LIST>) {
                     chomp($line);
                     $line =~ s{#.*}{};
-                    next if (!$line || $line =~ m{^\s*$};
+                    next if (!$line || $line =~ m{^\s*$});
                     $content .= "$l,${item}\n";
                 }
                 $Content->{$listoption} = $content;
