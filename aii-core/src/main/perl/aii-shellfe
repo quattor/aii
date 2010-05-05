@@ -37,6 +37,8 @@ specified in the profile.
                         --statuslist <filename> >     |
                         --firmware <hostname|regexp>  |
                         --firmwarelist <filename>     |
+                        --livecd <hostname|regexp>    |
+                        --livecdlist <filename>       |
                         --file <filename>
 
 C<--removeall>, is not ready yet.
@@ -144,9 +146,20 @@ with a # are comment lines.
 
 Select the firmware installation target for <hostname>. Perl regular expressions
 can be used.
+
 =item --firmwarelist <filename>
 
-Select firmware isntallation for the hosts listed on <filename>. Hosts have to
+Select firmware installation for the hosts listed in <filename>. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+=item --livecd
+
+Select the livecd installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --livecdlist <filename>
+
+Select livecd installation for the hosts listed in <filename>. Hosts have to 
 be listed one per line. Lines starting with # are comment.
 
 =item --rescue <hostname|regexp>
@@ -342,6 +355,7 @@ use constant REMOVEMETHOD	=> 'Unconfigure';
 use constant STATUSMETHOD	=> 'Status';
 use constant RESCUEMETHOD	=> 'Rescue';
 use constant FIRMWAREMETHOD     => 'Firmware';
+use constant LIVECDMETHOD       => 'Livecd';
 use constant CAFILE	=> 'ca_file';
 use constant CADIR	=> 'ca_dir';
 use constant KEY	=> 'key_file';
@@ -426,6 +440,15 @@ sub app_options
        { NAME    => 'firmwarelist=s',
 	 HELP    => 'File with the nodes requiring firmware upgrade',
 	 DEFAULT => undef },
+
+       { NAME    => 'livecd=s',
+         HELP    => 'Node(s) to boot to a livecd target ' .
+                    '(can be a regexp)',
+         DEFAULT => undef },
+
+       { NAME    => 'livecdlist=s',
+         HELP    => 'File with the nodes requiring livecd target',
+         DEFAULT => undef },
 
        { NAME    => 'cdburl=s',
 	 HELP    => 'URL for CDB location',
@@ -922,7 +945,27 @@ sub firmware
 	    $self->error("aii-shellfe: couldn't acquire lock on $node for firmware");
 	    exit(1);
 	}
-	$self->run_plugin ($st, NBP, FIRMWAREMETHOD)
+	$self->run_plugin ($st, NBP, FIRMWAREMETHOD);
+    }
+}
+
+# Runs the Livecd method of the NBP plugins of the nodes given as 
+# arguments
+sub livecd
+{
+    my ($self, %nl) = @_;
+    while (my ($node, $st) = each (%nl))  {
+	if ($self->option('noaction')) {
+	    $self->debug(1, "Would set to livecd: $node");
+	    next;
+	}
+	$self->debug(1, "Setting to livecd: $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for livecd");
+	    exit(1);
+	}
+	$self->run_plugin($st, NBP, LIVECDMETHOD);
     }
 }
 
