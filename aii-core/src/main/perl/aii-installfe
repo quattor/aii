@@ -27,9 +27,11 @@ aii-installfe - AII remote command line management frontend
                           --removelist <filename>       |
                           --removeall                   |
                           --status <hostname|regexp>    |
-                          --statuslist <filename> 
-			  --firmware <hostname|regexp>
-			  --firmwarelist <filename>
+                          --statuslist <filename>       |
+			  --firmware <hostname|regexp>  |
+			  --firmwarelist <filename>     |
+			  --livecd <hostname|regexp>    |
+			  --livecdlist <filename>
 
 =head1 DESCRIPTION
 
@@ -113,7 +115,17 @@ can be used.
 
 =item --firmwarelist <filename>
 
-Select firmware isntallation for the hosts listed on <filename>. Hosts have to 
+Select firmware installation for the hosts listed on <filename>. Hosts have to 
+be listed one per line. Lines starting with # are comment.
+
+=item --livecd
+
+Select the livecd installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --livecdlist <filename>
+
+Select livecd installation for the hosts listed on <filename>. Hosts have to
 be listed one per line. Lines starting with # are comment.
 
 =back
@@ -300,6 +312,15 @@ sub app_options {
 
 	{ NAME    => 'firmwarelist=s',
 	  HELP    => 'File with the nodes requiring firmware upgrade',
+	  DEFAULT => undef },
+
+	{ NAME    => 'livecd=s',
+	  HELP    => 'Node(s) to use the livecd install target ' .
+		     '(can be a regexp)',
+	  DEFAULT => undef },
+
+        { NAME    => 'livecdlist=s',
+	  HELP    => 'File with the nodes requiring livecd install',
 	  DEFAULT => undef },
 
         { NAME    => 'nodhcp',
@@ -504,7 +525,7 @@ sub parse_options {
         $actions++;
     } else {
 
-        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware') {
+        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware', 'livecd') {
 
             if ($this_app->option($item)) {
                 push(@Options, "--$item", $this_app->option($item));
