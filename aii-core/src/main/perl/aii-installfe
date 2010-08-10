@@ -26,6 +26,8 @@ aii-installfe - AII remote command line management frontend
                           --remove <hostname|regexp>    |
                           --removelist <filename>       |
                           --removeall                   |
+                          --rescue <hostname|regex>     |
+                          --rescuelist <filename>       |
                           --status <hostname|regexp>    |
                           --statuslist <filename>       |
 			  --firmware <hostname|regexp>  |
@@ -96,6 +98,16 @@ be listed one per line. Lines starting with # are comment.
 
 Remove configurations for *ALL* hosts configured. Useful only in case
 of problems/test.
+
+=item --rescue <hostname|regexp>
+
+Select the rescue target for <hostname>. Perl regular expressions can be
+used.
+
+=item --rescuelist <filename>
+
+Select rescue for the host listed on <filename>. Hosts have to be listed 
+onde per line. Lines starting with # are comment.
 
 =item --status <hostname|regexp>
 
@@ -275,6 +287,14 @@ sub app_options {
         { NAME    => 'removelist=s',
           HELP    => 'File with the nodes to be removed',
           DEFAULT => undef },
+
+	{ NAME    => 'rescue=s',
+	  HELP    => 'Node(s) to be rescued (can be a regexp)',
+	  DEFAULT => undef },
+
+	{ NAME    => 'rescuelist=s',
+	  HELP    => 'File with the nodes to be rescued',
+	  DEFAULT => undef },
 
         { NAME    => 'removeall',
           HELP    => 'Remove ALL nodes configured',
@@ -525,7 +545,7 @@ sub parse_options {
         $actions++;
     } else {
 
-        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware', 'livecd') {
+        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware', 'livecd', 'rescue') {
 
             if ($this_app->option($item)) {
                 push(@Options, "--$item", $this_app->option($item));
