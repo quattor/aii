@@ -484,7 +484,7 @@ sub ksinstall_rpm
     if ($proxyhost) {
         $proxy_opts = "--httpproxy $proxyhost ";
         if ($proxyport) {
-            $proxy_opts .= "-- httpport $proxyport ";
+            $proxy_opts .= "--httpport $proxyport ";
         }
     }
     print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
