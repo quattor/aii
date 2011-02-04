@@ -24,6 +24,7 @@ specified in the profile.
                         --bootlist <filename>         |
                         --configure <hostname|regexp> |
                         --configurelist <filename>    |
+                        --include <directories...>    |
                         --install <hostname|regexp>   |
                         --installlist <filename>      |
                         --notify                      |
@@ -103,6 +104,11 @@ expression <regexp>
 
 Configure hosts listed in <filename>. Each line should contain one
 host name. Lines starting with a # are comment lines.
+
+=item --include <directories...>
+
+A colon-separated list of directories to add to the search path
+for perl plugins.
 
 =item --notify
 
@@ -346,6 +352,7 @@ use constant RETRIES	=> 6;
 use constant TIMEOUT	=> 60;
 use constant PARTERR_ST	=> 16;
 use constant COMMANDS	=> qw (configure install boot remove status rescue firmware livecd);
+use constant INCLUDE    => 'include';
 use constant NOTIFY	=> 'notify';
 use constant NBPDIR	=> 'nbpdir';
 use constant CONFIGURE	=> 'Configure';
@@ -414,6 +421,10 @@ sub app_options
        { NAME    => 'rescuelist=s',
 	 HELP    => 'File with the nodes to be booted in rescue mode',
 	 DEFAULT => undef },
+
+       { NAME    => 'include=s',
+         HELP    => 'Directories to add to include path',
+         DEFAULT => '' },
 
        { NAME    => 'notify',
 	 HELP    => 'Executed by CDB client whenever nodes config changed',
@@ -575,6 +586,9 @@ sub _initialize
     $ENV{HTTPS_CA_DIR} = $f  if $f = $self->option (CADIR);
     $ENV{HTTPS_KEY_FILE} = $f if $f = $self->option (KEY);
     $ENV{HTTPS_CERT_FILE} = $f if $f = $self->option (CERT);
+    if ($self->option(INCLUDE)) {
+        unshift(@INC, split(/:+/, $self->option(INCLUDE));
+    }
     return $self;
 }
 
