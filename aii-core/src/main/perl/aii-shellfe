@@ -587,7 +587,7 @@ sub _initialize
     $ENV{HTTPS_KEY_FILE} = $f if $f = $self->option (KEY);
     $ENV{HTTPS_CERT_FILE} = $f if $f = $self->option (CERT);
     if ($self->option(INCLUDE)) {
-        unshift(@INC, split(/:+/, $self->option(INCLUDE));
+        unshift(@INC, split(/:+/, $self->option(INCLUDE)));
     }
     return $self;
 }
