@@ -265,7 +265,8 @@ EOF
     print "\n";
 
     print "lang $tree->{lang}\n";
-    print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n";
+    print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
+        if exists $tree->{langsupport};
 
     print "keyboard $tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
