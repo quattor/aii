@@ -379,6 +379,9 @@ sub pre_install_script
 # primary, one extended and your /dev/foo4 will be silently renamed to
 # /dev/foo5.
 
+# Make sure messages show up on the serial console
+exec >/dev/console 2>&1
+
 EOF
 
     # Hook handling should come here, to allow NIKHEF to override
