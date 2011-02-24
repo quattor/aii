@@ -391,6 +391,14 @@ EOF
     ksprint_filesystems ($config);
     # Is this needed if we are allowing for hooks?
     ksuserscript ($config, PRESCRIPT);
+
+    print <<EOF;
+
+# De-activate logical volumes. Needed on RHEL6, see:
+# https://bugzilla.redhat.com/show_bug.cgi?id=652417
+lvm vgchange -an
+
+EOF
 }
 
 # Prints the code needed for removing and creating partitions, block
