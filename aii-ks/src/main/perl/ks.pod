@@ -43,6 +43,10 @@ i.e. enable shadow passwords and MD5 hashing.
 The location of the bootloader. Valid values are "mbr", "partition"
 and "none". Defaults to "mbr".
 
+=item * booloader_append ? string
+
+String to add in an "--append" option for the bootloader
+
 =item * clearmbr : boolean
 
 Whether the disk's master boot record (MBR) should be cleared when
@@ -103,6 +107,11 @@ C</software/components/ccm/profile>.
 
 Protocol for the installation. It must be either HTTP, HTTPS, NFS or
 FTP.
+
+=item * ignoredisk ? string[]
+
+List of devices that Anaconda will have to skip during the
+installation. List here any gpt-labeled disk you are using.
 
 =item * packages : string[]
 
@@ -367,6 +376,10 @@ values or variables.
 
 List of package names to be installed before rebooting. Place here Xen
 or OpenVZ kernels, or mkinitrd packages needed by them.
+
+=item * AII_OSINSTALL_IGNOREDISKS : string[]
+
+List of disks to be ignored at installation time.
 
 =back
 

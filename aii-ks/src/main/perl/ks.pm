@@ -5,7 +5,7 @@
 # File: ks.pm
 # Implementation of ncm-ks
 # Author: Luis Fernando Muñoz Mejías
-# Version: 1.1.16 : 03/07/08 20:35
+# Version: 1.1.32 : 13/01/11 17:08
 #  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
@@ -18,6 +18,7 @@ use strict;
 use warnings;
 use NCM::Component;
 use EDG::WP4::CCM::Property;
+use EDG::WP4::CCM::Element qw (unescape);
 use NCM::Filesystem;
 use NCM::Partition qw (partition_compare);
 use NCM::BlockdevFactory qw (build);
@@ -27,9 +28,11 @@ use LC::Exception qw (throw_error);
 use Data::Dumper;
 use NCM::Template;
 use Exporter;
+use CAF::FileWriter;
 use Sys::Hostname;
 
 our @ISA = qw (NCM::Component Exporter);
+our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
@@ -83,7 +86,7 @@ use constant QUATTOR_LIST	=> qw (perl-Compress-Zlib
 				       perl-LC
 				       perl-AppConfig-caf
 				       perl-Proc-ProcessTable
-                                       perl-IO-String
+				       perl-IO-String
 				       perl-CAF
 				       ccm
 				       ncm-template
@@ -112,12 +115,9 @@ sub ksopen
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
 
-    if (!open (KS, ">$ksdir/$host.$domain.ks")) {
-      throw_error ("Couldn't open file $host.$domain.ks");
-      # LC::Exception will end up continuing if the error is handled.
-      return 0;
-    }
-    select KS;
+    my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
+				    log => $this_app);
+    select ($ks);
 }
 
 # Prints the opening here doc statement for the post-reboot
@@ -158,6 +158,11 @@ sub ksnetwork
     return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    unless (exists ($net->{ip})) {
+	    $this_app->error ("Static boot protocol specified ",
+			      "but no IP given to the interface");
+	    return;
+    }
     my $gw = '--gateway='; 
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
@@ -166,7 +171,7 @@ sub ksnetwork
     } else {
         # This is a recipe for disaster
         # Best guess is that no gateway is needed.
-        $this_app->debug (1, "No gateway defined for dev $dev and ",
+        $this_app->debug (5, "No gateway defined for dev $dev and ",
 			  " using static network description.",
 			  "Let's hope everything is reachable through a ",
 			  "direct route.");
@@ -242,8 +247,14 @@ reboot
 $installtype
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
-bootloader  --location=$tree->{bootloader_location}
 EOF
+
+    print "bootloader  --location=$tree->{bootloader_location}";
+    print " --driveorder=", join(',', $tree->{bootdisk_order})
+        if exists $tree->{bootdisk_order};
+    print " --append=\"$tree->{bootloader_append}\""
+        if exists $tree->{bootloader_append};
+    print "\n";
 
     if (exists $tree->{xwindows}) {
 	print "xconfig ";
@@ -283,6 +294,12 @@ EOF
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     print "zerombr yes\n" if $tree->{clearmbr};
+
+    if (exists ($tree->{ignoredisk}) &&
+	scalar (@{$tree->{ignoredisk}})) {
+	print "ignoredisk --drives=",
+	    join (',', @{$tree->{ignoredisk}}), "\n";
+    }
 
     my $pkgswitches = $tree->{package_switches} ?
       join(" ", @{$tree->{package_switches}}) : "--resolvedeps --ignoremissing";
@@ -443,10 +460,19 @@ sub ksprint_filesystems
     }
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (sort partition_compare @part);
-    foreach (@filesystems) {
-	$_->create_ks;
-	$_->format_ks;
+    $_->create_ks foreach @filesystems;
+
+    # Ensure that all LVMs are active before formatting anything, or
+    # they won't appear during the reinstallation process.
+    if ($config->elementExists("/system/blockdevices/logical_volumes")) {
+	print <<EOF;
+lvm vgscan --mknodes
+lvm vgchange -ay
+EOF
     }
+
+    $_->format_ks foreach @filesystems;
+
 }
 
 # Returns the list of packages specified on the profile with the given
@@ -461,12 +487,20 @@ sub kspkglist
 	next unless $config->elementExists ($path);
 	my $vers = $config->getElement ($path)->getTree;
 	while (my ($version, $vals) = each (%$vers)) {
-	    my $v = NCM::Template::unescape ($version);
+	    my $v = unescape ($version);
 	    my $archs = $vals->{arch};
-	    my $rep = $vals->{repository};
-	    push (@pkgs, { pkg=>"$pn-$v.$_.rpm",
-			   rep=>$rep
-			 }) foreach @$archs;
+            if ( exists ($vals->{repository}) ) {
+                # Previous ncm-spma <2.0 schema
+	        my $rep = $vals->{repository};
+	        push (@pkgs, { pkg=>"$pn-$v.$_.rpm",
+			       rep=>$rep
+			     }) foreach @$archs;
+            } else {
+                # New ncm-spma v2.0 schema 
+                while (my ($arch, $rep) = each (%$archs)) {
+                   push(@pkgs, { pkg=>"$pn-$v.$arch.rpm", rep=>$rep});
+                }
+            }
 	}
     }
     return @pkgs;
@@ -730,6 +764,7 @@ if [ -n "\$BOOT_ARRAY" ] ; then
     # Select only active disks (skip spares)
     case "\$BOOT_ARRAY" in
     /dev/md* )
+        level=`mdadm --query \$BOOT_ARRAY|awk '/raid/ {print \$3}'`
         DISKS=`mdadm --query --detail \$BOOT_ARRAY | \\
                awk '/active sync/{print \$7}'| \\
                sed 's!/dev/!!g
@@ -738,7 +773,7 @@ if [ -n "\$BOOT_ARRAY" ] ; then
         for d in \$DISKS
         do
             dpart=`mdadm --query --detail \$BOOT_ARRAY | \\
-                   awk '/dev\\/'\$d'/ {print \$7}'| \\
+                   awk '/dev\\/'\$d'[0-9]/ {print \$7}'| \\
                    sed 's!/dev/'\$d'!!g'`
             dpart=`expr \$dpart - 1`
             eval PART_\$d=\$dpart
@@ -758,16 +793,23 @@ if [ -n "\$BOOT_ARRAY" ] ; then
         ;;
     esac
 
+    i=0
     for d in \$DISKS
     do
         eval dpart=\\\$PART_\$d
-        echo bootspec setting grub on /dev/\$d: to hd0,\$dpart
+        echo bootspec setting grub on /dev/\$d: to hd\$i,\$dpart
         cat <<EOGRUB | /sbin/grub --batch
-device (hd0) /dev/\$d
-root (hd0,\$dpart)
-setup (hd0)
+device (hd\$i) /dev/\$d
+root (hd\$i,\$dpart)
+setup (hd\$i)
 quit
 EOGRUB
+
+    # For raid1, hd number must be different for each member
+    if [ -n "\$level" -a "\$level" = "raid1" ]
+    then
+      i=`expr \$i + 1`
+    fi
 
     done
 fi
@@ -862,7 +904,7 @@ EOF
 sub ksclose
 {
     my $fh = select;
-    close ($fh);
+    $fh->close();
     select (STDOUT);
 }
 

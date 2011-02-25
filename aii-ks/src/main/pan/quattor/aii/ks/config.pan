@@ -50,6 +50,11 @@ variable AII_CDB_SRV ?= AII_OSINSTALL_SRV;
 variable AII_OSINSTALL_PATH ?= undef;
 
 #
+# Boot order for disks, if needed.
+variable AII_OSINSTALL_BOOTDISK_ORDER ?= null;
+"/system/aii/osinstall/ks/bootdisk_order" ?= AII_OSINSTALL_BOOTDISK_ORDER;
+
+#
 # Installation protocol (http or nfs)
 # defaults to http
 #
@@ -233,6 +238,7 @@ variable AII_OSINSTALL_PACKAGES ?= list ("openssh",
     "perl-DBI",
     "perl-Crypt-SSLeay",
     "lsof",
+    "perl-IO-String",
     "curl");
 
 
@@ -278,6 +284,9 @@ variable AII_OSINSTALL_NODEPROFILE ?= {
 variable AII_OSINSTALL_EXTRAPKGS ?= null;
 "/system/aii/osinstall/ks/extra_packages" ?= AII_OSINSTALL_EXTRAPKGS;
 
+
+variable AII_OSINSTALL_IGNOREDISKS ?= null;
+"/system/aii/osinstall/ks/ignoredisk" ?= AII_OSINSTALL_IGNOREDISKS;
 #
 # For more details on Kickstart options see RedHat documentation:
 # http://www.redhat.com/docs/manuals/enterprise/RHEL-3-Manual/sysadmin-guide/ch-kickstart2.html

@@ -36,6 +36,7 @@ type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
 	"auth"		: string[] = list ("enableshadow", "enablemd5")
 	"bootloader_location" : string = "mbr"
+	"bootloader_append" ? string
 	"bootdisk_order" ? string[] # From DESYs template
 	"clearmbr"	: boolean = true
 	"clearpart"	? string []
@@ -60,6 +61,7 @@ type structure_ks_ks_info = {
 	"selinux"	? string with match (SELF, "disabled|enforcing|permissive")
 	"xwindows"	? structure_ks_ksxinfo
 	"disable_service" ? string[]
+	"ignoredisk"    ? string[]
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
