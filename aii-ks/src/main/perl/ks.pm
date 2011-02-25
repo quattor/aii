@@ -116,7 +116,7 @@ sub ksopen
     $self->debug(3,"Kickstart file directory = $ksdir");
 
     my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
-				    log => $this_app);
+				    mode => 0664, log => $this_app);
     select ($ks);
 }
 
