@@ -1,3 +1,10 @@
+2011-02-27  Michel Jouvin
+
+	* Release: 1.1.33
+	- * Fix --driveorders value produced by ks.pm
+	 * TPL/config.tpl: improved default definition of list of disks to ignore or whose partitions must be cleared (ensure all disks defined are in one of the list)
+	 * TPL/config.tpl: by default, define bootdisk_order with the disks having boot=true, if any
+
 2011-01-13  Victor Mendoza
 
 	* Release: 1.1.32

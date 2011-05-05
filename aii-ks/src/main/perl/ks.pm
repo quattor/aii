@@ -5,7 +5,7 @@
 # File: ks.pm
 # Implementation of ncm-ks
 # Author: Luis Fernando Muñoz Mejías
-# Version: 1.1.32 : 13/01/11 17:08
+# Version: 1.1.33 : 27/02/11 12:30
 #  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
@@ -250,7 +250,7 @@ rootpw --iscrypted $tree->{rootpw}
 EOF
 
     print "bootloader  --location=$tree->{bootloader_location}";
-    print " --driveorder=", join(',', $tree->{bootdisk_order})
+    print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order};
     print " --append=\"$tree->{bootloader_append}\""
         if exists $tree->{bootloader_append};

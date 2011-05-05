@@ -13,6 +13,15 @@ include {'quattor/aii/ks/schema'};
 variable AII_DOMAIN ?= value('/system/network/domainname');
 variable AII_HOSTNAME ?= value('/system/network/hostname');
 
+@{
+desc = when true, default list of disks whose partitions must be cleared contains only disks with attribute boot defined to true.\
+ When false, this list contains all disks managed by Quattor (defined in /system/blockdevices/physical_devs).
+values = true or false
+default = false
+required = no
+}
+variable AII_OSINSTALL_CLEARPART_BOOT_ONLY ?= false;
+
 #
 # OS installation server has to be defined via variable AII_OS_INSTALL_SRV.
 # No default value is meaningfull. Display an error if not defined previously.
@@ -48,11 +57,6 @@ variable AII_CDB_SRV ?= AII_OSINSTALL_SRV;
 
 #
 variable AII_OSINSTALL_PATH ?= undef;
-
-#
-# Boot order for disks, if needed.
-variable AII_OSINSTALL_BOOTDISK_ORDER ?= null;
-"/system/aii/osinstall/ks/bootdisk_order" ?= AII_OSINSTALL_BOOTDISK_ORDER;
 
 #
 # Installation protocol (http or nfs)
@@ -177,20 +181,103 @@ variable AII_OSINSTALL_OPTION_BOOTLOADER ?= "mbr";
 "/system/aii/osinstall/ks/bootloader_location" ?= AII_OSINSTALL_OPTION_BOOTLOADER;
 
 #
-# Clear the partition table?
-# default is to clear the partition table
+# Define list of disks to ignore and list of disks whose partition must be cleared.
+# By default, KS ignores all disk that are not managed by Quattor or not flagged as the boot disk
+# and partitions are set to be cleared on disks that are not ignored.
+# If there is only one disk, assume it is the system disk.
+# In addition set the default boot disk order based on the boot property if present.
+# Also ensure to add a disk only once to one or the other lists.
+# This variable is internal and cannot be redefined by a site: use appropriate variables instead.
 #
-variable AII_OSINSTALL_OPTION_CLEARPART ?= {
-    l = list();
-    if ( exists("/system/blockdevices/physical_devs") && is_defined("/system/blockdevices/physical_devs") ) {
-      foreach (k; v; value ("/system/blockdevices/physical_devs")) {
-	l[length(l)] = k;
+variable AII_OSINSTALL_DISKS = {
+    hd_path = '/hardware/harddisks';
+    blockdevices_path = '/system/blockdevices/physical_devs';
+    SELF['boot_order'] = list();
+    
+    # Check if an explicit list of disk to clear was specified
+    explicit_clearpath = nlist();
+    if ( is_defined(AII_OSINSTALL_OPTION_CLEARPART) ) {
+      if ( is_list(AII_OSINSTALL_OPTION_CLEARPART) ) {
+        SELF['clearpart'] = AII_OSINSTALL_OPTION_CLEARPART;
+        foreach (i;disk;AII_OSINSTALL_OPTION_CLEARPART) {
+          explicit_clearpath[disk] = '';
+        };
+      } else {
+        error('AII_OSINSTALL_OPTION_CLEARPART must be a list');
       };
+    } else {
+      SELF['clearpart'] = list();
     };
-    l;
+
+    # Check if an explicit list of disk to ignore was specified
+    explicit_ignore = nlist();
+    if ( is_defined(AII_OSINSTALL_IGNOREDISKS) ) {
+      if ( is_list(AII_OSINSTALL_IGNOREDISKS) ) {
+        SELF['ignore'] = AII_OSINSTALL_IGNOREDISKS;
+        foreach (i;disk;AII_OSINSTALL_IGNOREDISKS) {
+          explicit_ignore[disk] = '';
+        };
+      } else {
+        error('AII_OSINSTALL_IGNOREDISKS must be a list');
+      };
+    } else {
+      SELF['ignore'] = list();
+    };
+
+    # Retrieve list of defined block devices (meaning disks managed by Quattor)
+    if ( path_exists(blockdevices_path) && is_defined(value(blockdevices_path)) ) {
+      blockdevices = value(blockdevices_path);
+    } else {
+      blockdevices= nlist()
+    };
+
+    if ( exists(hd_path) && is_defined(value(hd_path)) ) {
+      hd_list = value(hd_path);
+      foreach (disk; params; hd_list) {
+        # A disk explicitly set in clearpart list must not be in ignore list
+        if ( (length(hd_list) == 1) ||
+             (is_defined(blockdevices[disk]) && !AII_OSINSTALL_CLEARPART_BOOT_ONLY) ||
+             is_defined(explicit_clearpath[disk]) ||
+             (exists(params['boot']) && params['boot']) ) {
+          if ( index(disk,SELF['ignore']) < 0 ) {
+            clearpart_enabled = true;
+            if ( index(disk,SELF['clearpart']) < 0 ) {
+              SELF['clearpart'][length(SELF['clearpart'])] = disk;
+            };
+          } else {
+            clearpart_enabled = false;
+          };
+          # Define only if there is an explicit boot property defined, else let undefined
+          if ( exists(params['boot']) && params['boot'] ) {
+            if ( clearpart_enabled ) {
+              SELF['boot_order'][length(SELF['boot_order'])] = disk;
+            } else {
+              error('HW description inconsistency: '+disk+' defined as a boot disk but clearing of partitions disabled');
+            };
+          };
+        } else {
+          if ( index(disk,SELF['clearpart']) < 0 ) {
+            if ( index(disk,SELF['ignore']) < 0 ) {
+              SELF['ignore'][length(SELF['ignore'])] = disk;
+            };
+          } else {
+            debug(disk+' not added to the list of ignored disk as its partitions must be cleared');
+          };
+        };
+      };
+    } else {
+      debug(TEMPLATE+': no disk defined in hardware configuration');
+    };
+    debug('Disks to ignore: '+to_string(SELF['ignore']));
+    debug('Disks whose partitions must be cleared: '+to_string(SELF['clearpart']));
+    SELF;
 };
 
-"/system/aii/osinstall/ks/clearpart" ?= AII_OSINSTALL_OPTION_CLEARPART;
+variable AII_OSINSTALL_BOOTDISK_ORDER ?= AII_OSINSTALL_DISKS['boot_order'];
+
+"/system/aii/osinstall/ks/clearpart" ?= AII_OSINSTALL_DISKS['clearpart'];
+"/system/aii/osinstall/ks/ignoredisk" ?= AII_OSINSTALL_DISKS['ignore'];
+"/system/aii/osinstall/ks/bootdisk_order" ?= AII_OSINSTALL_BOOTDISK_ORDER;
 
 ##
 ## A list of services to be disabled for the first reboot after the ks install
@@ -212,7 +299,6 @@ variable  AII_OSINSTALL_BOOTPROTO ?= 'dhcp';
 #
 variable AII_OSINSTALL_OPTION_AUTH ?= list ("enableshadow", "enablemd5");
 "/system/aii/osinstall/ks/auth" ?= AII_OSINSTALL_OPTION_AUTH;
-
 #
 # Firewall
 # default is to disable the firewall
@@ -284,9 +370,6 @@ variable AII_OSINSTALL_NODEPROFILE ?= {
 variable AII_OSINSTALL_EXTRAPKGS ?= null;
 "/system/aii/osinstall/ks/extra_packages" ?= AII_OSINSTALL_EXTRAPKGS;
 
-
-variable AII_OSINSTALL_IGNOREDISKS ?= null;
-"/system/aii/osinstall/ks/ignoredisk" ?= AII_OSINSTALL_IGNOREDISKS;
 #
 # For more details on Kickstart options see RedHat documentation:
 # http://www.redhat.com/docs/manuals/enterprise/RHEL-3-Manual/sysadmin-guide/ch-kickstart2.html
