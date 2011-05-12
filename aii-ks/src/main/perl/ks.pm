@@ -588,6 +588,21 @@ if [ ! -z "\$default" ]
 then
     sed -i "s/^\\(default\\)=.*/\\1=\$default/" /boot/grub/grub.conf
 fi
+
+# If the installer runs a different kernel version than it is being installed,
+# then module loading (e.g. when ncm-network tries to configure a bonding
+# interface) will not work during the build. Let's hope that the two kernels
+# are at least ABI compatible...
+_kernel_link_cleanup=
+if [ `uname -r` != $kv ]; then
+    if [ ! -d /lib/modules/`uname -r` ]; then
+	ln -s /lib/modules/$kv /lib/modules/`uname -r`
+
+	# Tell the post-install script to remove the link before reboot
+	_kernel_link_cleanup=/lib/modules/`uname -r`
+	export _kernel_link_cleanup
+    fi
+fi
 EOF
 }
 
@@ -736,6 +751,9 @@ sub kspostreboot_tail
 
     print <<EOF;
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
+if [ -n "\$_kernel_link_cleanup" ]; then
+    rm -f "\$_kernel_link_cleanup"
+fi
 shutdown -r now
 
 EOF
