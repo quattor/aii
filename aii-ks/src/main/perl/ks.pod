@@ -143,7 +143,7 @@ List of additional packages needed to have the node running, before
 the SPMA actually runs. For instance, Xen kernels or special mkinitrd
 packages should be placed here.
 
-=item * package_switches ? string[]
+=item * packages_args ? string[]
 
 List of switches to add to the kickstart "%packages" line.
 Defaults to "--resolvedeps --ignoremissing"; you probably

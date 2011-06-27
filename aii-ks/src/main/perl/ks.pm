@@ -301,9 +301,14 @@ EOF
 	    join (',', @{$tree->{ignoredisk}}), "\n";
     }
 
-    my $pkgswitches = $tree->{package_switches} ?
-      join(" ", @{$tree->{package_switches}}) : "--resolvedeps --ignoremissing";
-	  $this_app->debug (3, "Setting %package switches to '${pkgswitches}'");
+    my $pkgswitches = "--resolvedeps --ignoremissing";
+    # FIXME: upstream choose packages_args; drop package_switches eventually
+    if (exists ($tree->{package_switches})) {
+      $pkgswitches = join(" ", @{$tree->{package_switches}});
+    } elsif (exists ($tree->{packages_args})) {
+      $pkgswitches = join(" ", @{$tree->{packages_args}});
+    }
+    $this_app->debug (3, "Setting %package switches to '${pkgswitches}'");
     print "%packages ${pkgswitches}\n",
       join ("\n", @{$tree->{packages}}), "\n";
 
