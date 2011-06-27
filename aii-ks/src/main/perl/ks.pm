@@ -277,7 +277,7 @@ EOF
 
     print "lang $tree->{lang}\n";
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
-        unless (@{$tree->{langsupport}}[0] eq "none");
+        if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
     print "keyboard $tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};

@@ -46,7 +46,7 @@ type structure_ks_ks_info = {
 	"installtype"	: string
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"	
-	"langsupport"	: string [] = list ("en_US.UTF-8")
+	"langsupport"	? string [] = list ("en_US.UTF-8")
 	"mouse"		? string
 	"bootproto"	: string with match (SELF, "static|dhcp")
 	"keyboard"	: string = "us"
