@@ -734,6 +734,16 @@ sub ksquattor_config
 {
     my $config = shift;
 
+    # Hack to prevent ncm-network failing when the order of interfaces does not
+    # match its expectations
+    my $clear_netcfg = 0;
+    if ($config->elementExists("/system/network/set_hwaddr") &&
+	    $config->getElement("/system/network/set_hwaddr")->getValue &&
+	    $config->elementExists("/system/aii/nbp/pxelinux/ksdevicemode") &&
+	    $config->getElement("/system/aii/nbp/pxelinux/ksdevicemode")->getValue eq 'mac') {
+	$clear_netcfg = 1;
+    }
+
     print <<EOF;
 
 cat <<End_Of_CCM_Conf > /etc/ccm.conf
@@ -770,6 +780,16 @@ EOF
 # nss will work)
 service nscd start
 sleep 5 # give nscd time to initialize
+EOF
+
+    if ($clear_netcfg) {
+	print <<EOF;
+rm -f /etc/udev.d/rules.d/70-persistent-net.rules
+rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
+EOF
+    }
+
+    print <<EOF;
 /usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
 /usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
 /usr/sbin/ncm-ncd --configure --all
