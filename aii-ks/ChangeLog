@@ -1,3 +1,112 @@
+2011-02-27  Michel Jouvin
+
+	* Release: 1.1.33
+	- * Fix --driveorders value produced by ks.pm
+	 * TPL/config.tpl: improved default definition of list of disks to ignore or whose partitions must be cleared (ensure all disks defined are in one of the list)
+	 * TPL/config.tpl: by default, define bootdisk_order with the disks having boot=true, if any
+
+2011-01-13  Victor Mendoza
+
+	* Release: 1.1.32
+	- Added compatibility with the ncm-spma v2.0 schema
+
+2010-11-12  Loic Brarda
+
+	* Release: 1.1.31
+	- Add a bootloader_append option
+
+2009-08-22  Michel Jouvin
+
+	* Release: 1.1.30
+	- The real fix for md devices! Previous mod breaks non raid1 config. This one should work with all raid level
+
+2009-08-21  Michel Jouvin
+
+	* Release: 1.1.29
+	- Fix configuration of grub with md devices
+
+2009-08-04  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.28
+	- Fix a bug that makes LVMs not be active during re-installations.
+
+	This bug appears only when used together with ncm-lib-blockdevices
+	>= 0.20.
+
+2009-04-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.27
+	- Fix bug #49240.
+	
+	Just a stupid semicolon...
+
+2009-04-02  <unknown>
+
+	* Release: 1.1.26
+	- Implement the --driveorder directive.
+
+2009-02-18  Luis Fernando Muñoz Mejías,Luis.Fernando.Munoz.Mejias@cern.ch
+
+	* Release: 1.1.25
+	- Fix bug #47067
+
+2008-11-05  "Luis Fernando"
+
+	* Release: 1.1.24
+	- Updated the documentation for the ignoredisk directive.
+
+2008-11-05  "Luis Fernando"
+
+	* Release: 1.1.23
+	- Fixed a nasty bug on the ignoredisk handling.
+
+2008-11-05  "Luis Fernando"
+
+	* Release: 1.1.22
+	- Adding support for the ignoredisk Anaconda directive.
+
+2008-11-03  "Luis Fernando"
+
+	* Release: 1.1.21
+	- Using CAF::FileWriter for handling files.
+	
+	Fixes a symlink vulnerability.
+
+2008-10-31  "Luis Fernando"
+
+	* Release: 1.1.20
+	- Fixes for better handling reverse proxies.
+	
+	Rewriting the URL is too complicated for this code, so instead the
+	proxy is ignored in case it is reverse. This way, the RPM server
+	is accessed directly during the installation.
+
+2008-10-13  root
+
+	* Release: 1.1.19
+	- Fix specfile to take RELEASE into account
+
+2008-10-13  root
+
+	* Release: 1.1.19
+	- Really add perl-IO-String !
+
+2008-10-01  "Luis Fernando"
+
+	* Release: 1.1.19
+	- Adding perl-IO-String to the list of packages for the initial installation, to
+	fullfill the dependencies of perl-CAF 1.7.
+
+2008-09-22  "Luis Fernando"
+
+	* Release: 1.1.18
+	- Adding dependency on CCM >= 2.1.0
+
+2008-08-21  "Luis Fernando"
+
+	* Release: 1.1.17
+	- Updated the dependency on ncm-lib-blockdevices. Now we depend on ncm-lib-blockdevices >= 0.18.3.
+
 2008-07-03  "Luis Fernando"
 
 	* Release: 1.1.16

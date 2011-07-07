@@ -34,8 +34,10 @@ type structure_ks_ksfirewall = {
 # Information needed for creating the Kickstart file
 type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
+	"acklist"	? type_absoluteURI[]
 	"auth"		: string[] = list ("enableshadow", "enablemd5")
 	"bootloader_location" : string = "mbr"
+	"bootloader_append" ? string
 	"bootdisk_order" ? string[] # From DESYs template
 	"clearmbr"	: boolean = true
 	"clearpart"	? string []
@@ -43,9 +45,10 @@ type structure_ks_ks_info = {
 	"email_success" : boolean = false
 	"firewall"	? structure_ks_ksfirewall
 	"installtype"	: string
+	"installnumber" ? string
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"	
-	"langsupport"	: string [] = list ("en_US.UTF-8")
+	"langsupport"	? string [] = list ("en_US.UTF-8")
 	"mouse"		? string
 	"bootproto"	: string with match (SELF, "static|dhcp")
 	"keyboard"	: string = "us"
@@ -60,13 +63,16 @@ type structure_ks_ks_info = {
 	"selinux"	? string with match (SELF, "disabled|enforcing|permissive")
 	"xwindows"	? structure_ks_ksxinfo
 	"disable_service" ? string[]
+	"ignoredisk"    ? string[]
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
 	# Hooks for user customization are under: /system/ks/hooks/{pre_install,
 	# post_install, post_reboot and install}. They
 	# are optional.
-
+	# FIXME: upstream uses packages_args; drop package_switches when aii-ks is ready
+	"package_switches" ? string[]
+	"packages_args" : string[] = list("--ignoremissing","--resolvedeps")
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
