@@ -389,7 +389,7 @@ sub pre_install_script
 {
     my ($self, $config) = @_;
 
-    print <<EOF;
+    print <<'EOF';
 %pre
 
 # Pre-installation script.
@@ -405,32 +405,42 @@ sub pre_install_script
 exec >/dev/console 2>&1
 
 # Hack for RHEL 6: force re-reading the partition table
+#
+# fdisk often fails to re-read the partition table on RHEL 6, so we have to do
+# it explicitely. We also have to make sure that udev had enough time to create
+# the device nodes.
 rereadpt () {
-    sync
+    [ -x /sbin/udevadm ] && udevadm settle
+    # hdparm can still fail with EBUSY without the wait...
     sleep 2
-    hdparm -z \$1
+    hdparm -q -z "$1"
+    [ -x /sbin/udevadm ] && udevadm settle
+    # Just in case...
+    sleep 2
 }
 
 # Align the start of a partition
 align () {
-    disk="\$1"
-    path="\$2"
-    n="\$3"
-    align_sect="\$4"
+    local disk path n align_sect START ALIGNED
+    # By passing disk/path/n separately, we don't have to worry about part_prefix
+    disk="$1"
+    path="$2"
+    n="$3"
+    align_sect="$4"
 
-    START=`fdisk -ul \$disk | awk "{if (\\\$1 == "\$path") print \\\$2 == "*" ? \\\$3: \\\$2}"`
-    ALIGNED=\$(((\$START + \$align_sect - 1) / \$align_sect * \$align_sect))
-    if [ \$START != \$ALIGNED ]; then
-	echo "Aligning \$path: old start sector: \$START, new: \$ALIGNED"
-	fdisk \$disk <<end_of_fdisk
+    START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
+    ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
+    if [ $START != $ALIGNED ]; then
+	echo "Aligning $path: old start sector: $START, new: $ALIGNED"
+	fdisk $disk <<end_of_fdisk
 x
 b
-\$n
-\$ALIGNED
+$n
+$ALIGNED
 w
 end_of_fdisk
 
-	rereadpt \$disk
+	rereadpt $disk
     fi
 }
 
@@ -495,7 +505,9 @@ sub ksprint_filesystems
     }
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (sort partition_compare @part);
-    $_->align_ks foreach (sort partition_compare @part);
+    foreach (sort partition_compare @part) {
+	$_->align_ks if $_->can('align_ks');
+    }
     $_->create_ks foreach @filesystems;
 
     # Ensure that all LVMs are active before formatting anything, or
