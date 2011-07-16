@@ -431,6 +431,7 @@ align () {
     START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
     ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
     if [ $START != $ALIGNED ]; then
+	echo "-----------------------------------"
 	echo "Aligning $path: old start sector: $START, new: $ALIGNED"
 	fdisk $disk <<end_of_fdisk
 x
