@@ -445,6 +445,17 @@ end_of_fdisk
     fi
 }
 
+wipe_metadata () {
+    local path clear SIZE START
+    path="$1"
+    clear="$2"
+
+    SIZE=`fdisk -s "$path"`
+    START=$(($SIZE / 1024 - $clear))
+    dd if=/dev/zero of="$path" bs=1M count=$clear 2>/dev/null
+    dd if=/dev/zero of="$path" bs=1M seek=$START 2>/dev/null
+}
+
 EOF
 
     # Hook handling should come here, to allow NIKHEF to override
