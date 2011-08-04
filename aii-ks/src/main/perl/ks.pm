@@ -322,6 +322,15 @@ sub ksmountpoints
     # Skip the remainder if "/system/filesystems" is undefined
     return unless ( $config->elementExists (FS) );
 
+    my $tree = $config->getElement(KS)->getTree;
+    my %ignoredisk;
+    if (exists ($tree->{ignoredisk}) &&
+	scalar (@{$tree->{ignoredisk}})) {
+	foreach my $disk (@{$tree->{ignoredisk}}) {
+	    $ignoredisk{$disk} = 1;
+	}
+    }
+
     print <<EOF;
 
 # Mountpoint and block device definition.  At this stage, LVM and MD
@@ -336,6 +345,8 @@ EOF
 	my $fs = $fss->getNextElement;
 	my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
 					   $config);
+	next if (exists $fstree->{block_device}->{holding_dev} &&
+		 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
 	$this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 	$fstree->print_ks;
     }
