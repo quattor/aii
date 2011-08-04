@@ -251,7 +251,7 @@ EOF
 
     print "bootloader  --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
-        if exists $tree->{bootdisk_order};
+        if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
         if exists $tree->{bootloader_append};
     print "\n";
