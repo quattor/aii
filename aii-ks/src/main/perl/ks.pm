@@ -5,7 +5,7 @@
 # File: ks.pm
 # Implementation of ncm-ks
 # Author: Luis Fernando Muñoz Mejías
-# Version: 1.2.4 : 24/06/11 17:00
+# Version: 2.3.0 : 24/06/11 17:00
 #  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
