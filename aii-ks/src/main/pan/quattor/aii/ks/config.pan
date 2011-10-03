@@ -242,7 +242,7 @@ variable AII_OSINSTALL_DISKS = {
           if ( index(disk,SELF['ignore']) < 0 ) {
             clearpart_enabled = true;
             if ( index(disk,SELF['clearpart']) < 0 ) {
-              SELF['clearpart'][length(SELF['clearpart'])] = disk;
+              SELF['clearpart'][length(SELF['clearpart'])] = unescape(disk);
             };
           } else {
             clearpart_enabled = false;
@@ -250,7 +250,7 @@ variable AII_OSINSTALL_DISKS = {
           # Define only if there is an explicit boot property defined, else let undefined
           if ( exists(params['boot']) && params['boot'] ) {
             if ( clearpart_enabled ) {
-              SELF['boot_order'][length(SELF['boot_order'])] = disk;
+              SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
             } else {
               error('HW description inconsistency: '+disk+' defined as a boot disk but clearing of partitions disabled');
             };
@@ -258,7 +258,7 @@ variable AII_OSINSTALL_DISKS = {
         } else {
           if ( index(disk,SELF['clearpart']) < 0 ) {
             if ( index(disk,SELF['ignore']) < 0 ) {
-              SELF['ignore'][length(SELF['ignore'])] = disk;
+              SELF['ignore'][length(SELF['ignore'])] = unescape(disk);
             };
           } else {
             debug(disk+' not added to the list of ignored disk as its partitions must be cleared');

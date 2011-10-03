@@ -5,7 +5,7 @@
 # File: ks.pm
 # Implementation of ncm-ks
 # Author: Luis Fernando Muñoz Mejías
-# Version: 1.1.33 : 27/02/11 12:30
+# Version: 1.2.4 : 24/06/11 17:00
 #  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
@@ -473,7 +473,7 @@ EOF
     # partitioning.
     ksuserhooks ($config, PREHOOK);
 
-    ksprint_filesystems ($config);
+    $self->ksprint_filesystems ($config);
     # Is this needed if we are allowing for hooks?
     ksuserscript ($config, PRESCRIPT);
 
@@ -490,7 +490,7 @@ EOF
 # devices and filesystems
 sub ksprint_filesystems
 {
-    my $config = shift;
+    my ($self, $config) = @_;
 
     # Skip the remainder if "/system/filesystems" is not defined
     return unless ( $config->elementExists (FS) );
@@ -506,7 +506,7 @@ sub ksprint_filesystems
     }
 	
     foreach (@$clear) {
-	my $disk = build ($config, "physical_devs/$_");
+	my $disk = build ($config, "physical_devs/".$self->escape($_));
 	$disk->clearpart_ks;
     }
     while ($fss->hasNextElement) {
