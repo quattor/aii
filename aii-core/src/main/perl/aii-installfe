@@ -399,7 +399,7 @@ sub _initialize {
     #
 
     # external version number
-    $self->{'VERSION'} = '2.3.0';
+    $self->{'VERSION'} = '2.5.0';
 
     # show setup text
     $self->{'USAGE'} = "Usage: aii-installfe [options]\n";
