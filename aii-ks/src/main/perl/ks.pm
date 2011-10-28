@@ -48,6 +48,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       REPO		=> "/software/repositories",
 	       PRESCRIPT	=> "/system/aii/osinstall/ks/pre_install_script",
 	       PREHOOK		=> "/system/aii/hooks/pre_install",
+	       PREENDHOOK	=> "/system/aii/hooks/pre_install_end",
 	       POSTREBOOTSCRIPT	=> "/system/aii/osinstall/ks/post_reboot_script",
 	       POSTREBOOTHOOK	=> "/system/aii/hooks/post_reboot",
 	       POSTSCRIPT	=> "/system/aii/osinstall/ks/post_install_script",
@@ -476,6 +477,8 @@ EOF
     $self->ksprint_filesystems ($config);
     # Is this needed if we are allowing for hooks?
     ksuserscript ($config, PRESCRIPT);
+
+    ksuserhooks ($config, PREENDHOOK);
 
     print <<EOF;
 
