@@ -77,7 +77,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 my $localhost = hostname();
 
 # Base package path for user hooks.
-use constant   MODULEBASE	=> "";
+use constant   MODULEBASE	=> "AII::";
 use constant   USEMODULE	=> "use " . MODULEBASE;
 
 # Configuration variable for the osinstall directory.
@@ -212,11 +212,20 @@ sub ksuserhooks
 			      "Skipping");
 	    next;
 	}
-	$this_app->debug (5, "Loading " . MODULEBASE . $tree->{module});
-	eval (USEMODULE . $tree->{module});
-	throw_error ("Couldn't load module $tree->{module}: $@")
-	  if $@;
-	my $hook = eval (MODULEBASE . $tree->{module} . "->new");
+	my $modulename = MODULEBASE . $tree->{module};
+	$this_app->debug (5, "Loading " . $modulename);
+	eval ("use " . $modulename);
+	if ($@) {
+	    # Fallback: try without the AII:: prefix
+	    my $orig_error = $@;
+	    $modulename = $tree->{module};
+	    $this_app->debug (5, "Loading " . $modulename);
+	    eval ("use " . $modulename);
+	    # Report the original error message if the fallback failed
+	    throw_error ("Couldn't load module $tree->{module}: $orig_error")
+		if $@;
+	}
+	my $hook = eval ($modulename . "->new");
 	throw_error ("Couldn't instantiate object of class $tree->{module}")
 	  if $@;
 	$this_app->debug (5, "Running $tree->{module}->$method");
