@@ -51,6 +51,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       PREENDHOOK	=> "/system/aii/hooks/pre_install_end",
 	       POSTREBOOTSCRIPT	=> "/system/aii/osinstall/ks/post_reboot_script",
 	       POSTREBOOTHOOK	=> "/system/aii/hooks/post_reboot",
+	       POSTREBOOTENDHOOK	=> "/system/aii/hooks/post_reboot_end",
 	       POSTSCRIPT	=> "/system/aii/osinstall/ks/post_install_script",
 	       POSTHOOK		=> "/system/aii/hooks/post_install",
 	       ANACONDAHOOK	=> "/system/aii/hooks/anaconda",
@@ -845,6 +846,7 @@ sub post_reboot_script
     ksbasepackages ($config);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
+    ksuserhooks ($config, POSTREBOOTENDHOOK);
     kspostreboot_tail ($config);
 }
 
