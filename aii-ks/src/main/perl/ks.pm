@@ -66,6 +66,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       ROOTMAIL		=> "/system/rootmail",
 	       AII_PROFILE	=> "/system/aii/osinstall/ks/node_profile",
 	       CCM_PROFILE	=> "/software/components/ccm/profile",
+	       CCM_TRUST	=> "/software/components/ccm/trust",
 	       CCM_KEY		=> "/software/components/ccm/key_file",
 	       CCM_CERT		=> "/software/components/ccm/cert_file",
 	       CCM_CA		=> "/software/components/ccm/ca_file",
@@ -799,6 +800,8 @@ EOF
       if $config->elementExists (CCM_WORLDR);
     print "dbformat ", $config->getElement (CCM_DBFORMAT)->getValue, "\n"
       if $config->elementExists (CCM_DBFORMAT);
+    print "trust ", $config->getElement (CCM_TRUST)->getValue, "\n"
+      if $config->elementExists (CCM_TRUST);
     print "End_Of_CCM_Conf\n";
 
     print <<EOF;
