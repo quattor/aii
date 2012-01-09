@@ -1,0 +1,11 @@
+AII repositories for Quattor. This is a fllow of ticket #245, and NOT
+to be used in any production environment.
+
+This repository will get re-created over and over, and its history
+will change. Just *don't* base any of your work on this.
+
+* TODO Validate the layout
+
+* TODO Move everything to a Maven buildtools-based structure
+
+* TODO Push to SF
