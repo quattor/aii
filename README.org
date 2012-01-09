@@ -1,4 +1,4 @@
-AII repositories for Quattor. This is a fllow of ticket #245, and NOT
+AII repositories for Quattor. This is a fllow of ticket #256, and NOT
 to be used in any production environment.
 
 This repository will get re-created over and over, and its history
