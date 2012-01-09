@@ -1,0 +1,129 @@
+=pod
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+library, complex block device configurations are supported.
+
+These changes are described below in more detail.
+
+=head3 Plugins for generating the Kickstart and PXE configuration
+
+AII version 1 used template files for the generation of the OS
+installation (Kickstart) file and the network boot setup
+(PXE). Version 2 of AII no longer uses these template files. Instead,
+it uses C<plugins> for the configuration of the network boot and OS
+installation setups.
+
+The plugins are Perl modules that are dynamically loaded by the AII
+front end aii-shellfe. The plugin code is responsible for writing the
+configuration for a specific tool (e.g. Kickstart, PXE) based on the
+information in the host profile.
+
+The plugin approach has the advantage that other OS installation or
+boot tools may be used, when a corresponding plugin has been
+developed. Furthermore, the plugins are written in plain Perl code,
+which the authors consider easier to maintain than the code for the
+NCM template processor used by AII version 1.
+
+Plugins may allow for additional configuration on a per-user basis via
+hooks.  Hooks are additional modules -defined by the user- to perform
+specific tasks in addition to the default configuration. Support for
+user or site-specific changes is thus possible without exposing it to
+all other users.  This allows for easier maintenance of the parts of
+generic relevance, as opposed to adding all specific features in one
+huge template.  See L<aii-hooks(8)> for more details on hooks.
+
+There are currently two plugins: L<aii-ks(8)> for the
+generation of the Kickstart setup, and L<aii-pxelinux(8)> for
+the PXE network boot setup.  Although, these plugins are in fact
+optional, they are required to achieve the same functionality in
+version 2 as offered by AII version 1. The plugins aii-ks and
+aii-pxelinux are provided as separate packages.
+
+
+=head3 Pan schema
+
+Comparing AII versions 1 and 2, there are various changes in the Pan
+schema.
+
+In AII version 1, the configuration for network boot and OS
+installation was stored under /system/aii/nbp/options and
+/system/aii/osinstall/options, respectively.  AII's schema did not
+explicitly define the supported fields and their values. Hence, there
+was no compile-time checking for the correctness of the user-specified
+configuration. Errors were only found when running the AII command
+line tool, or worse, when installing a node. The default plugins for
+AII version 2 use strict type checking to catch errors at compile
+time.
+
+For most fields, it is no longer needed to directly change the values
+under the Pan path /system/aii. Instead, variables can be used to
+specify these values. A sensible default value is defined for most
+variables. See the documentation for L<aii-ks(8)> and
+L<aii-pxelinux(8)> for a description of the supported fields
+and variables.
+
+AII version 2 offers enhanced support for various types of block
+devices.  Furthermore, it allows for stacking block devices on top of
+each other.  For example, various RAID devices may be combined in a
+logical volume group. The changes in the Pan schema to enable these
+features, are implemented via the library
+L<ncm-lib-blockdevices(8)>.
+
+
+=head2 Upgrading from AII release 1
+
+Apart from some site-specific configuration, the default plugins
+aii-ks and aii-nbp should work out of the box.
+
+It is not possible to have concurrent installations of AII versions
+1 and 2 on the same server.
+
+=head3 Configuration files
+
+All AII-related configuration files are now found under /etc/aii/ instead of 
+directly under /etc.
+
+=head3 Schema changes
+
+The steps below summarize which actions should be taken to migrate an existing
+Pan configuration for AII version to version 2.
+
+1. Define the required Pan variables for AII, and define any of the optional
+variables to use another value than the default.
+
+2. Use ncm-lib-blockdevices in favor of the Pan function set_partitions(). 
+See the documentation in L<ncm-lib-blockdevices(8)> for details.
+
+3. Ensure that there are no remaining entries C</system/aii/osinstall/options> 
+and C</system/aii/nbp/options> in the Pan hierarchy. The presence of these 
+branches will make AII believe that there are OS installation and network boot
+plugins called C<options>. Since those plugins are probably not defined, a
+run-time error will occur. 
+
+
+=head2 Contributing plugins or hooks
+
+As mentioned above, it is possible to develop your own plugin or hooks.
+If you write a plugin or hook that might be of interest for other users,
+please share it! 
+
+If you have write access to Quattor's CVS repository at CERN, you can
+add your component in a new directory under 
+C<quattor/aii/plug-ins/contrib/plugins> or 
+C<quattor/aii/plug-ins/contrib/hooks>.
+If you do no have write access, or for other questions, please contact the
+maintainers of AII.
+
+
+=head1 SEE ALSO
+
+L<aii(8)>, L<aii-shellfe(8)>, L<aii-dhcp(8)>,
+L<aii-hooks(8)>, L<aii-ks(8)>, L<aii-pxelinux(8)>
+
+=head1 AUTHORS
+
+Ronald Starink <ronalds@nikhef.nl>, Luis Fernando Muñoz Mejías <luisf.munnoz@uam.es>, Michel Jouvin <jouvin@lal.in2p3.fr>
+
+=cut

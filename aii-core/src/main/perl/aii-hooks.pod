@@ -1,0 +1,231 @@
+=pod
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+from the core Kickstart file generation, helps to keep the latter
+clean and easy to maintain.
+
+The concept of hooks is supported by the new Kickstart generator
+L<aii-ks(8)>, but can be used in the exact same way by any other
+AII plug-in. For instance, a Jumpstart generator might want to use the
+same hook architecture.
+
+
+=head2 What is a hook?
+
+A hook is just a funny name for a component that is instantiated and
+executed inside another component. The API is slightly different than
+that of NCM components, and the definitions must be made in a
+different place. Nevertheless, the concept is the same.
+
+=head2 Kickstart hooks
+
+Currently, hooks can be inserted in five places inside the Kickstart:
+
+=over
+
+=item During the Anaconda directives phase
+
+These hooks allow to place additional, otherwise unsupported Anaconda
+directives. It's meant for the very special cases where the official
+partitioning layout is not wanted.
+
+=item In the pre-installation phase
+
+These hooks will be executed before the actual installation is
+performed. More precisely, they will be executed after block devices
+such as partitions, LVM or software RAID are created.
+
+=item In the post-installation phase
+
+These hooks will be executed after the basic installation has been
+performed, but before the node reboots. Actually, they will be
+executed before kernels are installed and GRUB is configured.
+
+=item In the post-reboot phase
+
+After the first reboot, a script is executed for configuring some
+basic services that will make Quattor work. This includes CCM and
+installing Quattor base packages. Hooks can be run after all the base
+Quattor packages have ben installed and before CCM is configured.
+
+=head2 NBP hooks
+
+Hooks can be placed to run on network boot actions. Currently provided
+hooks are run:
+
+=item When marking a node for installation
+
+When marking a node for installation (C<aii-shellfe --install>, a
+C<install> hook can be defined.
+
+=item When marking a node for normal boot
+
+When marking a node for normal boot, a C<boot> hook can be defined.
+
+=item When marking a node for rescue boot
+
+=item When removing a node from the installation infrastructure
+
+=back
+
+During each phase, an arbitrary number of hooks can be executed. This
+allows the combination of several small customizations, that may be
+shared among users.
+
+=head2 Defining hooks
+
+Hooks are defined as part of the AII structure. They have their own
+subtree under AII's tree, so compile-time checks can be performed on any
+hook.
+
+The subtree is C</system/aii/hooks>, and the hooks for the Kickstart
+are:
+
+=over 4
+
+=item C<anaconda> for adding oficcially unsupported Anaconda directives
+
+These hooks run at the end of the Kickstart directives section.
+
+=item C<pre_install> for C<%pre> phase hooks.
+
+These hooks are run after the partitioning code has been generated.
+
+=item C<post_install> for C<%post> phase hooks.
+
+These hooks are run before any kernel installations are done, on the
+C<%post> phase.
+
+=item C<pre_reboot> for the very end of C<%post> phase hooks
+
+These hooks are run just before rebooting the node for starting the
+post-reboot phase.
+
+=item C<post_reboot> for C<post-reboot> hooks.
+
+These hooks run before CCM initialization.
+
+=back
+
+=over 4
+
+=item C<install> for NBP C<install> hooks
+
+=item C<rescue> for NBP C<rescue> hooks
+
+=item C<boot> for NBP C<boot> hooks
+
+=item C<remove> for NBP C<remove> hooks
+
+=back
+
+=head2 Hook structure
+
+A hook structure has only one mandatory field, named "module". This is
+the name of the Perl module that must be loaded and run. The user is
+free to add any more fields, just as happens with NCM components.
+
+=head2 Hook API
+
+The following methods are exposed:
+
+=over 4
+
+=item C<new>
+
+Class constructor, without arguments.
+
+=item C<pre_install> C<post_install> C<post_reboot> C<install> C<boot>
+C<rescue> C<remove>
+
+For running pre_install, post_install and post_reboot actions on the
+Kickstart, and install, boot, rescue or remove actions on the NBP
+configuration.
+
+=back
+
+
+All hook methods, except new, accept these three arguments:
+
+=over 4
+
+=item $self
+
+The object itself
+
+=item $path
+
+The Pan path to the hook being run. This way, the hook can get its
+information.
+
+=item $config
+
+The configuration object describing the profile.
+
+=back
+
+The Kickstart file is selected as the default filehandle. Just C<print> the
+text you want to see on your Kickstart file.
+
+=head2 An example C<post_reboot> hook
+
+Here is an example on how to do BEgrid's Sindes configuration. The Pan
+code looks like this:
+
+ type begrids_hook = {
+     "module" : string
+     "more_stuf": more_field_types
+ };
+
+ bind "/system/aii/hooks/post_reboot/0" = begrids_hook;
+  "/system/aii/hooks/post_reboot" = list (
+     nlist ("module", "begrid", ...)
+ );
+
+And the Perl code that implements this hook is:
+
+ package begrid;
+ use strict;
+ use warnings;
+
+ sub new {
+     my $class = shift;
+     return bless {}, $class;
+ }
+
+
+ sub post_reboot {
+     my ($self, $config, $path) = @_;
+
+     $self->install_rpms;
+     my $t = $config->getElement ("/software/components/sindes")->getTree;
+     print <<EOF;
+     $t->{aii_route}
+     cat <<end_of_get-cert.conf > /etc/sindes/get-cert.conf
+     HTTPS_SEL=$t->{http_sel}
+     HTTPS_SERVER=$t->{https_server}
+     RENEW_CERT_PORT=</software/components/sindes/renew_cert_port>
+     NEW_CERT_PORT=</software/components/sindes/new_cert_port>
+     #domain name, to be removed from the hostname if it's a FQDN
+     DOMAIN_NAME="</software/components/sindes/domain_name>"
+     #login/passwd for first certificate request.
+     # /!\ beware of chicken & egg problem here.
+     USER=
+     PASSWD=
+     ...
+     end_of_get-cert.conf
+     EOF
+ }
+
+=head2 SEE ALSO
+
+L<aii(8)>, L<aii-ks(8)>
+
+=head2 AUTHORS
+
+Luis Fernando Muñoz Mejías <luisf.munnoz@uam.es>, Ronald Starink
+<ronalds@nikhef.nl>
+
+=cut
