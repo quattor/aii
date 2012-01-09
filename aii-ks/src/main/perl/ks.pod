@@ -1,0 +1,394 @@
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+
+=pod
+
+=head1 Kickstart Generator
+
+This document describes AII's Kickstart generator.
+
+=head2 SYNOPSIS
+
+This AII component generates a Kickstart for installing SL 3 and 4. It
+must be called from aii-shellfe 2 or higher.
+
+=head2 IF YOU ARE UPGRADING FROM AII 1.X
+
+Now it is possible to define a correct Pan structure for AII
+plug-ins. This means that old strings, with long or boolean semantics
+have been converted to real long and boolean types.
+
+=head2 RESOURCES
+
+All these paths are relative to /system/aii/osinstall/ks.
+
+=over 4
+
+=item * ackurl : absolute URI
+
+The absolute URL where the aii-installack.cgi script is located. This
+script will change the PXE state for the node from network boot
+("install") to local boot ("boot"). This field is set automatically
+using the variables AII_ACK_SRV and AII_ACK_CGI.
+
+=item * auth : string[]
+
+List of options for authentication. Defaults to ("enableshadow", "enablemd5").
+i.e. enable shadow passwords and MD5 hashing.
+
+=item * booloader_location : string
+
+The location of the bootloader. Valid values are "mbr", "partition"
+and "none". Defaults to "mbr".
+
+=item * booloader_append ? string
+
+String to add in an "--append" option for the bootloader
+
+=item * clearmbr : boolean
+
+Whether the disk's master boot record (MBR) should be cleared when
+installing the node. Defaults to true.
+
+=item * clearpart ? string[]
+
+List of devices whose partitions must be cleared before proceeding
+with the installation.
+
+=item * driverdisk ? absoluteURI
+
+URL for any additional drivers that might be needed during the
+installation.
+
+=item * email_success : boolean
+
+Whether an e-mail should be sent to the system administrator upon a
+successful installation. Defaults to false.
+
+=item * installtype : string
+
+A string containing the type of installation and the location of the
+distribution on the Kickstart server. This field will be derived by
+AII on later versions.
+
+=item * keyboard : string
+
+The preferred keyboard layout for the node. Defaults to "us".
+
+=item * lang : string
+
+The language used during the installation process. Defaults to
+"en_US.UTF-8".
+
+=item * langsupport : string[]
+
+List of languages to be installed during this phase. If you use
+several languages, you must mark the entry for the default one with
+'--default=<your_lang>'.
+
+=item * mouse : string
+
+The mouse type for the system. Defaults to "none".
+
+=item * bootproto : string
+
+Protocol for configuring the network interface. It must be either
+"dhcp" or "static".
+
+=item * node_profile : absoluteURI
+
+URL where the profile can be fetched. On systems using CCM (most of
+them!) this should be the same value as of
+C</software/components/ccm/profile>.
+
+=item * osinstall_protocol : string
+
+Protocol for the installation. It must be either HTTP, HTTPS, NFS or
+FTP.
+
+=item * ignoredisk ? string[]
+
+List of devices that Anaconda will have to skip during the
+installation. List here any gpt-labeled disk you are using.
+
+=item * packages : string[]
+
+List of packages to be installed before the reboot.
+
+=item * pre_install_script, post_install_script, post_reboot_script ? absoluteURI
+
+URLs where the user-specific scripts can be fetched from. Please note
+that these scripts are not hooks!
+
+=item * timezone : string
+
+Your local timezone, e.g: Europe/Madrid.
+
+=item * selinux : string
+
+Enable SELinux on your system. Must be one of "disabled", "enforcing"
+or "permissive".
+
+=item * disable_service ? string[]
+
+List of services to be disabled before the reboot, in order to avoid
+nasty behaviour such as, f.i, grabbing lots of RPMs from CERN because
+of Yum.
+
+=item * extra_packages ? string[]
+
+List of additional packages needed to have the node running, before
+the SPMA actually runs. For instance, Xen kernels or special mkinitrd
+packages should be placed here.
+
+=item * firewall
+
+See below
+
+=item * xwindows
+
+See below
+
+=back
+
+=head3 Firewall configuration
+
+Anaconda allows for some limited IPtables configuration for the
+installation. The structure that describes this configuration has the
+following fields:
+
+=over 4
+
+=item * enabled : boolean
+
+Whether or not the firewall must be enabled.
+
+=item * trusted ? string[]
+
+List of trusted devices. Traffic from and to these devices will not be
+filtered.
+
+=item * services : string[]
+
+List of service names to be allowed by the firewall. Each element must
+be one of ssh, telnet, smtp, http, ftp. Defaults to "ssh".
+
+=item * ports : long[]
+
+List of ports to be opened on the host. Defaults to 7777 (Quattor
+notifications).
+
+=back
+
+All paths are relative to C</system/aii/osinstall/ks/firewall>
+
+=head3 X configuration
+
+Also, X server can be configured by AII. The options are:
+
+=over 4
+
+=item * card ? string
+
+Driver for the graphic card, f.i: "nv".
+
+=item * monitor ? string
+
+Monitor description.
+
+=item * noprobe ? string
+
+Do not probe the monitor.
+
+=item * vsync ? long
+
+Monitor vertical sync frequency.
+
+=item * hsync ? long
+
+Monitor horizontal refresh.
+
+=item * defaultdesktop : string
+
+KDE or GNOME.
+
+=item * resolution : string
+
+Default screen resolution, f.i: "1024x768".
+
+=item * videoram ? long
+
+Video card RAM.
+
+=item * startxonboot : boolean
+
+Start GDM on boot. Defaults to true.
+
+=item * depth : long
+
+Default color depth, in bits. Defaults to 24.
+
+=back
+
+=head2 Variables
+
+=over
+
+=item * AII_OSINSTALL_SRV : string
+
+Fully qualified name of the server that contains the Linux
+distribution (usually a copy of the Linux CDs).
+
+=item * AII_KS_SRV : string
+
+FQDN of the server that holds the Kickstart file for this
+node. Defaults to AII_OSINSTALL_SRV.
+
+=item * AII_CDB_SRV : string
+
+FQDN of the server holding the profile.
+
+=item * AII_OSINSTALL_PROTOCOL : string
+
+Protocol to be used for the installation. Must be either "http", "ftp"
+or "nfs".
+
+=item * AII_OSINSTALL_PATH : string
+
+Path part of the URL that locates the Linux image for the
+installation.
+
+=item * AII_OSINSTALL_ROOT ? string
+
+Top directory of the Linux images to be used during the
+installation. AII_OSINSTALL_PATH can be compound by concatenating
+AII_OSINSTALL_ROOT, AII_OSINSTALL_OS_VERSION and AII_OSINSTALL_SUBURL.
+
+=item * AII_OSINSTALL_OS_VERSION ? string
+
+Linux image to be used, e.g: "sl44-i386", if the path part of the URL
+is "/foo/si44-i386/".
+
+=item * AII_OSINSTALL_SUBURL ? string
+
+Sub-directories inside AII_OSINSTALL_ROOT/AII_OSINSTALL_OS_VERSION
+where the Linux image must be found.
+
+=item * AII_OSINSTALL_SELINUX : string
+
+Selinux status after the first reboot. Must be either "disabled",
+"enforcing" or "permissive". Defaults to "disabled".
+
+=item * AII_OSINSTALL_OPTION_LANG : string
+
+Language during the installation process. Defaults to "en_US".
+
+=item * AII_OSINSTALL_OPTION_LANG_SUPP : string[]
+
+List of languages to be installed during the installation process. By
+default, only AII_OSINSTALL_OPTION_LANG will be installed.
+
+=item * AII_OSINSTALL_OPTION_KEYBOARD : string
+
+Keyboard layout to be used during the installation. Defaults to "us".
+
+=item * AII_OSINSTALL_OPTION_MOUSE : string
+
+Mouse specification. Defaults to "none".
+
+=item * AII_OSINSTALL_OPTION_TIMEZONE : string
+
+System's time zone. Defaults to "Europe/Paris".
+
+=item * AII_OSINSTALL_ROOTPW : string
+
+Root password to be used during the installation phase. By default,
+it's the same as in the production phase (the value specified by the
+accounts component).
+
+=item * AII_OSINSTALL_OPTION_CLEARMBR : boolean
+
+Whether or not clear the disk's MBR.
+
+=item * AII_OSINSTALL_OPTION_BOOTLOADER : string
+
+Bootloader location. Must be either "mbr", "partition" or
+"none". Default is "mbr".
+
+=item * AII_OSINSTALL_OPTION_CLEARPART : string[]
+
+List of disks whose partition tables must be destroyed before the
+installation (or re-installation). For backwards compatibility, it
+defaults to all disks in the system (fully, destructive
+re-installation).
+
+=item * AII_OSINSTALL_BOOTPROTO : string
+
+How to configure the network during the install phase. Must be either
+"static" for static network configurations or "dhcp" for configuring
+the network via DHCP.
+
+=item * AII_OSINSTALL_OPTION_AUTH : string[]
+
+List of options for the authorization system. By default, MD5 shadowed
+passwords are enabled, this is C<list ("enableshadow", "enablemd5")>
+
+=item * AII_OSINSTALL_OPTION_FIREWALL ? firewal
+
+Firewall structure, as described in section "Firewall configuration".
+
+=item * AII_OSINSTALL_PACKAGES : string[]
+
+List of packages to be installed by Anaconda. Anaconda will check and
+fullfill the dependencies of the packages listed here.
+
+=item * AII_ACK_SRV : string
+
+The server where the acknowledgement CGI is located. Defaults to
+AII_OSINSTALL_SRV.
+
+=item * AII_ACK_CGI : string
+
+Path to the AII acknowledgement CGI. Defaults to "/cgi-bin/aii-installack.cgi"
+
+=item * AII_USE_CCM : boolean
+
+Defaults to true.
+
+=item * AII_PROFILE_PATH : string
+
+Server directory holding the node profile. Defaults to "/profiles".
+
+=item * AII_OSINSTALL_NODEPROFILE : string
+
+Full URL for the node's profile. It is derived from other profile
+values or variables.
+
+=item * AII_OSINSTALL_EXTRAPKGS : string[]
+
+List of package names to be installed before rebooting. Place here Xen
+or OpenVZ kernels, or mkinitrd packages needed by them.
+
+=item * AII_OSINSTALL_IGNOREDISKS : string[]
+
+List of disks to be ignored at installation time.
+
+=back
+
+=head2 Customizing KS generation
+
+L<aii-hooks(8)> describes how to write a hook to add your own scripts
+to the generated kicstart files.
+
+=head2 SEE ALSO
+
+L<aii(8)>, L<aii-shellfe(8)>, L<aii-hooks(8)>
+
+=head2 AUTHORS
+
+Luis Fernando Muñoz Mejías <luisf.munnoz@uam.es>, Ronald Starink
+<ronalds@nikhef.nl>
+
+=cut
