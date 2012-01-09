@@ -1,0 +1,74 @@
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+
+The fields to be filled by the user are:
+
+=over
+
+=item * kernel : string
+
+The path to the kernel image to be used for the network boot.
+
+=item * initrd : string
+
+The path to the initrd image to be used for the network boot.
+
+=item * kslocation : absoluteURI
+
+The absolute URL to the kickstart file.
+
+=item * ksdevice : string
+
+The device to be used for grabbing the Kickstart file. Must be either
+C<link> for using the first device with link up, C<eth?> for network
+devices or C<fd> for floppy disks.
+
+=item * label : string
+
+An informative label to be shown at boot time.
+
+=item * append ? string
+
+Additional kernel parameters.
+
+=back
+
+=head2 VARIABLES
+
+The variables exposed to users are:
+
+=over
+
+=item * AII_KS_PATH : string
+
+Kickstart path inside the AII server. Defaults to "/ks" if the
+installation is made via HTTP or "/osinstall/ks" otherwise.
+
+=item * AII_KS_CONFIG_FILE : string
+
+Path to the KS file inside the server. Defaults to AII_KS_PATH +
+FULL_HOSTNAME.
+
+=item * AII_NBP_LABEL : string
+
+Label for the boot loader.
+
+=item * AII_NBP_ROOT : string
+
+Relative path (from /osinstall/nbp) of the initrd and kernel.
+
+=item * AII_NBP_KERNELPARAMS ? string
+
+Optional variable. Contains additional parameters be added at boot
+time, such as "noacpi".
+
+=item * AII_NBP_INITRD ? string
+
+Exact name of the initrd file. Defaults to "initrd.img".
+
+=back
+
+=cut
+
