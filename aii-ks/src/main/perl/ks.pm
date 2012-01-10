@@ -404,7 +404,7 @@ sub pre_install_script
 {
     my ($self, $config) = @_;
 
-    print <<EOF;
+    print <<'EOF';
 %pre
 
 # Pre-installation script.
