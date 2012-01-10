@@ -5,7 +5,7 @@
 # File: ks.pm
 # Implementation of ncm-ks
 # Author: Luis Fernando Muñoz Mejías
-# Version: 1.2.4 : 24/06/11 17:00
+# Version: 2.3.0 : 24/06/11 17:00
 #  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
@@ -29,6 +29,8 @@ use Data::Dumper;
 use NCM::Template;
 use Exporter;
 use CAF::FileWriter;
+use Sys::Hostname;
+
 our @ISA = qw (NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
 
@@ -46,8 +48,10 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       REPO		=> "/software/repositories",
 	       PRESCRIPT	=> "/system/aii/osinstall/ks/pre_install_script",
 	       PREHOOK		=> "/system/aii/hooks/pre_install",
+	       PREENDHOOK	=> "/system/aii/hooks/pre_install_end",
 	       POSTREBOOTSCRIPT	=> "/system/aii/osinstall/ks/post_reboot_script",
 	       POSTREBOOTHOOK	=> "/system/aii/hooks/post_reboot",
+	       POSTREBOOTENDHOOK	=> "/system/aii/hooks/post_reboot_end",
 	       POSTSCRIPT	=> "/system/aii/osinstall/ks/post_install_script",
 	       POSTHOOK		=> "/system/aii/hooks/post_install",
 	       ANACONDAHOOK	=> "/system/aii/hooks/anaconda",
@@ -55,20 +59,24 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       PKG		=> "/software/packages/",
 	       KERNELVERSION	=> "/system/kernel/version",
 	       ACKURL		=> "/system/aii/osinstall/ks/ackurl",
+	       ACKLIST          => "/system/aii/osinstall/ks/acklist",
 	       CARDS		=> "/hardware/cards/nic",
 	       SPMAPROXY	=> "/software/components/spma/proxy",
 	       SPMA		=> "/software/components/spma",
 	       ROOTMAIL		=> "/system/rootmail",
 	       AII_PROFILE	=> "/system/aii/osinstall/ks/node_profile",
 	       CCM_PROFILE	=> "/software/components/ccm/profile",
+	       CCM_TRUST	=> "/software/components/ccm/trust",
 	       CCM_KEY		=> "/software/components/ccm/key_file",
 	       CCM_CERT		=> "/software/components/ccm/cert_file",
 	       CCM_CA		=> "/software/components/ccm/ca_file",
 	       CCM_WORLDR	=> "/software/components/ccm/world_readable",
+               CCM_DBFORMAT     => "/software/components/ccm/dbformat",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
 	       FORWARDPROXY	=> "forward",
 	   };
+my $localhost = hostname();
 
 # Base package path for user hooks.
 use constant   MODULEBASE	=> "AII::";
@@ -110,9 +118,9 @@ sub ksopen
 
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
-    
+
     my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
-				    log => $this_app);
+				    mode => 0664, log => $this_app);
     select ($ks);
 }
 
@@ -206,11 +214,20 @@ sub ksuserhooks
 			      "Skipping");
 	    next;
 	}
-	$this_app->debug (5, "Loading " . MODULEBASE . $tree->{module});
-	eval (USEMODULE . $tree->{module});
-	throw_error ("Couldn't load module $tree->{module}: $@")
-	  if $@;
-	my $hook = eval (MODULEBASE . $tree->{module} . "->new");
+	my $modulename = MODULEBASE . $tree->{module};
+	$this_app->debug (5, "Loading " . $modulename);
+	eval ("use " . $modulename);
+	if ($@) {
+	    # Fallback: try without the AII:: prefix
+	    my $orig_error = $@;
+	    $modulename = $tree->{module};
+	    $this_app->debug (5, "Loading " . $modulename);
+	    eval ("use " . $modulename);
+	    # Report the original error message if the fallback failed
+	    throw_error ("Couldn't load module $tree->{module}: $orig_error")
+		if $@;
+	}
+	my $hook = eval ($modulename . "->new");
 	throw_error ("Couldn't instantiate object of class $tree->{module}")
 	  if $@;
 	$this_app->debug (5, "Running $tree->{module}->$method");
@@ -226,18 +243,28 @@ sub kscommands
 
     my $tree = $config->getElement(KS)->getTree;
 
+    my $installtype = $tree->{installtype};
+    if ($installtype =~ /http/) {
+        my ($proxyhost, $proxyport) = proxy($config);
+        if ($proxyhost) {
+            if ($proxyport) {
+                $proxyhost .= ":$proxyport";
+            }
+            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+        }
+    }
     print <<EOF;
 install
 text
 reboot
-$tree->{installtype}
+$installtype
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
     print "bootloader  --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
-        if exists $tree->{bootdisk_order};
+        if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
         if exists $tree->{bootloader_append};
     print "\n";
@@ -256,12 +283,14 @@ EOF
 	print "skipx\n" unless exists $tree->{xwindows};
     }
 
+    print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
     print "auth ";
     print "--$_ " foreach @{$tree->{auth}};
     print "\n";
 
     print "lang $tree->{lang}\n";
-    print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n" if exists $tree->{langsupport};
+    print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
+        if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
     print "keyboard $tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
@@ -297,6 +326,15 @@ sub ksmountpoints
     # Skip the remainder if "/system/filesystems" is undefined
     return unless ( $config->elementExists (FS) );
 
+    my $tree = $config->getElement(KS)->getTree;
+    my %ignoredisk;
+    if (exists ($tree->{ignoredisk}) &&
+	scalar (@{$tree->{ignoredisk}})) {
+	foreach my $disk (@{$tree->{ignoredisk}}) {
+	    $ignoredisk{$disk} = 1;
+	}
+    }
+
     print <<EOF;
 
 # Mountpoint and block device definition.  At this stage, LVM and MD
@@ -311,6 +349,8 @@ EOF
 	my $fs = $fss->getNextElement;
 	my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
 					   $config);
+	next if (exists $fstree->{block_device}->{holding_dev} &&
+		 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
 	$this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 	$fstree->print_ks;
     }
@@ -376,6 +416,61 @@ sub pre_install_script
 # primary, one extended and your /dev/foo4 will be silently renamed to
 # /dev/foo5.
 
+# Make sure messages show up on the serial console
+exec >/dev/console 2>&1
+
+# Hack for RHEL 6: force re-reading the partition table
+#
+# fdisk often fails to re-read the partition table on RHEL 6, so we have to do
+# it explicitely. We also have to make sure that udev had enough time to create
+# the device nodes.
+rereadpt () {
+    [ -x /sbin/udevadm ] && udevadm settle
+    # hdparm can still fail with EBUSY without the wait...
+    sleep 2
+    hdparm -q -z "$1"
+    [ -x /sbin/udevadm ] && udevadm settle
+    # Just in case...
+    sleep 2
+}
+
+# Align the start of a partition
+align () {
+    local disk path n align_sect START ALIGNED
+    # By passing disk/path/n separately, we don't have to worry about part_prefix
+    disk="$1"
+    path="$2"
+    n="$3"
+    align_sect="$4"
+
+    START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
+    ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
+    if [ $START != $ALIGNED ]; then
+	echo "-----------------------------------"
+	echo "Aligning $path: old start sector: $START, new: $ALIGNED"
+	fdisk $disk <<end_of_fdisk
+x
+b
+$n
+$ALIGNED
+w
+end_of_fdisk
+
+	rereadpt $disk
+    fi
+}
+
+wipe_metadata () {
+    local path clear SIZE START
+    path="$1"
+    clear="$2"
+
+    SIZE=`fdisk -s "$path"`
+    START=$(($SIZE / 1024 - $clear))
+    dd if=/dev/zero of="$path" bs=1M count=$clear 2>/dev/null
+    dd if=/dev/zero of="$path" bs=1M seek=$START 2>/dev/null
+}
+
 EOF
 
     # Hook handling should come here, to allow NIKHEF to override
@@ -385,6 +480,16 @@ EOF
     $self->ksprint_filesystems ($config);
     # Is this needed if we are allowing for hooks?
     ksuserscript ($config, PRESCRIPT);
+
+    ksuserhooks ($config, PREENDHOOK);
+
+    print <<EOF;
+
+# De-activate logical volumes. Needed on RHEL6, see:
+# https://bugzilla.redhat.com/show_bug.cgi?id=652417
+lvm vgchange -an
+
+EOF
 }
 
 # Prints the code needed for removing and creating partitions, block
@@ -429,6 +534,9 @@ sub ksprint_filesystems
     }
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (sort partition_compare @part);
+    foreach (sort partition_compare @part) {
+	$_->align_ks if $_->can('align_ks');
+    }
     $_->create_ks foreach @filesystems;
 
     # Ensure that all LVMs are active before formatting anything, or
@@ -495,20 +603,39 @@ sub ksinstall_rpm
     my @pkglist = kspkglist ($config, @pkgs);
     my $proxy_opts = "";
 
-    my $spma = $config->getElement (SPMA)->getTree;
-    if (exists ($spma->{proxy}) && exists ($spma->{proxytype})
-	&& $spma->{proxytype} eq FORWARDPROXY) {
-	$proxy_opts = "--httpproxy $spma->{proxyhost} "
-	    if exists $spma->{proxyhost};
-	$proxy_opts .= "--httpport $spma->{proxyport} "
-	    if exists $spma->{proxyport};
+    my ($proxyhost, $proxyport) = proxy($config);
+    if ($proxyhost) {
+        $proxy_opts = "--httpproxy $proxyhost ";
+        if ($proxyport) {
+            $proxy_opts .= "--httpport $proxyport ";
+        }
     }
+    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
+      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
+	foreach @pkglist;
+}
 
-    foreach my $pkg (@pkglist) {
-	print "/bin/rpm -i --force $proxy_opts \"",
-	    kspkgurl ($config, $pkg), "\" || \\\n",
-	    " "x4, "fail \"Failed to install $pkg->{pkg}: \\\$?\"\n";
+sub proxy {
+    my ($config) = @_;
+    my ($proxyhost, $proxyport);
+    if ($config->elementExists (SPMAPROXY)) {
+	my $spma = $config->getElement (SPMA)->getTree;
+	my $proxy_host = $spma->{proxyhost};
+	my @proxies = split /,/,$proxy_host;
+	if (scalar(@proxies) == 1) {
+	    # there's only one proxy specified
+            $proxyhost = $spma->{proxyhost};
+	} elsif (scalar(@proxies) > 1) {
+	    # optimize by picking the responding server as the proxy
+	    my ($me) = grep { /\b$localhost\b/ } @proxies;
+	    $me ||= $proxies[0];
+            $proxyhost = $me;
+	}
+        if (exists $spma->{proxyport}) {
+            $proxyport = $spma->{proxyport};
+        }
     }
+    return ($proxyhost, $proxyport);
 }
 
 # Prints the Bash code to install all the kernels specified in the
@@ -603,7 +730,7 @@ success() {
     sendmail -t <<End_of_sendmail
 From: root\@$hostname
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor instalation on $hostname succeeded
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname succeeded
 
 Node $hostname successfully installed.
 .
@@ -615,7 +742,7 @@ hostname $hostname.$domain
     fail "Last installation went wrong. Aborting. See logfile"
 
 exec &> /root/ks-post-install.log
-tail -f /root/ks-post-install.log &>/dev/tty7 &
+tail -f /root/ks-post-install.log &>/dev/console &
 
 EOF
 }
@@ -632,6 +759,16 @@ sub ksbasepackages
 sub ksquattor_config
 {
     my $config = shift;
+
+    # Hack to prevent ncm-network failing when the order of interfaces does not
+    # match its expectations
+    my $clear_netcfg = 0;
+    if ($config->elementExists("/system/network/set_hwaddr") &&
+	    $config->getElement("/system/network/set_hwaddr")->getValue &&
+	    $config->elementExists("/system/aii/nbp/pxelinux/ksdevicemode") &&
+	    $config->getElement("/system/aii/nbp/pxelinux/ksdevicemode")->getValue eq 'mac') {
+	$clear_netcfg = 1;
+    }
 
     print <<EOF;
 
@@ -653,12 +790,34 @@ EOF
       if $config->elementExists (CCM_CA);
     print "world_readable ", $config->getElement (CCM_WORLDR)->getValue, "\n"
       if $config->elementExists (CCM_WORLDR);
+    print "dbformat ", $config->getElement (CCM_DBFORMAT)->getValue, "\n"
+      if $config->elementExists (CCM_DBFORMAT);
+    print "trust ", $config->getElement (CCM_TRUST)->getValue, "\n"
+      if $config->elementExists (CCM_TRUST);
     print "End_Of_CCM_Conf\n";
 
     print <<EOF;
 
 /usr/sbin/ccm-initialise || fail "CCM initialization failed with code \\\$?"
 /usr/sbin/ccm-fetch || fail "ccm-fetch failed with code \\\$?"
+# we want nscd running in case the NSS config
+# gets modified (ncm-ncd will be bound to nscd for
+# lookups and therefore an nscd bounce will cause
+# ncm-ncd to immediately notice the changes, which
+# means that components that rely on valid data in
+# nss will work)
+service nscd start
+sleep 5 # give nscd time to initialize
+EOF
+
+    if ($clear_netcfg) {
+	print <<EOF;
+rm -f /etc/udev.d/rules.d/70-persistent-net.rules
+rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
+EOF
+    }
+
+    print <<EOF;
 /usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
 /usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
 /usr/sbin/ncm-ncd --configure --all
@@ -691,6 +850,7 @@ sub post_reboot_script
     ksbasepackages ($config);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
+    ksuserhooks ($config, POSTREBOOTENDHOOK);
     kspostreboot_tail ($config);
 }
 
@@ -822,6 +982,20 @@ chmod +x /etc/rc.d/init.d/ks-post-reboot
 ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
 wget -q --output-document=- '$ackurl'
 EOF
+
+    my @acklist;
+    if ($config->elementExists (ACKLIST) ) {
+	@acklist = @{$config->getElement (ACKLIST)->getTree()};
+    } else {
+	@acklist = ($config->getElement (ACKURL)->getValue);
+    }
+
+    foreach my $url (@acklist) {
+        print <<EOF;
+wget -q --output-document=- '$url'
+EOF
+    }
+
     ksuserhooks ($config, PREREBOOTHOOK);
 }
 

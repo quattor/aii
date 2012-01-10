@@ -2,7 +2,7 @@
 # This is 'TPL/sl6.tpl', a aii-ks's file
 ################################################################################
 #
-# VERSION:    1.2.4, 24/06/11 17:00
+# VERSION:    2.3.0, 24/06/11 17:00
 # AUTHOR:     Luis Fernando Muñoz Mejías
 # MAINTAINER: Luis Fernando Muñoz Mejías
 # LICENSE:    http://cern.ch/eu-datagrid/license.html

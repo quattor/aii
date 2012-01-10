@@ -35,8 +35,8 @@ type structure_ks_ksfirewall = {
 type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
 	"auth"		: string[] = list ("enableshadow", "enablemd5")
-    "bootloader_location" : string = "mbr"
-    "bootloader_append" ? string
+	"bootloader_location" : string = "mbr"
+	"bootloader_append" ? string
 	"bootdisk_order" ? string[] # From DESYs template
 	"clearmbr"	: boolean = true
 	"clearpart"	? string []
@@ -44,6 +44,7 @@ type structure_ks_ks_info = {
 	"email_success" : boolean = false
 	"firewall"	? structure_ks_ksfirewall
 	"installtype"	: string
+	"installnumber" ? string
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"	
 	"langsupport"	? string [] = list ("en_US.UTF-8")
@@ -68,7 +69,7 @@ type structure_ks_ks_info = {
 	# Hooks for user customization are under: /system/ks/hooks/{pre_install,
 	# post_install, post_reboot and install}. They
 	# are optional.
-    "packages_args" : string[] = list("--ignoremissing","--resolvedeps")
+	"packages_args" : string[] = list("--ignoremissing","--resolvedeps")
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
