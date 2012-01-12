@@ -9,3 +9,7 @@ will change. Just *don't* base any of your work on this.
 * TODO Move everything to a Maven buildtools-based structure
 
 * TODO Push to SF
+
+While we move to Maven, here is how to build stuff:
+
+  make BTDIR=<path-to-your-old-buildtools> <target>
