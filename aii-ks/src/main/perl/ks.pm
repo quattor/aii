@@ -284,10 +284,7 @@ EOF
     }
 
     print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
-    print "auth ";
-    print "--$_ " foreach @{$tree->{auth}};
-    print "\n";
-
+    print "auth ", join(" ", map("--$_",  @{$tree->{auth}})), "\n";
     print "lang $tree->{lang}\n";
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
         if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
