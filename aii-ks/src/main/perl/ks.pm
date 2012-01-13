@@ -310,7 +310,7 @@ EOF
 	print "ignoredisk --drives=",
 	    join (',', @{$tree->{ignoredisk}}), "\n";
     }
-    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
+    print "%packages ", join(" ",@{$tree->{packages_opts}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
 
 }
