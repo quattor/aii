@@ -62,5 +62,5 @@ variable AII_DHCP_ADDOPTIONS ?= null;
 # End of DHCP daemon configuration
 ###################################
 
-
-
+variable AII_CONFIG_SITE ?= null;
+include {if_exists(AII_CONFIG_SITE);};
