@@ -26,8 +26,14 @@ aii-installfe - AII remote command line management frontend
                           --remove <hostname|regexp>    |
                           --removelist <filename>       |
                           --removeall                   |
+                          --rescue <hostname|regex>     |
+                          --rescuelist <filename>       |
                           --status <hostname|regexp>    |
-                          --statuslist <filename> 
+                          --statuslist <filename>       |
+			  --firmware <hostname|regexp>  |
+			  --firmwarelist <filename>     |
+			  --livecd <hostname|regexp>    |
+			  --livecdlist <filename>
 
 =head1 DESCRIPTION
 
@@ -93,6 +99,16 @@ be listed one per line. Lines starting with # are comment.
 Remove configurations for *ALL* hosts configured. Useful only in case
 of problems/test.
 
+=item --rescue <hostname|regexp>
+
+Select the rescue target for <hostname>. Perl regular expressions can be
+used.
+
+=item --rescuelist <filename>
+
+Select rescue for the host listed on <filename>. Hosts have to be listed 
+onde per line. Lines starting with # are comment.
+
 =item --status <hostname|regexp>
 
 Report the boot status (boot from local disk/install) for <hostname> or
@@ -103,6 +119,26 @@ for all hostnames that match the regular expression <regexp>
 Report the boot status (boot from local disk/install) for hosts listed
 on <filename>. Hosts have to be listed one per line. Lines starting
 with # are comment.
+
+=item --firmware
+
+Select the firmware installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --firmwarelist <filename>
+
+Select firmware installation for the hosts listed on <filename>. Hosts have to 
+be listed one per line. Lines starting with # are comment.
+
+=item --livecd
+
+Select the livecd installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --livecdlist <filename>
+
+Select livecd installation for the hosts listed on <filename>. Hosts have to
+be listed one per line. Lines starting with # are comment.
 
 =back
 
@@ -204,8 +240,8 @@ Rafael Garcia Leiva <angel.leiva@uam.es>
 BEGIN {
 
     # use perl libs in /usr/lib/perl
-    unshift(@INC, '/usr/lib/perl');
-    unshift(@INC,'/opt/edg/lib/perl');
+    push(@INC, '/usr/lib/perl');
+    push(@INC,'/opt/edg/lib/perl');
 
 }
 
@@ -218,10 +254,16 @@ package aii_installfe;
 use CAF::Application;
 use CAF::Reporter;
 use LC::Exception qw (SUCCESS throw_error);
+use IPC::Run;
 
 use strict;
 
 our @ISA= qw(CAF::Application CAF::Reporter);
+
+use MSDW::Version
+    'Parallel-Queue' => '1.9.1',
+;
+use Parallel::Queue;
 
 #
 # Public Methods/Functions for CAF
@@ -245,6 +287,14 @@ sub app_options {
         { NAME    => 'removelist=s',
           HELP    => 'File with the nodes to be removed',
           DEFAULT => undef },
+
+	{ NAME    => 'rescue=s',
+	  HELP    => 'Node(s) to be rescued (can be a regexp)',
+	  DEFAULT => undef },
+
+	{ NAME    => 'rescuelist=s',
+	  HELP    => 'File with the nodes to be rescued',
+	  DEFAULT => undef },
 
         { NAME    => 'removeall',
           HELP    => 'Remove ALL nodes configured',
@@ -275,6 +325,24 @@ sub app_options {
           HELP    => 'File with the nodes to report boot/install status',
           DEFAULT => undef },
 
+	{ NAME    => 'firmware=s',
+	  HELP    => 'Nodes(s) to have their firmware image updated ' .
+		     '(can be a regexp)',
+	  DEFAULT => undef },
+
+	{ NAME    => 'firmwarelist=s',
+	  HELP    => 'File with the nodes requiring firmware upgrade',
+	  DEFAULT => undef },
+
+	{ NAME    => 'livecd=s',
+	  HELP    => 'Node(s) to use the livecd install target ' .
+		     '(can be a regexp)',
+	  DEFAULT => undef },
+
+        { NAME    => 'livecdlist=s',
+	  HELP    => 'File with the nodes requiring livecd install',
+	  DEFAULT => undef },
+
         { NAME    => 'nodhcp',
           HELP    => 'Do not update DHCP server(s)',
           DEFAULT => undef },
@@ -303,7 +371,11 @@ sub app_options {
 
         { NAME    => 'noaction',
           HELP    => 'do not actually perform operations',
-          DEFAULT => undef }
+          DEFAULT => undef },
+
+        { NAME    => 'sshdir=s',
+          HELP    => 'the directory for ssh/scp',
+          DEFAULT => '/usr/bin' }
 
         # options inherited from CAF
         #   --help
@@ -327,7 +399,7 @@ sub _initialize {
     #
 
     # external version number
-    $self->{'VERSION'} = '2.4.6';
+    $self->{'VERSION'} = '2.5.0';
 
     # show setup text
     $self->{'USAGE'} = "Usage: aii-installfe [options]\n";
@@ -364,6 +436,7 @@ package main;
 
 use LC::Exception qw (SUCCESS throw_error);
 use File::Basename;
+use FindBin qw($Bin);
 
 use strict;
 use vars qw($this_app %SIG);
@@ -372,12 +445,10 @@ use vars qw($this_app %SIG);
 # Global Attributes:
 #
 
-my ($Options, $Files);
-my (@Servers);
-
-$Options = "";
-$Files   = "";
-@Servers = ();
+my (@Options) = ();
+my (@Servers) = ();
+my ($Content) = {};
+my $actions = 0;
 
 #
 # run_remotely($user_at_host)
@@ -397,71 +468,51 @@ sub run_remotely ($) {
     if ($user eq '' || $host eq '') {
         $this_app->error("aii-installfe: bad remote user/server "
                          . "specified ($user_at_host)");
-        return(1);
+        return(0);
     }
 
     $host = (gethostbyname($host))[0];
 
-    # remote copy files with node lists to AII server
-    if ($Files ne "") {
-        if ($this_app->option('noaction')) {
-            $this_app->info("aii-installfe: run: "
-                             . "\"scp $Files $user_at_host:\"");
-        } else {
-            $this_app->debug(2, "aii-installfe: copy node lists: "
-                                . "\"scp $Files $user_at_host:\"");
-            if (system("scp $Files $user_at_host:")) {
-                $this_app->error("installfe: failed execution of "
-                                 . "\"scp $Files $user_at_host:\"");
-                return(1);
-            }
-        }
-    }
-
     # remote run aii-shellfe on AII server
-    if ($this_app->option('noaction')) {
-        $this_app->info("aii-installfe: run: "
-                        . "\"ssh $user_at_host /usr/bin/sudo "
-                        . "/usr/sbin/aii-shellfe $Options\"");
-    } else {
-        $this_app->debug(2, "aii-installfe: run aii-shellfe remotely: "
-                            . "\"ssh $user_at_host /usr/bin/sudo "
-                            . "/usr/sbin/aii-shellfe $Options\"");
-        if (system("ssh $user_at_host /usr/bin/sudo "
-                   . "/usr/sbin/aii-shellfe $Options 2>&1")) {
-            $this_app->error("installfe: failed execution of "
-                        . "\"ssh $user_at_host /usr/bin/sudo "
-                        . "/usr/sbin/aii-shellfe $Options\"");
-            return(1);
-        }
-    }
-
-    return(0);
-
+    my $ssh = $this_app->option('sshdir') . "/ssh";
+    my @cmd = ($ssh, "-q", "$user_at_host", "/usr/bin/sudo",
+               "$Bin/aii-shellfe", @Options);
+    return(run_cmd('remotely', @cmd));
 }
 
 #
-# run_localy()
+# run_locally()
 #
 # run aii-shellfe on the local host
 #
 sub run_locally {
+    my @cmd = ("$Bin/aii-shellfe", @Options);
+    $this_app->debug(2, "aii-installfe: run aii-shellfe locally: ");
+    return(run_cmd('locally', @cmd));
+}
 
-    if ($this_app->option('noaction')) {
-        $this_app->info("aii-installfe: run localy: ".
-                        "/usr/sbin/aii-shellfe $Options");
-    } else {
-        $this_app->debug(2, "aii-installfe: running localy: "
-                            . "/usr/sbin/aii-shellfe $Options");
-        if (system("/usr/sbin/aii-shellfe $Options 2>&1")) {
-            $this_app->error("aii-installfe: failed execution of "
-                             . "/usr/sbin/aii-shellfe $Options");
-            return(1);
+sub run_cmd {
+    my ($style, @cmd) = @_;
+
+    my $content = "";
+    if (keys %$Content) {
+        push(@cmd, '--file', '-');
+        while (my ($opt, $block) = each %$Content) {
+            $content .= $block;
         }
     }
 
-    return(0);
-
+    if ($this_app->option('noaction')) {
+        $this_app->info("aii-installfe: would run $style: " . join(" ", @cmd));
+    } else {
+        $this_app->debug(2, "aii-installfe: run $style: " . join(" ", @cmd));
+        my $err = "";
+        if (!eval { IPC::Run::run(\@cmd, \$content, '2>', \$err) } || $@) {
+            $this_app->error("installfe: failed execution of " .  join(" ", @cmd) . "\n$err\n$@");
+            return(0);
+        }
+    }
+    return 1;
 }
 
 #
@@ -477,41 +528,49 @@ sub parse_options {
     # retrieve options for shellfe
     #
 
-    $Options = '';
+    push(@Options, '--nodhcp')      if $this_app->option('nodhcp');
+    push(@Options, '--nonbp')       if $this_app->option('nonbp');
+    push(@Options, '--noosinstall') if $this_app->option('noosinstall');
 
-    $Options .= ' --nodhcp'      if $this_app->option('nodhcp');
-    $Options .= ' --nonbp'       if $this_app->option('nonbp');
-    $Options .= ' --noosinstall' if $this_app->option('noosinstall');
-
-    $Options .= ' --verbose'     if $this_app->option('verbose');
-    $Options .= ' --quiet'       if $this_app->option('quiet');
+    push(@Options, '--verbose')     if $this_app->option('verbose');
+    push(@Options, '--quiet')       if $this_app->option('quiet');
 
     if ($this_app->option('debug')) {
-        $Options .= ' --debug ' . $this_app->option('debug');
+        push(@Options, '--debug', $this_app->option('debug'));
     }
 
     if ($this_app->option('removeall'))   {
-        $Options .= ' --removeall';
+        push(@Options, '--removeall');
         $this_app->warn('aii-installfe: remove all option enabled');
+        $actions++;
     } else {
 
-        for $item ('install', 'boot', 'configure', 'remove', 'status') {
+        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware', 'livecd', 'rescue') {
 
             if ($this_app->option($item)) {
-                $Options .= " --$item '" . $this_app->option($item) . "'";
+                push(@Options, "--$item", $this_app->option($item));
+                $actions++;
             }
 
-            if ($this_app->option($item . 'list')) {
-                if (! -f $this_app->option($item . 'list')) {
-                    $this_app->error('aii-installfe: file not found ('
-                               . $this_app->option($item . 'list') . ')');
+            my $listoption = "${item}list";
+            if ($this_app->option($listoption)) {
+                my $filename = $this_app->option($listoption);
+                $filename =~ s{[^\w._:/\\~-]}{_}g; # we don't want to pass shell meta to open
+                my $content = "";
+                if (!open(LIST, $filename)) {
+                    $this_app->error("aii-installfe: $listoption '$filename' not readable: $!");
                     return(1);
                 }
-                $Options .= ' --' . $item . 'list ' .
-                            basename($this_app->option($item . 'list'));
-                $Files .= ' ' . $this_app->option($item . 'list');
+                foreach my $line (<LIST>) {
+                    chomp($line);
+                    $line =~ s{#.*}{};
+                    next if (!$line || $line =~ m{^\s*$});
+                    $content .= "$line,${item}\n";
+                }
+                $Content->{$listoption} = $content;
+                close(LIST);
+                $actions++;
             }
-
 
         }
 
@@ -547,7 +606,7 @@ if (parse_options()) {
     $this_app->error("aii-installfe: failed to process cmd line ");
     exit(1);
 }
-if ($Options eq '') {
+if (!$actions) {
     $this_app->warn('aii-installfe: no actions specified');
     exit(0);
 }
@@ -561,25 +620,57 @@ if ($Options eq '') {
 
 $this_app->verbose("aii-installfe: servers = " . @Servers);
 
-# Pass cmdline data to the node
-foreach $server (@Servers) {
+my ($local_server) = grep { /\blocalhost\b/ } @Servers;
+my @remote_servers = grep { !/\blocalhost\b/ } @Servers;
 
-    $this_app->debug(1, "aii-installfe: server: $server");
+my $errcount = 0;
 
-    if ($server eq 'localhost') {
-        if (run_locally()) {
-            $this_app->error("aii-installfe: failed to run "
-                             . "aii-shellfe locally");
-            exit(1);
-        }
-    } else {
-        if (run_remotely($server)) {
-            $this_app->error("aii-installfe: failed to run "
-                             . "aii-shellfe remotely");
-            exit(1);
-        }
+if ($local_server) {
+    $this_app->debug(1, "aii-installfe: server: $local_server");
+    if (run_locally()) {
+	$this_app->error("aii-installfe: failed to run "
+			. "aii-shellfe locally on $local_server");
+	$errcount++;
     }
+}
 
+if (@remote_servers) {
+    my $q = Parallel::Queue->new();
+    $q->setTrapStdio(1);
+    $q->setList(@remote_servers);
+    $q->setWidth(10);
+    $q->setTimeLimit("1h");
+    $q->setAction(\&run_remotely);
+    my $result = $q->run();
+
+    for my $index ( 0 .. $#remote_servers ) {
+	my $host = $remote_servers[$index];
+	my $status = $result->getStatus($index);
+        foreach my $line ( split(/\n+/,$result->getOutput($index))) {
+            my $h = $host;
+            $h =~ s{.*\@}{}; # remove username: we just care about hostname
+            print "[$h] $line\n";
+        }
+	if ($status eq "fail") {
+	    $this_app->error("aii-installfe: failed to run "
+			     . "aii-shellfe remotely on $host");
+	    $errcount++;
+	} elsif ($status eq "nofork") {
+	    $this_app->error("aii-installfe: failed to fork "
+			     . " to run aii-shellfe remotely");
+	    $errcount++;
+	} elsif ($status eq "notime") {
+	    $this_app->error("aii-installfe: ran out of time "
+			     . "before we could process $host");
+	    $errcount++;
+	}
+    }
+}
+
+if ($errcount == scalar(@Servers)) {
+    $this_app->error("aii-installfe: failed to run "
+		     . "aii-shellfe on any defined servers");
+    exit(1);
 }
 
 exit (0);
