@@ -429,20 +429,6 @@
 		</sources>
 	      </mapping>
 	      
-	      <mapping>
-	      	<directory>/usr/share/man</directory>
-	      	<filemode>644</filemode>
-	      	<username>root</username>
-	      	<groupname>root</groupname>
-	      	<documentation>true</documentation>
-	      	<directoryIncluded>false</directoryIncluded>
-	      	<sources>
-	      	  <source>
-	      	    <location>target/doc/man</location>
-	      	  </source>
-	      	</sources>
-	      </mapping>
-
 	    </mappings>
 	  </configuration>
 	</plugin>
