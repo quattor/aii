@@ -881,7 +881,11 @@ sub fetch_profiles
 	    $self->{status} = PARTERR_ST;
 	    next;
 	}
-	$fh->fetchProfile;
+	my @err = $fh->fetchProfile();
+	if ($err[0] != 0) {
+	    $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
+	    next;
+	}
 	my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT});
 	if ($cm) {
 	    my $cfg = $cm->getLockedConfiguration (0);
