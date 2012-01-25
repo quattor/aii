@@ -381,6 +381,7 @@
 	      <require>ncm-ncd</require>
 	      <require>libuser</require>
 	      <require>aii-server</require>
+	      <require>perl-CDB_File</require>
 	    </requires>
 
 	    <mappings>
