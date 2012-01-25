@@ -1,0 +1,780 @@
+2011-06-24  Michel Jouvin
+
+	* Release: 2.4.6
+	- Add templates to help configuring required RPMs
+
+2010-06-18  Ronald Starink
+
+	* Release: 2.4.5
+	- Fix bug 68868: host declarations are global options and should not be contained in any block.
+
+2009-04-13  root
+
+	* Release: 2.4.4
+	- Fix deprecated syntax for panc v8
+
+2009-03-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.4.4
+	- Restore the lock file.
+
+2009-03-19  Luis Fernando Muñoz Mejías
+
+	* Release: 2.4.3
+	- Sanitize MACs when invoking aii-dhcp, or aii-dhcp may fail.
+
+2008-12-12  Marco Emilio Poleggi,<Marco.Poleggi@cnaf.infn.it>
+
+	* Release: 2.4.2
+	- [your comment here]
+
+2008-12-05  Marco Emilio Poleggi,<Marco.Poleggi@cnaf.infn.it>
+
+	* Release: 2.4.1
+	- [your comment here]
+
+2008-09-29  "Luis Fernando"
+
+	* Release: 2.4.0
+	- Changing to full tainted mode.
+
+2008-08-21  "Luis Fernando"
+
+	* Release: 2.3.2
+	- Updated the dependency on CCM, which is now >= 2.1.0 .
+
+2008-08-07  "Luis Fernando"
+
+	* Release: 2.3.1
+	- Added a new parameter to aii-installack.cgi. The parameter's name is "bootconf" and
+	allows to specify the configuration file for the local boot.
+
+2008-07-09  "Luis Fernando"
+
+	* Release: 2.3.0
+	- Switching to tainted mode. Currently the -t switch is used, and only warnings are issued.
+
+2008-07-03  "Luis Fernando"
+
+	* Release: 2.2.7
+	- Fixed a format string vulnerability, on the instantiation of plug-ins, that would allow an attacker to run arbitrary n the install server.
+
+2008-06-13  "Luis Fernando"
+
+	* Release: 2.2.6
+	- Yet another test for SL5 build tools.
+
+2008-06-13  "Luis Fernando"
+
+	* Release: 2.2.6
+	- Testing to tag
+
+2008-06-13  "Luis Fernando"
+
+	* Release: 2.2.6
+	- Set PATH environment variable to make -t (and in the future -T) happy.
+
+2008-06-11  Luis Fernando Muñoz Mejías
+
+	* Release: 2.2.5
+	- Fixed bug #37719.
+
+2008-06-04  Luis Fernando Muñoz Mejías
+
+	* Release: 2.2.4
+	- Added support for a command-line cdburl to aii-installack CGI.
+
+2008-05-30  root
+
+	* Release: 2.2.3
+	- Add DHCP configuration file to debug info (level 3)
+	Pass --debug option from aii-shellfe to aii-dhcp
+
+2008-05-21  Luis Fernando Muñoz Mejías
+
+	* Release: 2.2.2
+	- Documentation upgrade.
+
+2008-05-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.2.1
+	- Added handle for notify command, it was forgotten on last release.
+
+2008-05-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.2.0
+	- Re-implemented --notify.
+
+2008-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 2.1.0
+	- Made /system/aii/osinstall, /system/aii/nbp and /system/aii/dhcp optional.
+	This is useful for enclosures and boot schemas other than PXE+KS+DHCP (e.g, openvz).
+
+2008-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.11
+	- Updated the documentation of aii-shellfe, to remember that regular expressions with
+	a '.' require --use_fqdn.
+
+2008-04-25  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.10
+	- Just whitespace changes.
+
+2008-04-25  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.9
+	- Improved the handling of DHCP options, thanks to Stijn.
+
+2008-04-18  root
+
+	* Release: 2.0.8
+	- Fix typo in pod file
+
+2008-04-18  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.7
+	- Documented NBP hooks.
+
+2008-04-14  Ronald Starink, NIKHEF, x5180
+
+	* Release: 2.0.6
+	- Suppress warning message when profile_prefix is not defined in /etc/aii/aii-shellfe.conf
+
+2008-02-27  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.5
+	- Minor documentation fixes.
+
+2008-02-21  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.4
+	- Fixed some typos and lowercase on variables.
+
+2008-02-20  Ronald Starink, NIKHEF, x5180
+
+	* Release: 2.0.3
+	- Updating documentation for AII release 2
+
+2008-02-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.2
+	- fixed a small problem with the packages.
+
+2008-02-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.1
+	- Fixed the dependency on pan-templates.
+
+2008-02-20  Luis Fernando Muñoz Mejías
+
+	* Release: 2.0.0
+	- AII 2.0 at last!!
+	More flexibility and power, more modularity, better code, it rocks.
+	See the documentation to get all the details.
+
+2008-02-20  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.13
+	- Emptied TPL/quattor/aii/schema, as AII data types are part of pan-templates.
+	Adapted TPL/quattor/aii/config to the new layout, removed old stuff.
+
+2008-02-19  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.12
+	- Fixed a bug on aii-installfe where the list of servers was not splitted and thus it could lead to very strange behaviour when several servers were specified.
+
+2008-02-18  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.11
+	- Fixed a bug when handling regular expressions that contain a
+	dot.
+
+2008-02-16  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.9
+	- Minor documentation improvements.
+
+2008-02-16  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.8
+	- Move configuration files from /etc to /etc/aii. This has to be handled
+	by users, just warn them when upgrading.
+
+2008-02-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.7
+	- Minor documentation improvements.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.6
+	- Creating man pages at make-time.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.5
+	- Added missing file documenting hooks.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.4
+	- Adding missing files.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.3
+	- Starting the merge of AII 2.
+	
+	Removing obsolete documentation, templates and programs.
+	
+	Adding new stuff and documentation. Needs some documentation on writing plug-ins.
+	
+	This should be AII 2.0rc1.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.3
+	- Starting the merge of AII 2.
+	
+	Removing obsolete documentation, templates and programs.
+	
+	Adding new stuff and documentation. Needs some documentation on writing plug-ins.
+	
+	This should be AII 2.0rc1.
+
+2008-01-15  Luis Fernando Muñoz Mejías
+
+	* Release: 1.99.3
+	- Starting the merge of AII 2.
+	
+	Removing obsolete documentation, templates and programs.
+	
+	Adding new stuff and documentation. Needs some documentation on writing plug-ins.
+	
+	This should be AII 2.0rc1.
+
+2008-01-09  Luis Fernando Muñoz Mejías  <mejias@delta.ft.uam.es>
+
+	* aii-shellfe.cin: Added header.
+
+	* hooks.pod.cin: Changed the name to be compliant with the Quattor
+	build tools.
+
+	* TPL/schema.tpl.cin: Modified some variable names, added header.
+
+	* aii.pod.cin: Added general AII documentation.
+
+	* Makefile: Modifying old AII makefile.
+
+2007-09-25  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.10
+	- Testing a fix for bug #29855.
+
+2007-08-23  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.9
+	- Small improvement to bug #28980.
+
+2007-08-23  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.8
+	- Allow for a parameter in aii-installack, fixing bug #28980
+
+2007-07-27  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.7
+	- Added kernel-xen to the list of kernels to install before rebooting.
+
+2007-07-24  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.6
+	- Fixed a typo
+
+2007-07-20  Michel Jouvin
+
+	* Release: 1.3.5
+	- Remove reference to QWG specific variables DOMAIN and HOSTNAME
+
+2007-07-11  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.4
+	- Small improvement on the way e-mails are sent.
+
+2007-07-06  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.3
+	- Added back xwindows configuration.
+
+2007-07-05  Luis Fernando Muñoz Mejías
+
+	* Release: 1.3.2
+	- Added a few fields that got lost on 1.3.
+	The schema and the man page agree again.
+
+2007-06-30  SDW
+
+	* Release: 1.3.1
+	- Add selinux to structure_service_aii_osinstall_options
+
+2007-06-29  Michel Jouvin
+
+	* Release: 1.3.0
+	- Add a real schema to AII matching currently used options
+	Fix vmlinuz default path for x86_64 archs
+
+2007-06-27  SDW
+
+	* Release: 1.2.2
+	- Add AII_OSINSTALL_ROOTPW to control rootpassword set by AII
+	- Add curl to AII_OSINSTALL_PACKAGES
+	- Added variable AII_USE_CCM to control the consistency of the profile location
+	  as configured for AII and possibly ccm.
+
+2007-06-27  Michel Jouvin
+
+	* Release: 1.2.1
+	- Remove structure_component from AII schema.tpl (aii is definitly not a component)
+
+2007-06-27  Michel Jouvin
+
+	* Release: 1.2.0
+	- Fix typos in previous release
+
+2007-06-27  Michel Jouvin
+
+	* Release: 1.2.0
+	- Rework TPL/config.tpl.cin for improved backward compatibility
+	Variables added for each configuration path defined to avoid direct redefinition of paths
+	More computed defaults (useful in QWG context but without dependencies)
+	Added Michel Jouvin to maintainer list
+
+2007-06-22  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.1.11
+	- bug #27365: aii-shellfe returns success when ccm-fetch fails
+
+2007-05-16  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.10
+	- Modified the KS template to fix #26137.
+	Now AII depends on ncm-template 1.0.16 or higher.
+
+2007-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.9
+	- Added 'g' option to sed uses. This should avoid bug #26137 reappearing
+	on MEGARAID devices, if somebody has something like dev/ciss/c10d5p10 and
+	dev/ciss/c5d10p1.
+
+2007-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.9
+	- Added 'g' option to sed uses. This should avoid bug #26137 reappearing
+	on MEGARAID devices, if somebody has something like dev/ciss/c10d5p10 and
+	dev/ciss/c5d10p1.
+
+2007-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.8
+	- Corrected the bugs introduced in 1.1.7. ncm-template only makes AII harder...
+
+2007-05-08  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.7
+	- Inlined the changes for ncm-template 1.0.12, fixing bug #26137
+
+2007-05-07  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.6
+	- Documented the work around for bug #26137
+
+2007-05-07  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.5
+	- Fixed bug #26147
+
+2007-05-07  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.1.4
+	- Fix bug #26140: post install should not use \$script but $script
+
+2007-04-02  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.3
+	- Removed old, non-namespaced PAN templates.
+
+2007-03-30  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.2
+	- Corrected an outdated include statement.
+
+2007-03-30  Luis Fernando Muñoz Mejías
+
+	* Release: 1.1.1
+	- Fixed make clean
+
+2007-03-29  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.1.0
+	- Upgrade to new structure of Pan templates
+	Only use namespaced templates
+
+2007-03-22  Luis Fernando Muñoz Mejías
+
+	* Release: 1.0.59
+	- Started documenting the AII fields and variables.
+	Created AII man page, and added it to Makefile and specfile.
+
+2007-03-20  Luis Fernando Muñoz Mejías
+
+	* Release: 1.0.58
+	- Fixed a package duplicaton that may lead to instalation failures.
+
+2007-03-19  Luis Fernando Muñoz Mejías <mejias@delta.ft.uam.es>
+
+	* Release: 1.0.57
+	- Adapted the paths and namespaces to the III Quattor Workshop decisions.
+	Fixed a couple of typos.
+	Added "selinux" option for enabling/disabling SELinux (by Ronald).
+
+2007-03-15  Luis Fernando Muñoz Mejías <mejias@delta.ft.uam.es>
+
+	- Adapted namespacing to the decisions made in the Quattor
+	Workshop. Renamed component/ to quattor/.
+	- Adapted paths to the decisions made in the Quattor
+	Workshop. Renamed "/software/components/aii" to "/system/aii".
+	
+2007-03-10  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.0.56
+	- - Improvements to namespacing
+	- Removal of many configuration paths
+	- Added some (optional) variables for server configuration
+	- Split generic part from site or platform specific configuration, fixing #9735
+	- Applied the above to the non-namespaced components
+
+2007-03-02  Marco Emilio Poleggi,<Marco.Poleggi@cern.ch>
+
+	* Release: 1.0.54
+	- forgot to get rid of eg/ in Makefile...
+
+2007-03-02  Marco Emilio Poleggi,<Marco.Poleggi@cern.ch>
+
+	* Release: 1.0.53
+	- Added new templates based on namespaces
+	- old templates moved from eg/ to TPL/
+	TO BE REVIEWED!
+
+2007-02-27  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.0.52
+	- Implementation for #24189
+
+2007-02-16  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+	* Release: 1.0.51
+	- FIxed Makefile and specfile, prepended variable RPM_PROXY with a slash
+
+2007-02-16  Luis Fernando MUNOZ MEJIAS
+
+	* Release: 1.0.50
+	- Renamed i386_sl3_ks.conf to sl_ks.conf .
+	This KickStart template works for SL3, SL4 and i386 and x86_64.
+	Fixed bug #23003
+
+2007-02-16  Luis Fernando MUNOZ MEJIAS
+
+	* Release: 1.0.49
+	- Fixing bug #17689
+	New partitioning methods, in the %pre script of i386_sl3_ks.conf
+
+2007-02-15  Michel Jouvin
+
+	* Release: 1.0.48
+	- Remove deprecated 'define' keyword
+
+2007-02-14  Michel Jouvin
+
+	* Release: 1.0.47
+	- Add support for boot disk definition in pro_software_component_aii.tpl
+
+2007-02-02  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+        * Release: 1.0.46
+        - Fixed bug #20944, #16602 and implemented request #16667 (still untested)
+
+2006-12-21  Michel Jouvin
+
+	* Release: 1.0.45
+	- Add ncm-template during post installation script (required by ncm-ncd)
+
+2006-10-12  Ronald S
+
+        * Release: 1.0.44
+        - Fix bugs #14994, #17979, #20411
+
+2006-07-04  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+        * Release: 1.0.43
+        - Use absolute path when invoking aii-* components. This may solve an issue with aii-installfe.
+
+2006-05-19  Ronald Starink, NIKHEF, +31205922179, ronalds@nikhef.nl
+
+        * Release: 1.0.42
+        - Fix dependency on ncm-template
+
+2006-05-05  Michel Jouvin
+
+        * Release: 1.0.41
+        - Fix disk missing when creating LVM partitions; add support for multiple disks to clearpart
+
+2006-04-21  Ronald S
+
+        * Release: 1.0.40
+        - Added option --profile_prefix to man page
+
+2006-04-20  Ronald S
+
+        * Release: 1.0.38
+        - Implement #8984: Support for pre/post install scripts
+
+2006-04-19  Ronald S
+
+        * Release: 1.0.37
+        - Fixed #6356: aii-shellfe no longer produces a log file
+        - Fixed #10455: aii-dhcp ignores comments
+        - Fixed #15066: profile prefixes are configurable
+        - Fixed #10361: rpm downgrade no longer needed
+        - Fixed #14163: LVM support in KS template fixed
+        - Implemented #9164: support for --rescue option
+        - Implemented #10360: location of bootloader is configurable
+        - Some cleanup in the KS template
+
+2006-03-11  Michel Jouvin
+
+        * Release: 1.0.36
+        - Use rpmt-py instead of rpmt (bug #15471)
+
+2006-03-11  Michel Jouvin
+
+        * Release: 1.0.35
+        - Use new clause PACKAGEPATH (bug #15458) to locate RPMs
+
+2006-03-08  Michel Jouvin
+
+        * Release: 1.0.34
+        - Add support for adding drivers for NICs during postinstall (bug #15427)
+
+2006-02-17  root
+
+        * Release: 1.0.33
+        - Add support for LVM logical volumes in i386_sl3_ks.conf
+
+2005-08-23  Ronald S
+
+        * Release: 1.0.32
+        - Use HTTP instead of HTTPS to fetch the kickstart file
+
+2005-08-23  Ronald S
+
+        * Release: 1.0.31
+        - Removed HTTPS support for kickstart.
+
+2005-08-23  Ronald S
+
+        * Release: 1.0.30
+        - Implementation of bugs #6518, #10381, #10410
+
+2005-07-19  Cesar Lobo 
+
+        * Release: 1.0.29
+        - Changes in the AII templates & cleanup after the rpm upgrade in %post installation
+
+2005-07-15  German Cancio Melia
+
+        * Release: 1.0.28
+        - On behalf of Cesar Lobo: Fixed Savannah #9570 (right initrd for sl3, use boot_nic() function)
+
+2005-07-13  German Cancio Melia
+
+        * Release: 1.0.27
+        - Check for existence of a valid boot network interface (boot=true)
+
+2005-07-07  German Cancio Melia
+
+        * Release: 1.0.26
+        - Last fixes and glitches for RC 1.1
+
+2005-07-07  German Cancio Melia
+
+        * Release: 1.0.25
+        - New template set by Cesar Lobo
+
+2005-07-04  root
+
+        * Release: 1.0.24
+        - Fix handling of machines with multiple NICS (boot=true required for DHCP registration)
+
+2005-07-01  German Cancio Melia
+
+        * Release: 1.0.23
+        - Added auto-partitioning using CDB profile information (i386_sl3_ks.conf)
+
+2005-07-01  German Cancio Melia
+
+        * Release: 1.0.22
+        - Added a patch for multiple kernel installation problem (Savannah #5007)
+
+2005-06-30  German Cancio Melia
+
+        * Release: 1.0.21
+        - changed rh73 to i386_rh73 and sl3_i386 to i386_sl3 - to be consistent with the rest of the Quattor modules
+
+2005-06-30  German Cancio Melia
+
+        * Release: 1.0.20
+        - Mostly cosmetic corrections - and changed the 'sl303' references to sl3_i386, in order to better support platforms like x86_64
+
+2005-06-02  Cesar Lobo
+
+        * Release: 1.0.19
+        - The AII now uses the Template processor
+
+2005-05-30  German Cancio Melia
+
+        * Release: 1.0.18
+        - Fix in recently added multiarch support :-(
+
+2005-05-27  German Cancio Melia
+
+        * Release: 1.0.17
+        - Changes required for new SPMA package format (multi-architecture support)
+
+2005-04-23  German Cancio Melia
+
+        * Release: 1.0.16
+        - Now puts templates in NCM_TPL_FILES as well
+
+2005-03-01  Rafael Garcia Leiva
+
+        * Release: 1.0.15
+        - missing sl303_pxe.conf file
+
+2005-03-01  Rafael Garcia Leiva
+
+        * Release: 1.0.14
+        - improved aii-shellfe options management, error reporting and man page.
+
+2005-02-16  Rafael Garcia Leiva
+
+        * Release: 1.0.13
+        - Fix #3427: unhelpful error message with aii-shellfe
+
+2005-01-20  Rafael Garcia Leiva
+
+        * Release: 1.0.12
+        - fixed savannah #6234: config files need to be 'configured' when packaging
+
+2004-11-26  Rafael Garcia Leiva
+
+        * Release: 1.0.11
+        - added support for ScientificLinux 303
+
+2004-11-10  Rafael Garcia Leiva
+
+        * Release: 1.0.10
+        - removed references to edg, and minor bugs fixed
+
+2004-11-03  Rafael Garcia Leiva
+
+        * Release: 1.0.9
+        - package renamed, fixed dependencies
+
+2004-09-21  Rafael Garcia Leiva
+
+        * Release: 1.0.8
+        - missing TFTP configuration file example
+
+2004-09-17  Rafael Garcia Leiva
+
+        * Release: 1.0.7
+        - Clarified error messages and doc (Savannah Bugs #3287 and #4060)
+
+2004-09-17  Rafael Garcia Leiva
+
+        * Release: 1.0.6
+        - Package versions are not wired on KickStart file (Savannah Task #863)
+
+2004-09-13  Rafael Garcia Leiva
+
+        * Release: 1.0.5
+        - manage multiple dhcp entries for single host (Savannah Bug #3426) and aii-shellfe uses profiles-info.xml files for regular expressions (Savannah Task #866)
+
+2004-09-07  Rafael Garcia Leiva
+
+        * Release: 1.0.4
+        - Simplified PXE Linux installation procedure.
+
+2004-09-07  Rafael Garcia Leiva
+
+        * Release: 1.0.3
+        - aii-dhcp updated to work with ISC DHCP version 3
+
+2004-07-05  Rafael Garcia Leiva
+
+        * Release: 1.0.2
+        - updated to new template set
+
+2004-07-02  Rafael Garcia Leiva
+
+        * Release: 1.0.1
+        - adapted to new template set
+
+2004-07-01  Rafael Garcia Leiva
+
+        * Release: 1.0.0
+        - release candidate for beta
+
+2004-06-14  Rafael Garcia Leiva
+
+        * Release: 0.10.1
+        - split into two packages, solved bug #3616
+
+2004-06-10  Rafael Garcia Leiva
+
+        * Release: 0.10.0
+        - re-organized pan templates, and adapted code to new templates
+
+2004-06-03  German Cancio Melia
+
+        * Release: 0.1.5
+        - Added missing doc file to spec file (Savannah #3486)
+
+2004-05-06  Rafael Garcia Leiva
+
+        * Release: 0.1.4
+        - bug fixed for the alpha 2 release
+
+2004-04-08  German CANCIO MELIA
+
+        * Release: 0.1.3
+        - Replaced hardcoded Perl interpreter with @PERL_EXECUTABLE@ for improved portability
+
+2004-03-26  German CANCIO MELIA
+
+        * Release: 0.1.2
+        - Renamed example file CDB server name
+
+2004-03-18  Rafael Garcia Leiva
+
+        * Release: 0.1.1
+        - AII for quattor alpha release
+
+2004-03-10  Rafael Angel Garcia Leiva
+
+        * Release: 0.1.0
+        - First public realease available
+

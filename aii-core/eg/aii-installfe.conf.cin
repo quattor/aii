@@ -1,0 +1,31 @@
+#
+# aii-installfe.conf         aii-installfe configuration file
+#
+# Enrico Ferro <enrico.ferro@pd.infn.it>
+# Rafael A. Garcia Leiva <angel.leiva@uam.es>
+#
+# Copyright (c) 2003 EU DataGrid.
+# For license conditions see http://www.eu-datagrid.org/license.html
+#
+
+# Installation servers to be updated remotely via ssh. Use'@'
+# to select the remote user to use. E.g:
+#
+#  servers = john@install-1.asdf.fi
+#
+# If there more servers, use ' ' to separate them:
+#
+#  servers = john@install-1.asdf.fi john@install-2.asdf.fi
+#
+# If you are running *all* tools (edg-dhcp, edg-nbp, edg-osinstall)
+# on *this* machine, use just:
+#
+#  server = localhost
+#
+# They will be executed *directly* (no ssh required). Of course you can mix:
+#
+#  servers = localhost john@install-1.asdf.fi
+#
+# Default value: localhost
+#
+# servers = localhost

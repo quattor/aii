@@ -1,0 +1,1218 @@
+#!/usr/bin/perl -wT
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+################################################################################
+
+# This is aii-shellfe, a aii's file
+
+=pod
+
+=head1 NAME
+
+aii-shellfe - AII local management utility.
+
+The aii-shellfe program configures, marks for install or for local
+boot the nodes given as arguments. It loads and runs any AII plug-ins
+specified in the profile.
+
+=head1 SYNOPSIS
+
+ aii-shellfev2 --cdburl URL [options]
+                       <--boot <hostname|regexp>      |
+                        --bootlist <filename>         |
+                        --configure <hostname|regexp> |
+                        --configurelist <filename>    |
+                        --include <directories...>    |
+                        --install <hostname|regexp>   |
+                        --installlist <filename>      |
+                        --notify                      |
+                        --filter <regex>              |
+                        --remove <hostname|regexp>    |
+                        --removelist <filename> >     |
+                        --removeall                   |
+                        --rescue <hostname|regexp>    |
+                        --rescuelist <filename>       |
+                        --status <hostname|regexp>    |
+                        --statuslist <filename> >     |
+                        --firmware <hostname|regexp>  |
+                        --firmwarelist <filename>     |
+                        --livecd <hostname|regexp>    |
+                        --livecdlist <filename>       |
+                        --file <filename>
+
+C<--removeall>, is not ready yet.
+
+=head1 DESCRIPTION
+
+aii-shellfe is the user frontend for the quattor Automated
+Installation Infrastructure. aii-shellfe is used to automatically
+manage DHCP, the Network Bootstrap Program (NBP), and the OS
+installer. It instantiates
+and configures NCM components for configuring these systems.
+
+aii-shellfe can be used locally, or remotely called with
+aii-installfe.  aii-shellfe can be called by the CDB notification
+handler for the automatic synchronisation with CDB as well.
+
+Input data can be specified via the command line (for just one host)
+or via a text file (for more than one host). Perl regular expressions
+(see EXAMPLES) instead of hostnames are supported (only in case of
+command line options). The only limitation is that, if your regular
+expression contains a dot (.), you must specify --use_fqdn.
+
+Note that you have to configure (command --configure) the client nodes
+before to mark them for the installation or to boot from local disk.
+
+aii-shellfe needs the URL for the location of the CDB. Instead of
+CDB, a plain http(s) server may be used to fetch the profiles. It is
+recommended to store this parameter in the aii-shellfe.conf
+configuration file.
+
+=head1 COMMANDS
+
+=over 4
+
+=item --boot <hostname|regexp>
+
+Select boot from local disk for <hostname> or for all hostnames that
+match the Perl regular expression <regexp>
+
+=item --bootlist <filename>
+
+Select boot from local disk for hosts listed on <filename>. Each line
+should contain one host name. Lines starting with a # are comment
+lines.
+
+=item --install <hostname|regexp>
+
+Select to install <hostname> or all hostnames that match the Perl
+regular expression <regexp>
+
+=item --installlist <filename>
+
+Select to install the hosts listed in <filename>. Each line should
+contain one host name. Lines starting with a # are comment lines.
+
+=item --configure <hostname|regexp>
+
+Configure <hostname> or all hostnames that match the Perl regular
+expression <regexp>
+
+=item --configurelist <filename>
+
+Configure hosts listed in <filename>. Each line should contain one
+host name. Lines starting with a # are comment lines.
+
+=item --include <directories...>
+
+A colon-separated list of directories to add to the search path
+for perl plugins.
+
+=item --notify
+
+aii-shellfe should be executed with this parameter by CDB
+notification client, i.e. whenever the content of CDB changes.
+
+=item --filter
+
+aii-shellfe should only notify against hosts that match this filter. A
+filter for only hosts within a specific domain would look like
+"\.foo\.com$".
+
+=item --remove <hostname|regexp>
+
+Remove the configuration for <hostname> or all hostnames that match
+the Perl regular expression <regexp>
+
+=item --removelist <filename>
+
+Remove configurations for hosts listed in <filename>. Each line should
+contain one host name. Lines starting with a # are comment lines.
+
+=item --removeall
+
+Remove configurations for *ALL* hosts configured. Useful only in case
+of problems/test (note that DHCP configuration is not affected by this
+command).
+
+=item --status <hostname|regexp>
+
+Report the boot status (boot from local disk/install) for <hostname>
+or for all hostnames that match the Perl regular expression <regexp>
+
+=item --statuslist <filename>
+
+Report the boot status (boot from local disk/install) for hosts listed
+in <filename>. Each line should contain one host name. Lines starting
+with a # are comment lines.
+
+=item --firmware
+
+Select the firmware installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --firmwarelist <filename>
+
+Select firmware installation for the hosts listed in <filename>. Hosts have to
+be listed one per line. Lines starting with # are comment.
+
+=item --livecd
+
+Select the livecd installation target for <hostname>. Perl regular expressions
+can be used.
+
+=item --livecdlist <filename>
+
+Select livecd installation for the hosts listed in <filename>. Hosts have to 
+be listed one per line. Lines starting with # are comment.
+
+=item --rescue <hostname|regexp>
+
+Use the Rescue image (LOCATION) to boot <hostname> or all hostnames
+that match the Perl regular expression <regexp>.
+
+=item --rescuelist <filename>
+
+Use the Rescue image (LOCATION) to boot the hosts listed in
+<filename>.  Each line should contain one host name. Lines starting
+with a # are comment lines.
+
+=item --file <filename>
+
+Read the actions and hosts from the specified file. This file
+allows you to specify both the action and the hostname at
+the same time.
+Each line should
+be of the form:
+   hostname,action[,argument]
+The action is one of the
+defined actions such as 'configure', 'install', etc. The
+optional argument is for the use of the specified action.
+The value of the filename may be '-' in which case stdin
+is used (this feature is not available on any of the other
+file-based options).
+
+=back
+
+=head1 OPTIONS
+
+=over 4
+
+=item --nodiscovery
+
+Do not update DHCP configuration. Valid only with --configure command.
+
+=item --nonbp
+
+Do not update NBP configuration. Valid only with --configure command.
+
+=item --noosinstall
+
+Do not update OS installer configuration. Valid only with --configure
+command.
+
+=item --cdburl <url>
+
+URL for CDB location
+
+=back
+
+=head2 Other Options
+
+=over
+
+=item --help
+
+Displays a help message with all options and default settings.
+
+=item --version
+
+Displays program version information.
+
+=item --debug <1..5>
+
+Set the debugging level to <1..5>.
+
+=item --cfgfile <path>
+
+Use as configuration file <path> instead of the default configuration
+file /etc/aii/aii-shellfe.conf.
+
+=item --logfile <file>
+
+Store and append log messages in <file>.
+
+=item --noaction
+
+Compute and show the operations, but do not execute them. The
+components must accept $NoAction.
+
+=item --use_fqdn
+
+When retrieving profiles, keep the fully qualified domain name in the
+name of the profile (if specified). Otherwise, the domain name will be
+stripped. Use this also if your regular expressions contain a dot.
+
+=item --profile_prefix <prefix>
+
+Set the prefix for the profile names that AII will fetch from the CDB.
+The default is 'profile_'. To disable the usage of a prefix, set
+profile_prefix to an empty string in the configuration file
+/etc/aii/aii-shellfe.conf.
+
+=item --cachedir <dir>
+
+The location to cache foreign profiles. This defaults to /tmp/aii.
+
+=back
+
+=head1 CONFIGURATION FILE
+
+Default values of command lines options can be specified in the file
+/etc/aii/aii-shellfe.conf using syntax:
+
+ <option> = <value>
+
+Also, for fetching the profiles, /etc/ccm.conf must exist and be
+correct.
+
+=head1 EXAMPLES
+
+E.g. to get the status of all nodes:
+
+ aii-shellfe --status .+ --use_fqdn
+
+To prepare configuration files for grid001, grid002, grid005:
+
+ aii-shellfe --configure grid00[125]
+
+To set as "to be installed" grid001 and grid002:
+
+ aii-shellfe --install grid00[12]
+
+
+=head1 RETURN
+
+On success, aii-shellfe returns 0. Fatal errors are indicated by
+return value 1.  When non-fatal errors occur, aii-shellfe returns
+16.
+
+=head1 SEE ALSO
+
+L<aii-components(8)>, L<aii-hooks(8)>,
+L<aii(8)>
+
+=head1 AUTHORS
+
+Luis Fernando Muñoz Mejías <luisf.munnoz@uam.es>
+
+Ronald Starink <ronalds@nikhef.nl>
+
+=cut
+
+BEGIN {
+	push (@INC, qw !/usr/lib/perl /opt/edg/lib/perl!);
+}
+
+package aii_shellfev2;
+
+use strict;
+use warnings;
+
+use CAF::Application;
+use CAF::Reporter;
+use CAF::Lock qw (FORCE_IF_STALE);
+use EDG::WP4::CCM::CacheManager;
+use EDG::WP4::CDBSYNC::NCL;
+use LC::Exception qw (SUCCESS throw_error);
+use LC::Process qw (execute);
+use LWP::UserAgent;
+use XML::Simple;
+use EDG::WP4::CCM::Fetch;
+use File::Path qw(mkpath);
+use DB_File;
+
+our $profiles_info = undef;
+
+use constant MODULEBASE	=> 'NCM::Component::';
+use constant USEMODULE	=> "use " . MODULEBASE;
+use constant PROFILEINFO => 'profiles-info.xml';
+use constant NODHCP	=> 'nodhcp';
+use constant NONBP	=> 'nonbp';
+use constant NOOSINSTALL=> 'noosinstall';
+use constant OSINSTALL	=> '/system/aii/osinstall';
+use constant NBP	=> '/system/aii/nbp';
+use constant CDBURL	=> 'cdburl';
+use constant PREFIX	=> 'profile_prefix';
+use constant HOSTNAME	=> '/system/network/hostname';
+use constant LOCKDIR    => '/var/lock/quattor/';
+# we're going to at least deprecate the global lock, but leaving for now just in case
+use constant LOCKFILE	=> '/var/lock/quattor/aii';
+use constant RETRIES	=> 6;
+use constant TIMEOUT	=> 60;
+use constant PARTERR_ST	=> 16;
+use constant COMMANDS	=> qw (configure install boot remove status rescue firmware livecd);
+use constant INCLUDE    => 'include';
+use constant NOTIFY	=> 'notify';
+use constant NBPDIR	=> 'nbpdir';
+use constant CONFIGURE	=> 'Configure';
+use constant INSTALLMETHOD	=> 'Install';
+use constant BOOTMETHOD	=> 'Boot';
+use constant REMOVEMETHOD	=> 'Unconfigure';
+use constant STATUSMETHOD	=> 'Status';
+use constant RESCUEMETHOD	=> 'Rescue';
+# Constants for aii-dhcp. These should be improved, and probably we
+# should get rid of aii-dhcp at all.
+use constant MACADDR	=> '/hardware/cards/nic/eth0/hwaddr';
+use constant HWCARDS	=> '/hardware/cards/nic';
+use constant DHCPCFG	=> "/usr/sbin/aii-dhcp";
+use constant DHCPOPTION => '/system/aii/dhcp/options';
+use constant DHCPPATH	=> '/system/aii/dhcp';
+use constant MAC	=> '--mac';
+use constant FIRMWAREMETHOD     => 'Firmware';
+use constant LIVECDMETHOD       => 'Livecd';
+use constant CAFILE	=> 'ca_file';
+use constant CADIR	=> 'ca_dir';
+use constant KEY	=> 'key_file';
+use constant CERT	=> 'cert_file';
+# Option for notification client
+use constant LOCALCACHE => 'localnclcache';
+
+our @ISA = qw (CAF::Application CAF::Reporter);
+
+# List of options for this application.
+sub app_options
+{
+
+    push(my @array,
+
+       { NAME    => 'configure=s',
+	 HELP    => 'Node(s) to be configured (can be a regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'configurelist=s',
+	 HELP    => 'File with the nodes to be configured',
+	 DEFAULT => undef },
+
+       { NAME    => 'remove=s',
+	 HELP    => 'Node(s) to be removed (can be a regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'removelist=s',
+	 HELP    => 'File with the nodes to be removed',
+	 DEFAULT => undef },
+
+       { NAME    => 'removeall',
+	 HELP    => 'Remove ALL nodes configured',
+	 DEFAULT => undef },
+
+       { NAME    => 'boot=s',
+	 HELP    => 'Node(s) to boot from local disk (can be a regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'bootlist=s',
+	 HELP    => 'File with the nodes to boot from local disk',
+	 DEFAULT => undef },
+
+       { NAME    => 'install=s',
+	 HELP    => 'Nodes(s) to be installed (can be regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'installlist=s',
+	 HELP    => 'File with the nodes to be installed',
+	 DEFAULT => undef },
+
+       { NAME    => 'rescue=s',
+	 HELP    => 'Node(s) to be booted in rescue mode',
+	 DEFAULT => undef },
+
+       { NAME    => 'rescuelist=s',
+	 HELP    => 'File with the nodes to be booted in rescue mode',
+	 DEFAULT => undef },
+
+       { NAME    => 'include=s',
+         HELP    => 'Directories to add to include path',
+         DEFAULT => '' },
+
+       { NAME    => 'notify',
+	 HELP    => 'Executed by CDB client whenever nodes config changed',
+	 DEFAULT => undef },
+
+       { NAME    => 'filter=s',
+	 HELP    => 'only notify hosts that match this filter',
+	 DEFAULT => undef },
+
+       { NAME    => 'status=s',
+	 HELP    => 'Report current boot/install status for the node ' .
+	 '(can be a regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'statuslist=s',
+	 HELP    => 'File with the nodes to report boot/install status',
+	 DEFAULT => undef },
+
+       { NAME    => 'firmware=s',
+	 HELP    => 'Nodes(s) to have their firmware image updated ' . 
+                     '(can be a regexp)',
+	 DEFAULT => undef },
+
+       { NAME    => 'firmwarelist=s',
+	 HELP    => 'File with the nodes requiring firmware upgrade',
+	 DEFAULT => undef },
+
+       { NAME    => 'livecd=s',
+         HELP    => 'Node(s) to boot to a livecd target ' .
+                    '(can be a regexp)',
+         DEFAULT => undef },
+
+       { NAME    => 'livecdlist=s',
+         HELP    => 'File with the nodes requiring livecd target',
+         DEFAULT => undef },
+
+       { NAME    => 'cdburl=s',
+	 HELP    => 'URL for CDB location',
+	 DEFAULT => undef },
+ 
+       { NAME    => 'localnclcache=s',
+	 HELP    => 'Local cache for NCL library',
+	 DEFAULT => '/usr/lib/aii/aii_ncl_cache' },
+
+       { NAME    => 'file=s',
+         HELP    => 'File with the nodes and the actions to perform',
+         DEFAULT => undef },
+
+	 # aii-* parameters
+
+       { NAME    => 'nodiscovery|nodhcp',
+	 HELP    => 'Do not update discovery (e.g. dhcp) configuration',
+	 DEFAULT => undef },
+
+       { NAME    => 'nonbp',
+	 HELP    => 'Do not update Network Boot Protocol (e.g. pxe) configuration',
+	 DEFAULT => undef },
+
+       { NAME    => 'noosinstall',
+	 HELP    => 'Do not update OS installer (e.g. kickstart) configuration',
+	 DEFAULT => undef },
+
+	 # other common options
+
+       { NAME    => 'cfgfile=s',
+	 HELP    => 'configuration file for aii-shellfe defaults',
+	 DEFAULT => '/etc/aii/aii-shellfe.conf' },
+
+       { NAME    => 'logfile=s',
+	 HELP    => 'Path to the log file',
+	 DEFAULT => '/var/log/aii-shellfe.log' },
+
+       { NAME    => 'noaction',
+	 HELP    => 'do not actually perform operations',
+	 DEFAULT => undef },
+
+       { NAME    => 'use_fqdn',
+	 HELP    => 'Use the fully qualified domain name in the profile name (if specified). Enable it if you use a regular expression with a dot as "host name"',
+	 DEFAULT => undef },
+
+       { NAME    => 'profile_prefix=s',
+	 HELP    => 'Default prefix for the profile name',
+	 DEFAULT => undef },
+
+       { NAME    => 'cachedir=s',
+         HELP    => 'where to cache foreign profiles',
+         DEFAULT => "/tmp/aii" },
+
+	 # Options for osinstall plug-ins
+       { NAME    => 'osinstalldir=s',
+	 HELP    => 'Directory where Kickstart files will be installed',
+	 DEFAULT => '/osinstall/ks' },
+
+	 # Options for DISCOVERY plug-ins
+	 { NAME => 'dhcpconf=s',
+	   HELP => 'name of dhcp configuration file',
+	   DEFAULT => '/etc/dhcpd.conf' },
+
+	 { NAME => 'restartcmd=s',
+	   HELP => 'how to restart the dhcp daemon',
+	   DEFAULT => 'service dhcpd restart' },
+
+	 # Options for NBP plug-ins
+       { NAME    => 'nbpdir=s',
+	 HELP    => 'Directory where files for NBP should be stored',
+	 DEFAULT => '/osinstall/nbp/pxelinux.cfg' },
+
+       { NAME    => 'bootconfig=s',
+	 HELP    => 'Generic "boot from local disk" file',
+	 DEFAULT => 'localboot.cfg' },
+
+       { NAME	=> 'rescueconfig=s',
+	 HELP	=> 'Generic "boot from rescue image" file',
+	 DEFAULT	=> 'rescue.cfg' },
+	 # Options for HTTPS
+       { NAME	=> CAFILE.'=s',
+	 HELP	=> 'Certificate file for the CA' },
+
+       { NAME	=> CADIR.'=s',
+	 HELP	=> 'Directory where allCA certificates can be found' },
+
+       { NAME	=> KEY.'=s',
+	 HELP	=> 'Private key for the certificate' },
+
+       { NAME	=> CERT.'=s',
+	 HELP	=> 'Certificate file to be used' }
+	 # options inherited from CAF
+	 #   --help
+	 #   --version
+	 #   --verbose
+	 #   --debug
+	 #   --quiet
+
+	);
+
+    return(\@array);
+
+}
+
+# Initializes the application object. Creates the lock and locks the
+# application.
+sub _initialize
+{
+    my $self = shift;
+
+    $self->{VERSION} = '2.0';
+    $self->{USAGE} = "Usage: $0 [options]\n";
+
+# removing the global lock
+#    ($self->{lock} = CAF::Lock->new (LOCKFILE)) &&
+#      $self->{lock}->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
+    $self->{LOG_APPEND} = 1;
+    $self->{LOG_TSTAMP} = 1;
+    $self->{status} = 0;
+    $self->SUPER::_initialize (@_) or return undef;
+    $self->set_report_logfile ($self->{LOG});
+    my $f;
+    $ENV{HTTPS_CA_FILE} = $f if $f = $self->option (CAFILE);
+    $ENV{HTTPS_CA_DIR} = $f  if $f = $self->option (CADIR);
+    $ENV{HTTPS_KEY_FILE} = $f if $f = $self->option (KEY);
+    $ENV{HTTPS_CERT_FILE} = $f if $f = $self->option (CERT);
+    if ($self->option(INCLUDE)) {
+        unshift(@INC, split(/:+/, $self->option(INCLUDE)));
+    }
+    return $self;
+}
+
+# Lock a node being configured, needs to be called in every method that contains
+# node operations (ie configure, notify etc)
+sub lock_node
+{
+    my ($self, $node) = @_;
+    my $lockfile = LOCKDIR . "$node";
+    my $lock = CAF::Lock->new ($lockfile);
+    if ($lock) {
+	$lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
+    } else {
+	return undef;
+    }
+    $self->debug(3, "aii-shellfe: locked node $node");
+    return $lock;
+}
+
+# Overwrite the report method to allow the KS plug-in to print
+# debugging output. See CAF::Reporter (8) for more information.
+sub report
+{
+    my $self = shift;
+    my $st = join ('', @_);
+    print STDOUT "$st\n" unless $SUPER::_REP_SETUP->{QUIET};
+    $self->log (@_);
+    return SUCCESS;
+}
+
+sub plugin_handler {
+    my ($self, $plugin, $ec, $e) = @_;
+    $self->error("$plugin: $e");
+    $self->{STATUS} = PARTERR_ST;
+    $e->has_been_reported(1);
+    return;
+}
+
+# Runs $method on the plug-in given at $path for $node. Arguments:
+# $_[1]: the name of the host being configured.
+# $_[2]: the PAN path of the plug-in to be run. If the path does not
+# exist, nothing will be done.
+# $_[3]: the method to be run.
+sub run_plugin
+{
+    my ($self, $st, $path, $method) = @_;
+
+    return unless $st->{configuration}->elementExists ($path);
+    # This is here because CacheManager and Fetch objects may have
+    # problems when they get out of scope.
+    my %rm = $st->{configuration}->getElement ($path)->getHash;
+    my $modulename = (keys (%rm))[0];
+    if ($modulename !~ m/^[a-zA-Z_]\w+$/) {
+	$self->error ("Invalid Perl identifier specified as a plug-in. ",
+		      "Skipping.");
+	$self->{status} = PARTERR_ST;
+	return;
+    }
+
+    if (!exists $self->{plugins}->{$modulename}) {
+	$self->debug (4, "Loading module $modulename");
+	eval (USEMODULE .  $modulename);
+	if ($@) {
+	    $self->error ("Couldn't load $modulename for path $path: $@");
+	    $self->{status} = PARTERR_ST;
+	    return;
+	}
+	$self->debug (4, "Instantiating $modulename");
+	my $class = MODULEBASE.$modulename;
+	my $module = eval { $class->new($modulename) };
+	if ($@) {
+	    $self->error ("Couldn't call 'new' on $modulename: $@");
+	    $self->{status} = PARTERR_ST;
+	    return;
+	}
+	$self->{plugins}->{$modulename} = $module;
+    }
+    my $plug = $self->{plugins}->{$modulename};
+    if ($plug->can($method)) {
+	$self->debug (4, "Running $modulename -> $method");
+        $aii_shellfev2::__EC__ = LC::Exception::Context->new;
+        $aii_shellfev2::__EC__->error_handler(sub {
+            $self->plugin_handler($modulename, @_);
+        });
+
+	if (!eval { $plug->$method ($st->{configuration}) }) {
+	    $self->error ("Failed to execute module's $modulename $method method");
+	    $self->{status} = PARTERR_ST;
+	}
+        if ($@) {
+	    $self->error ("Errors running module $modulename $method method: $@");
+	    $self->{status} = PARTERR_ST;
+        }
+	return;
+    } else {
+	$self->debug(4, "no method $method available for plugin $modulename");
+    }
+}
+
+sub iter_plugins {
+    my ($self, $st, $hook) = @_;
+    foreach my $plug ('osinstall', 'nbp', 'discovery') {
+	my $path = "/system/aii/$plug";
+	if (!$self->option("no$plug")) {
+	    $self->run_plugin($st, $path, $hook);
+	}
+    }
+}
+
+sub configure_notified
+{
+    my ($self, $notification) = @_;
+
+    my %h = $notification->getAllProfilesHash;
+
+    my $filter = $self->option('filter');
+
+    while (my ($node, $time) = each (%h)) {
+        $node =~ s{\.xml$}{}; # the profiles-info is a filename, we want node
+	if ($filter && $node !~ m{$filter}) {
+	    $self->debug(6, "ignoring $node due to filter");
+	    next;
+	}
+	if ($self->get_cache_time($node) < $time) {
+            if ($self->option('noaction')) {
+                $self->debug(1, "Would configure (notify): $node");
+                next;
+            }
+	    my $when = time(); # we use a host local time, taken before we fetch
+	    my @nl = $self->nodelist ($node, $self->option('use_fqdn'));
+	    my %hn = eval { $self->fetch_profiles (@nl) };
+            if ($@) {
+                $self->error("failed to fetch $node: " . $main::ec->error);
+                next;
+            }
+	    $self->configure (%hn);
+	}
+    }
+}
+
+# In case of CDB notification, re-configures or removes the
+# appropriate nodes.
+sub notify
+{
+    my $self = shift;
+
+    my $nt = EDG::WP4::CDBSYNC::NCL->new;
+    unless ($nt) {
+	$self->error ($main::ec->error);
+	return;
+    }
+
+    $self->configure_notified ($nt);
+}
+
+
+# Returns an array with the list of nodes specified in the file given
+# as an argument. Arguments:
+#
+# $_[1]: file name containing the list of nodes. Each element of the
+# list can be a regular expression!
+# $_[2]: whether or not the fully qualified domain name should be used
+# in the profile name.
+sub filenodelist
+{
+    my ($self, $rx, $fqdn) = @_;
+
+    my @nl;
+
+    open (FH, "<$rx") or throw_error ("Couldn't open file: $rx");
+
+    while (my $l = <FH>) {
+	next if $l =~ m/^#/;
+	chomp ($l);
+	$self->debug (3, "Evaluating regexp $l");
+	push (@nl, $self->nodelist ($l, $fqdn));
+    }
+    close (FH);
+    $self->debug (1, "Node list: " . join ("\t", @nl));
+    return @nl;
+}
+
+# Returns the list of profiles on the CDB server that match a given
+# regular expression.
+#
+# Arguments:
+# $_[1]: the regular expression.
+# $_[2]: whether or not to use fully qualified domain names in the
+# profiles names.
+sub nodelist
+{
+    my ($self, $rx, $fqdn) = @_;
+    # allow the nodename to be specified as either simple nodename, or
+    # as filename (i.e. .xml). However, to make sure our regexes make
+    # sense, we normalize to forget about the .xml for now.
+    $rx =~ s{\.xml$}{}; 
+    my $prefix = $self->option (PREFIX) || '';
+
+    if (!$profiles_info) {
+    	my $url = $self->option (CDBURL) . "/" . PROFILEINFO;
+    	my $ua = LWP::UserAgent->new;
+    	$self->debug (4, "Downloading profiles-info: $url");
+    	my $rp = $ua->get ($url);
+    	unless ($rp->is_success) {
+		$self->error ("Couldn't download $url. Aborting");
+		$self->{state} = 1;
+		return;
+    	}
+    	my $xml = $rp->content;
+    	$self->debug (4, "Parsing XML file from $url");
+    	$profiles_info = XMLin ($xml, ForceArray => 1);
+    	throw_error ("XML error: $_") unless $profiles_info;
+    }
+
+    # Let's try to fix the --use_fqdn once and for all:
+    #	$rx =~ s/^([^.]+).*/$1/ unless $fqdn;
+    $rx =~ m{^([^.]*)(.*)};
+    $rx = $1;
+    $rx .= "($2)" if $fqdn;
+    my @nl;
+    foreach (@{$profiles_info->{profile}}) {
+	if ($_->{content} =~ m/$prefix($rx)\b/) {
+	    my $host = $1;
+	    $self->debug (4, "Added $host to the list");
+	    push (@nl, $host);
+	}
+    }
+
+    $self->error ("No node matches $rx") unless (@nl);
+    return @nl;
+}
+
+sub cachedir {
+    my ($self, $node) = @_;
+    my $basedir = $self->option("cachedir");
+    my $cachedir = $basedir;
+    if ($self->option('use_fqdn') and $node =~ m{\.(.*)}) {
+	# break out hosts into subdirectories based on domain
+	# so long as there are less than 30,000 hosts per domain,
+	# this should give sufficient hashing to avoid any problems
+	# with directory size.
+	$cachedir .= "/$1";
+    }
+    $cachedir .= "/$node";
+    return $cachedir;
+}
+
+# Returns a hash with the node names given as arguments as keys and
+# the pair { fetch, cachemanager } objects associated to their
+# profiles as values.
+sub fetch_profiles
+{
+    my ($self, @nl) = @_;
+    my %h;
+
+    my $cdb = $self->option (CDBURL);
+    my $prefix = $self->option (PREFIX) || '';
+
+    foreach my $node (@nl) {
+	next if exists $h{node};
+	my $ccmdir = $self->cachedir($node);
+	my $url = "$cdb/$prefix$node.xml";
+	$self->debug (1, "Fetching profile: $url");
+
+        if ((!-d $ccmdir) && !mkpath($ccmdir)) {
+                $self->error("failed to create directory $ccmdir: $!");
+                next;
+        }
+        my $config = "$ccmdir/ccm.conf";
+        if (!open(FILE, ">$config")) {
+                $self->error("failed to create config file $config: $!");
+                next;
+        }
+        print FILE "cache_root $ccmdir\n";
+        close(FILE);
+        # we use CDB_File, since it's the fastest
+        my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE_URL => $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
+	unless ($fh) {
+	    $self->error ("Error creating Fetch object for $url");
+	    $self->{status} = PARTERR_ST;
+	    next;
+	}
+	my @err = $fh->fetchProfile();
+	if ($err[0] != 0) {
+	    $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
+	    next;
+	}
+	my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT});
+	if ($cm) {
+	    my $cfg = $cm->getLockedConfiguration (0);
+	    $h{$node} = { fetch        => $fh,
+			  cachemanager => $cm,
+			  configuration=> $cfg};
+	} else {
+	    $self->error ("Failed to create CacheManager ",
+			  "object for node $node");
+	    $self->{status} = PARTERR_ST;
+	}
+	$self->debug (1, "Inserted structure for $node on fetching structure");
+    }
+    return %h;
+}
+
+# Adds extra options to aii-dhcp configuration. This is the only part
+# of the core AII that has to explicitly look at the profile's values.
+# This part may be removed at a later version, when we have a proper
+# DHCP plug-in or component.
+sub dhcpcfg
+{
+    my ($self, $node, $cmd, $st, $mac) = @_;
+
+    my @dhcpop = (DHCPCFG, "--$cmd", "$node", MAC, "$mac");
+    if ("$cmd" eq 'configure') {
+	my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
+	## check for tftpserver option
+	push(@dhcpop,'--tftpserver',$opts->{tftpserver})
+	  if (exists($opts->{tftpserver}));
+	## check for addoptions
+	## addoptions is a single string
+	push(@dhcpop,'--addoptions','\''.$opts->{addoptions}.'\'')
+	  if (exists($opts->{addoptions}));
+    }
+    # Pass debug option
+    if ( $self->option('debug') ) {
+      push(@dhcpop,'--debug', $self->option('debug'));
+    } 
+    return @dhcpop;
+}
+
+# Runs aii-dhcp on the configuration object received as argument. It
+# uses the MAC of the first card marked with "boot"=true.
+sub dhcp
+{
+    my ($self, $node, $st, $cmd) = @_;
+
+    return unless $st->{configuration}->elementExists (DHCPPATH);
+    my $mac;
+    my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
+    foreach my $cfg (values (%$cards)) {
+	if ($cfg->{boot}) {
+	    $cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i;
+	    $mac = $1;
+	    last;
+	}
+    }
+
+    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
+    $self->debug (4, "Going to run: " .join (" ",@commands));
+    execute (\@commands) unless $self->option ('noaction');
+    if ($?) {
+	$self->error ("Error when configuring $node");
+	$self->{status} = PARTERR_ST;
+    }
+}
+
+# Runs the Install method of the NBP plugins of the nodes given as
+# arguments.
+sub install
+{
+    my ($self, %nl) = @_;
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(4, "Would install: $node");
+            next;
+        }
+	$self->debug (1, "Installing: $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for install");
+	    exit(1);
+	}
+	$self->run_plugin ($st, NBP, INSTALLMETHOD);
+    }
+}
+
+# Runs the Status method of the NBP plugins of the nodes given as
+# arguments.
+sub status
+{
+    my ($self, %nl) = @_;
+    while (my ($node, $st) = each (%nl)) {
+	$self->debug (1, "Showing the state of $node");
+	$self->run_plugin ($st, NBP, STATUSMETHOD);
+    }
+}
+
+# Runs the Boot method of the NBP plugins of the nodes given as
+# arguments.
+sub boot
+{
+    my ($self, %nl) = @_;
+
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(1, "Would set to boot: $node");
+            next;
+        }
+	$self->debug (1, "Booting: $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for boot");
+	    exit(1);
+	}
+	$self->run_plugin ($st, NBP, BOOTMETHOD);
+    }
+}
+
+# Runs the Firmware method of the NBP plugins of the nodes given as
+# arguments.
+sub firmware
+{
+    my ($self, %nl) = @_;
+
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(1, "Would set to firmware: $node");
+            next;
+        }
+	$self->debug (1, "Updating firmware of $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for firmware");
+	    exit(1);
+	}
+	$self->run_plugin ($st, NBP, FIRMWAREMETHOD);
+    }
+}
+
+# Runs the Livecd method of the NBP plugins of the nodes given as 
+# arguments
+sub livecd
+{
+    my ($self, %nl) = @_;
+    while (my ($node, $st) = each (%nl))  {
+	if ($self->option('noaction')) {
+	    $self->debug(1, "Would set to livecd: $node");
+	    next;
+	}
+	$self->debug(1, "Setting to livecd: $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for livecd");
+	    exit(1);
+	}
+	$self->run_plugin($st, NBP, LIVECDMETHOD);
+    }
+}
+
+# Runs the Remove method of the NBP plugins of the nodes given as
+# arguments.
+sub remove
+{
+    my ($self, %nl) = @_;
+
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(1, "Would remove: $node");
+            next;
+        }
+	$self->debug (1, "Removing $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for remove");
+	    exit(1);
+	}
+
+	$self->iter_plugins($st, REMOVEMETHOD);
+
+	$self->remove_cache_node($node);
+    }
+}
+
+# Runs the Rescue method of the NBP plugins of the nodes given as
+# arguments.
+sub rescue
+{
+    my ($self, %nl) = @_;
+
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(1, "Would rescue: $node");
+            next;
+        }
+	$self->debug (2, "Rescueing $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for rescue");
+	    exit(1);
+	}
+	$self->run_plugin ($st, NBP, RESCUEMETHOD);
+    }
+}
+
+# Configures DISCOVERY, OSINSTALL and NBP on the nodes received as
+# arguments.
+sub configure
+{
+    my ($self, %nl) = @_;
+
+    while (my ($node, $st) = each (%nl)) {
+        if ($self->option('noaction')) {
+            $self->debug(1, "Would configure: $node");
+            next;
+        }
+    	my $when = time();
+	$self->debug (2, "Configuring $node");
+	my $lock = $self->lock_node($node);
+	if (! $lock) {
+	    $self->error("aii-shellfe: couldn't acquire lock on $node for configure");
+	    exit(1);
+	}
+	$self->iter_plugins($st, CONFIGURE);
+	$self->set_cache_time($node, $when);
+    }
+}
+
+sub get_cache_time {
+    my ($self, $node) = @_;
+
+    my $cachedir = $self->cachedir($node);
+    return (stat("$cachedir/aii-configured"))[9] || 0;
+}
+
+sub set_cache_time {
+    my ($self, $node, $when) = @_;
+    my $cachedir = $self->cachedir($node);
+    if (!open(TOUCH, ">$cachedir/aii-configured")) {
+	$self->error("aii-shellfe: failed to update state for $node: $!");
+    }
+    close(TOUCH);
+}
+
+sub remove_cache_node {
+    my ($self, $node) = @_;
+    my $cachedir = $self->cachedir($node);
+    rmtree($cachedir);
+}
+
+# Runs all the commands
+sub cmds
+{
+    my $self = shift;
+
+    my $filecmds = {};
+    my $file = $self->option("file");
+    if ($file) {
+        my @content = ();
+        if ($file eq '-') {
+            @content = <>;
+        } else {
+            if (!open(FILE, $file)) {
+                $self->error("cannot open $file: $!");
+                return 0;
+            }
+            @content = <FILE>;
+            close(FILE);
+        }
+        foreach my $line (@content) {
+            chomp($line);
+            $line =~ s{#.*}{};
+            next if (!$line || $line =~ m{^\s*$});
+            my ($host, $cmd, $arg) = split(/,/, $line, 3);
+            $filecmds->{$cmd} ||= {};
+            $filecmds->{$cmd}->{$host} = $arg;
+        }
+    }
+
+    foreach my $cmd (COMMANDS) {
+	my $rx;
+	my @nl = ();
+	@nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
+	  if ($rx = $self->option ($cmd));
+        if (exists $filecmds->{$cmd}) {
+            push(@nl, keys %{$filecmds->{$cmd}});
+        }
+	$self->debug (2, "Nodes for $cmd: ", join ("\t", @nl));
+	push (@nl, $self->filenodelist ($rx, $self->option ('use_fqdn')))
+	  if ($rx = $self->option ($cmd."list"));
+	$self->debug (2, $cmd."list: ", join ("\t", @nl));
+	if (@nl) {
+	    my %h = $self->fetch_profiles (@nl);
+	    $self->$cmd (%h);
+	    $self->info (scalar (keys (%h)) . " to $cmd");
+	}
+    }
+
+    # Notify doesn't behave like other options, as it needs to
+    # discover by itself what nodes it must operate on.
+    if ($self->option (NOTIFY)) {
+	$self->notify;
+    }
+}
+
+sub finish {
+    my ($self) = @_;
+    $self->debug(5, "closing down");
+    foreach my $plugin (keys %{$self->{plugins}}) {
+	if ($self->{plugins}->{$plugin}->can("finish")) {
+	    $self->debug(5, "invoking finish for $plugin");
+	    $self->{plugins}->{$plugin}->finish();
+	}
+    }
+}
+
+package main;
+
+$ENV{PATH} = join (":", qw (/bin /usr/bin /usr/sbin /sbin));
+
+use LC::Exception qw (SUCCESS throw_error);
+
+our $this_app = aii_shellfev2->new ($0, @ARGV) or exit 1;
+our %SIG;
+our $ec = LC::Exception::Context->new->will_store_errors;
+
+$this_app->cmds;
+$this_app->finish;
+exit ($this_app->{status});

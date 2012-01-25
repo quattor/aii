@@ -1,0 +1,23 @@
+#
+# aii-nbp.conf		aii-nbp configuration file
+#
+# Enrico Ferro <enrico.ferro@pd.infn.it>
+# Rafael A. Garcia Leiva <angel.leiva@uam.es>
+#
+# Copyright (c) 2003 EU DataGrid.
+# For license conditions see http://www.eu-datagrid.org/license.html
+#
+
+# Directory where the NBP configuration files have to be stored
+# (default: /osinstall/nbp/pxelinux.cfg).
+# nbpdir = /osinstall/nbp/pxelinux.cfg
+
+# Directory where there the template files are present
+# (default: @QTTR_LIB@/aii/nbp).
+# templatedir = @QTTR_LIB@/aii/nbp
+
+# Generic "boot from local disk" NBP configuration file
+# (default: localboot.cfg). It must be present in
+# @QTTR_LIB@/aii/nbp. It is "symlinked" by aii-nbp into nbpdir
+# bootconfig = localboot.cfg
+
