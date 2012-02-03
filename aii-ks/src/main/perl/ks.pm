@@ -106,7 +106,7 @@ use constant QUATTOR_LIST	=> qw (perl-Compress-Zlib
 # Packages containing kernels. kernel-xen is not listed here, as it
 # depends on different versions of mkinitrd and e2fsprogs, and
 # installing them may cause a dependency hell.
-use constant KERNELLIST		=> qw (kernel kernel-smp);
+use constant KERNELLIST		=> qw (kernel kernel-firmware kernel-smp);
 
 # Opens the kickstart file and sets its handle as the default.
 sub ksopen
