@@ -6,7 +6,7 @@
   <artifactId>ks</artifactId>
 
   <packaging>pom</packaging>
-  <version>2.0.0</version>
+  <version>2.0.1</version>
   <name>build-profile</name>
   <url>http://quattor.org/cfg-modules/</url>
 
@@ -34,15 +34,22 @@
 
   <contributors>
     <contributor>
-      <name>Jane SMITH</name>
-      <email>smith@example.com</email>
+      <name>Michel Jouvin</name>
+      <email>jouvin@lal.in2pr.fr</email>
       <roles>
 	<role>author</role>
       </roles>
     </contributor>
     <contributor>
-      <name>Joe DOE</name>
-      <email>doe@example.org</email>
+      <name>Gabor Gombas</name>
+      <email>gabor.gombas@morganstanley.com</email>
+      <roles>
+	<role>author</role>
+      </roles>
+    </contributor>
+    <contributor>
+      <name>Ben Jones</name>
+      <email>ben.jones@morganstanley.com</email>
       <roles>
 	<role>author</role>
       </roles>
