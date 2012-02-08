@@ -331,7 +331,7 @@ use LC::Process qw (execute);
 use LWP::UserAgent;
 use XML::Simple;
 use EDG::WP4::CCM::Fetch;
-use File::Path qw(mkpath);
+use File::Path qw(mkpath rmtree);
 use DB_File;
 
 our $profiles_info = undef;
