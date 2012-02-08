@@ -1,4 +1,7 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project
+    xmlns="http://maven.apache.org/POM/4.0.0"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -12,8 +15,8 @@
 
   <parent>
     <groupId>org.quattor.maven</groupId>
-    <artifactId>maven</artifactId>
-    <version>1.10</version>
+    <artifactId>build-profile</artifactId>
+    <version>1.14</version>
   </parent>
 
   <licenses>
@@ -59,27 +62,10 @@
 
     <build-info>
 # 
-# ${artifactId}, ${version}, ${maven.build.timestamp}
+# ${project.artifactId}, ${project.version}, ${maven.build.timestamp}
 #
 </build-info>
   </properties>  
-
-  <dependencies>
-    <dependency>
-      <groupId>org.quattor.maven</groupId>
-      <artifactId>assemblies</artifactId>
-      <type>tar.gz</type>
-      <version>1.10</version>
-      <classifier>assemblies</classifier>
-    </dependency>
-    <dependency>
-      <groupId>org.quattor.maven</groupId>
-      <artifactId>build-scripts</artifactId>
-      <type>tar.gz</type>
-      <version>1.10</version>
-      <classifier>scripts</classifier>
-    </dependency>
-  </dependencies>
 
   <repositories>
     <repository>
@@ -132,77 +118,6 @@
 	<plugins>
 
 	  <plugin>
-	    <groupId>org.quattor.maven</groupId>
-	    <artifactId>maven-quattor-build-plugin</artifactId>
-	    <executions>
-	      <execution>
-		<id>set-build-properties</id>
-		<goals>
-		  <goal>set-build-properties</goal>
-		</goals>
-	      </execution>
-	    </executions>
-	  </plugin>
-
-	  <plugin>
-	    
-	    <groupId>org.apache.maven.plugins</groupId>
-	    <artifactId>maven-resources-plugin</artifactId>
-
-	    <executions>
-	      
-	      <execution>
-		<id>filter-pan-sources</id>
-		<phase>process-sources</phase>
-		<goals>
-		  <goal>copy-resources</goal>
-		</goals>
-		<configuration>
-		  <encoding>UTF-8</encoding>
-		  <delimiters>
-		    <delimiter>${*}</delimiter>
-		  </delimiters>
-		  <outputDirectory>${project.build.directory}/pan/</outputDirectory>
-		  <resources>
-		    <resource>
-		      <directory>src/main/pan</directory>
-		      <filtering>true</filtering>
-		    </resource>
-		  </resources>
-		</configuration> 
-	      </execution>
-
-	    </executions>
-	    
-	  </plugin>
-	  
-
-	  <plugin>
-	    
-	    <groupId>org.quattor.pan</groupId>
-	    <artifactId>maven-panc-plugin</artifactId>
-	    <version>8.4.5</version>
-
-	    <executions>
-	      
-	      <execution>
-		<id>check-generated-pan-syntax</id>
-		<phase>compile</phase>
-		<goals>
-		  <goal>check-syntax</goal>
-		</goals>
-		<configuration>
-		<sourceDirectory>${basedir}/target/pan</sourceDirectory>
-		</configuration> 
-	      </execution>
-
-	    </executions>
-	    
-	  </plugin>
-	  
-
-	  <plugin>
-	    
 	    <groupId>org.apache.maven.plugins</groupId>
 	    <artifactId>maven-resources-plugin</artifactId>
 
@@ -256,91 +171,49 @@
 		</configuration> 
 	      </execution>
 
-	    </executions>
-	    
-	  </plugin>
-
-	  
-	  <plugin>
-	    <artifactId>maven-dependency-plugin</artifactId>
-	    
-	    <executions>
-	      
 	      <execution>
-		<id>unpack-assemblies-scripts</id>
+		<id>filter-pan -sources</id>
 		<phase>process-sources</phase>
 		<goals>
-		  <goal>unpack</goal>
+		  <goal>copy-resources</goal>
 		</goals>
 		<configuration>
-		  <artifactItems>
-		    <artifactItem>
-		      <groupId>org.quattor.maven</groupId>
-		      <artifactId>assemblies</artifactId>
-		      <type>tar.gz</type>
-		      <classifier>assemblies</classifier>
-		    </artifactItem>
-		    <artifactItem>
-		      <groupId>org.quattor.maven</groupId>
-		      <artifactId>build-scripts</artifactId>
-		      <type>tar.gz</type>
-		      <classifier>scripts</classifier>
-		    </artifactItem>
-		  </artifactItems>
+		  <encoding>UTF-8</encoding>
+		  <delimiters>
+		    <delimiter>${*}</delimiter>
+		  </delimiters>
+		  <outputDirectory>${project.build.directory}/pan/</outputDirectory>
+		  <resources>
+		    <resource>
+		      <directory>src/main/pan</directory>
+		      <filtering>true</filtering>
+		    </resource>
+		  </resources>
 		</configuration>
 	      </execution>
-	      
 	    </executions>
-	  </plugin>
-	  
-
-	  <plugin>
-	    <groupId>org.codehaus.mojo</groupId>
-	    <artifactId>exec-maven-plugin</artifactId>
-	    
-	    <executions>
-	      
-	      <execution>
-	  	<id>pod2man</id>
-	  	<phase>compile</phase>
-	  	<goals>
-	  	  <goal>exec</goal>
-	  	</goals>
-	  	<configuration>
-	  	  <executable>target/dependency/build-scripts/pod2man.pl</executable>
-	  	  <workingDirectory>${basedir}</workingDirectory>
-	  	  <arguments>
-	  	    <argument>${project.version}</argument>
-	  	  </arguments>
-	  	</configuration>
-	      </execution>
-	      
-	    </executions>
-	    
 	  </plugin>
 
-	  <plugin>
-	    <artifactId>maven-assembly-plugin</artifactId>
-	    <extensions>true</extensions>
-	    
-	    <executions>
-	      
-	      <execution>
-		<id>tarballs</id>
-		<phase>package</phase>
-		<goals>
-		  <goal>single</goal>
-		</goals>
-		<configuration>
-		  <descriptors>
-		    <descriptor>target/dependency/assemblies/bin.xml</descriptor>
-		  </descriptors>
-		</configuration>
-	      </execution>
-	      
-	    </executions>
-	    
-	  </plugin>
+          <plugin>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <extensions>true</extensions>
+            
+            <executions>
+              
+              <execution>
+                <id>tarballs</id>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration combine.self="override">
+                  <descriptor>target/dependency/assemblies/bin.xml</descriptor>
+                </configuration>
+              </execution>
+              
+            </executions>
+            
+          </plugin>
 
 	</plugins>
       </build>
@@ -362,18 +235,18 @@
 	  <configuration>
 	    <version>${no-snapshot-version}</version>
 	    <release>${RELEASE}</release>
-	    <summary>aii-${artifactId}</summary>
-	    <name>aii-${artifactId}</name>
+	    <summary>aii-${project.artifactId}</summary>
+	    <name>aii-${project.artifactId}</name>
 	    <group>Quattor</group>
 	    <packager>Quattor</packager>
 	    <vendor>Quattor</vendor>
 	    <copyright>${license-url}</copyright>
 	    <url>${project.url}</url>
 	    <provides>
-	      <provide>aii-${artifactId}</provide>
+	      <provide>aii-${project.artifactId}</provide>
 	    </provides>
 	    <needarch>noarch</needarch>
-	    <description>${name}</description>
+	    <description>${project.name}</description>
 	    <requires>
 	      <require>ncm-ncd</require>
 	      <require>libuser</require>
@@ -401,7 +274,7 @@
 	      </mapping>
 
 	      <mapping>
-		<directory>/usr/share/doc/aii-${artifactId}-${project.version}</directory>
+		<directory>/usr/share/doc/aii-${project.artifactId}-${project.version}</directory>
 		<filemode>644</filemode>
 		<username>root</username>
 		<groupname>root</groupname>
@@ -457,17 +330,3 @@
 
 
 </project>
-
-
-<!-- <assembly> -->
-<!--   <id>bin</id> -->
-<!--   <fileSets> -->
-<!--     <fileSet> -->
-<!--       <directory>${basedir}</directory> -->
-<!--       <outputDirectory>share/doc/aii-${artifactId}-${version}</outputDirectory> -->
-<!--       <includes> -->
-<!-- 	<include>ChangeLog</include> -->
-<!--       </includes> -->
-<!--     </fileSet> -->
-<!--   </fileSets> -->
-<!-- </assembly> -->
