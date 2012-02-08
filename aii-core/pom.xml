@@ -125,15 +125,7 @@
 	      
 	      <execution>
 		<id>filter-perl-sources</id>
-		<phase>process-sources</phase>
-		<goals>
-		  <goal>copy-resources</goal>
-		</goals>
 		<configuration>
-		  <encoding>UTF-8</encoding>
-		  <delimiters>
-		    <delimiter>${*}</delimiter>
-		  </delimiters>
 		  <outputDirectory>${project.build.directory}/lib/perl</outputDirectory>
 		  <resources>
 		    <resource>
@@ -171,26 +163,6 @@
 		</configuration> 
 	      </execution>
 
-	      <execution>
-		<id>filter-pan -sources</id>
-		<phase>process-sources</phase>
-		<goals>
-		  <goal>copy-resources</goal>
-		</goals>
-		<configuration>
-		  <encoding>UTF-8</encoding>
-		  <delimiters>
-		    <delimiter>${*}</delimiter>
-		  </delimiters>
-		  <outputDirectory>${project.build.directory}/pan/</outputDirectory>
-		  <resources>
-		    <resource>
-		      <directory>src/main/pan</directory>
-		      <filtering>true</filtering>
-		    </resource>
-		  </resources>
-		</configuration>
-	      </execution>
 	    </executions>
 	  </plugin>
 
@@ -202,12 +174,10 @@
               
               <execution>
                 <id>tarballs</id>
-                <phase>package</phase>
-                <goals>
-                  <goal>single</goal>
-                </goals>
                 <configuration combine.self="override">
-                  <descriptor>target/dependency/assemblies/bin.xml</descriptor>
+		  <descriptors>
+		    <descriptor>target/dependency/assemblies/bin.xml</descriptor>
+		  </descriptors>
                 </configuration>
               </execution>
               
@@ -221,7 +191,6 @@
 
   </profiles>
 
-
   <build>
 
     <pluginManagement>
@@ -233,23 +202,14 @@
 	  <artifactId>rpm-maven-plugin</artifactId>
 
 	  <configuration>
-	    <version>${no-snapshot-version}</version>
-	    <release>${RELEASE}</release>
 	    <summary>aii-${project.artifactId}</summary>
 	    <name>aii-${project.artifactId}</name>
-	    <group>Quattor</group>
-	    <packager>Quattor</packager>
-	    <vendor>Quattor</vendor>
-	    <copyright>${license-url}</copyright>
-	    <url>${project.url}</url>
 	    <provides>
 	      <provide>aii-${project.artifactId}</provide>
 	    </provides>
 	    <needarch>noarch</needarch>
-	    <description>${project.name}</description>
 	    <requires>
 	      <require>ncm-ncd</require>
-	      <require>libuser</require>
 	      <require>aii-server</require>
 	      <require>perl-CDB_File</require>
 	      <require>ccm >= 2.3.0</require>
