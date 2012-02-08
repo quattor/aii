@@ -882,7 +882,7 @@ sub fetch_profiles
 	    next;
 	}
 	my @err = $fh->fetchProfile();
-	if ($err[0] != 0) {
+	if ($err[0] != SUCCESS) {
 	    $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
 	    next;
 	}
