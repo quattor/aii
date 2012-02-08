@@ -706,6 +706,7 @@ sub iter_plugins {
 	    $self->run_plugin($st, $path, $hook);
 	}
     }
+
 }
 
 sub configure_notified
@@ -1067,7 +1068,7 @@ sub remove
 	}
 
 	$self->iter_plugins($st, REMOVEMETHOD);
-
+	$self->dhcp ($node, $st, 'remove') unless $self->option (NODHCP);
 	$self->remove_cache_node($node);
     }
 }
@@ -1109,9 +1110,10 @@ sub configure
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
 	    $self->error("aii-shellfe: couldn't acquire lock on $node for configure");
-	    exit(1);
+	    next;
 	}
 	$self->iter_plugins($st, CONFIGURE);
+	$self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
 	$self->set_cache_time($node, $when);
     }
 }
