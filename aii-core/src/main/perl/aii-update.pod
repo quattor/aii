@@ -1,8 +1,20 @@
-=pod
 # ${license-info}
 # ${developer-info
 # ${author-info}
 # ${build-info}
+
+=pod
+
+=head1 AII-update
+
+This manual page describes the differences between AII versions 1 and 2.
+
+=head2 What is new?
+
+AII was completely redesigned to make it more flexibile, maintainable
+and more robust. New features include a plugin and hooks framework,
+allowing for the use of different network boot or OS install
+distributions. Via the L<ncm-lib-blockdevices(@MANSECT@)> helper
 library, complex block device configurations are supported.
 
 These changes are described below in more detail.

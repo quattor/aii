@@ -1,10 +1,22 @@
-=pod
 # ${license-info}
 # ${developer-info
 # ${author-info}
 # ${build-info}
-from the core Kickstart file generation, helps to keep the latter
-clean and easy to maintain.
+
+=pod
+
+=head1 Hooks for customizing kickstart creation on AII
+
+The generation of the Kickstart configuration file may be customized
+via C<hooks>. Hooks are a sort of components which are executed from
+the Kickstart plugin. 
+
+Using hooks allows for extending the default generation of the
+Kickstart file. It offers flexibility to implement new features or
+site-specific configuration on a per-user or per-site basis. Apart
+from improved flexibility, separating the implementation of specific
+features from the core Kickstart file generation, helps to keep the
+latter clean and easy to maintain.
 
 The concept of hooks is supported by the new Kickstart generator
 L<aii-ks(8)>, but can be used in the exact same way by any other
