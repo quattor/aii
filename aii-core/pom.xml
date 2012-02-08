@@ -35,16 +35,31 @@
   </developers>
 
   <contributors>
+    <!-- Anyone with more than 10 commits is here -->
     <contributor>
-      <name>Jane SMITH</name>
-      <email>smith@example.com</email>
+      <name>Michel Jouvin</name>
+      <email>jouvin@lal.in2p3.fr</email>
       <roles>
 	<role>author</role>
       </roles>
     </contributor>
     <contributor>
-      <name>Joe DOE</name>
-      <email>doe@example.org</email>
+      <name>Ben Jones</name>
+      <email>Ben.Jones@morganstanley.com</email>
+      <roles>
+	<role>author</role>
+      </roles>
+    </contributor>
+    <contributor>
+      <name>Gabor Gombas</name>
+      <email>Gabor.Gombas@morganstanley.com</email>
+      <roles>
+	<role>author</role>
+      </roles>
+    </contributor>
+    <contributor>
+      <name>Nick Williams</name>
+      <email>Nick.Williams@morganstanley.com</email>
       <roles>
 	<role>author</role>
       </roles>
