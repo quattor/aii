@@ -327,7 +327,7 @@ use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
 use EDG::WP4::CDBSYNC::NCL;
 use LC::Exception qw (SUCCESS throw_error);
-use LC::Process qw (execute);
+use CAF::Process;
 use LWP::UserAgent;
 use XML::Simple;
 use EDG::WP4::CCM::Fetch;
@@ -947,7 +947,8 @@ sub dhcp
 
     my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
     $self->debug (4, "Going to run: " .join (" ",@commands));
-    execute (\@commands) unless $self->option ('noaction');
+    CAF::Process->new(\@commands, log => $self)->run()
+	unless $self->option ('noaction');
     if ($?) {
 	$self->error ("Error when configuring $node");
 	$self->{status} = PARTERR_ST;
