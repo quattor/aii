@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.14</version>
+    <version>1.15</version>
   </parent>
 
   <licenses>
@@ -72,8 +72,8 @@
   <properties>
 
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <maven.build.timestamp.format>yyyyMMdd.HHmm.ss</maven.build.timestamp.format>
-    <RELEASE>0.${maven.build.timestamp}</RELEASE>
+
+    <RELEASE>1</RELEASE>
 
     <build-info>
 # 
