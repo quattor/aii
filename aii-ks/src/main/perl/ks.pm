@@ -2,11 +2,6 @@
 # ${developer-info
 # ${author-info}
 # ${build-info}
-# File: ks.pm
-# Implementation of ncm-ks
-# Author: Luis Fernando Muñoz Mejías
-# Version: 2.3.0 : 24/06/11 17:00
-#  ** Generated file : do not edit **
 #
 # Note: all methods in this component are called in a
 # $self->$method ($config) way, unless explicitly stated.
@@ -167,7 +162,7 @@ sub ksnetwork
 			      "but no IP given to the interface");
 	    return;
     }
-    my $gw = '--gateway='; 
+    my $gw = '--gateway=';
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
     } elsif ($config->elementExists ("/system/network/default_gateway")) {
@@ -396,7 +391,7 @@ EOF
     kscommands ($config);
 }
 
-# Takes care of the pre-install script, in which the 
+# Takes care of the pre-install script, in which the
 sub pre_install_script
 {
     my ($self, $config) = @_;
@@ -414,7 +409,8 @@ sub pre_install_script
 # /dev/foo5.
 
 # Make sure messages show up on the serial console
-exec >/dev/console 2>&1
+exec >/tmp/pre-log.log 2>&1
+tail -f /tmp/pre-log.log > /dev/console &
 set +x
 
 # Hack for RHEL 6: force re-reading the partition table
@@ -508,7 +504,7 @@ sub ksprint_filesystems
     if ($config->elementExists ("/system/aii/osinstall/ks/clearpart")) {
 	$clear = $config->getElement ("/system/aii/osinstall/ks/clearpart")->getTree;
     }
-	
+
     foreach (@$clear) {
 	my $disk = build ($config, "physical_devs/".$self->escape($_));
 	$disk->clearpart_ks;
@@ -571,7 +567,7 @@ sub kspkglist
 			       rep=>$rep
 			     }) foreach @$archs;
             } else {
-                # New ncm-spma v2.0 schema 
+                # New ncm-spma v2.0 schema
                 while (my ($arch, $rep) = each (%$archs)) {
                    push(@pkgs, { pkg=>"$pn-$v.$arch.rpm", rep=>$rep});
                 }
@@ -647,7 +643,7 @@ sub ksinstall_kernels
 
 # The kernel must be upgraded now. See bugs #5007 and #28380.
 EOF
-	
+
     ksinstall_rpm ($config, KERNELLIST);
 
     # Set the default kernel
@@ -937,6 +933,9 @@ set +x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
 
+exec &>/tmp/post-log.log
+tail -f /tmp/post-log.log > /dev/console &
+
 EOF
 
     $self->kspostreboot_hereopen;
@@ -952,7 +951,7 @@ EOF
     if ($tree->{bootloader_location} eq "mbr") {
 	ksfix_grub;
     }
-    
+
     ## disable services, if any
     if (exists($tree->{disable_service})) {
         ## should be a list of strings
