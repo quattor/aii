@@ -4,12 +4,11 @@ to be used in any production environment.
 This repository will get re-created over and over, and its history
 will change. Just *don't* base any of your work on this.
 
-* TODO Validate the layout
+* DONE Validate the layout
 
-* TODO Move everything to a Maven buildtools-based structure
+* DONE Move everything to a Maven buildtools-based structure
 
-* TODO Push to SF
+** TODO With a top-level POM file, so that we can build everythin in a single command.
 
-While we move to Maven, here is how to build stuff:
+* DONE Push to SF
 
-  make BTDIR=<path-to-your-old-buildtools> <target>
