@@ -165,7 +165,7 @@ can be used.
 
 =item --livecdlist <filename>
 
-Select livecd installation for the hosts listed in <filename>. Hosts have to 
+Select livecd installation for the hosts listed in <filename>. Hosts have to
 be listed one per line. Lines starting with # are comment.
 
 =item --rescue <hostname|regexp>
@@ -454,7 +454,7 @@ sub app_options
 	 DEFAULT => undef },
 
        { NAME    => 'firmware=s',
-	 HELP    => 'Nodes(s) to have their firmware image updated ' . 
+	 HELP    => 'Nodes(s) to have their firmware image updated ' .
                      '(can be a regexp)',
 	 DEFAULT => undef },
 
@@ -474,7 +474,7 @@ sub app_options
        { NAME    => 'cdburl=s',
 	 HELP    => 'URL for CDB location',
 	 DEFAULT => undef },
- 
+
        { NAME    => 'localnclcache=s',
 	 HELP    => 'Local cache for NCL library',
 	 DEFAULT => '/usr/lib/aii/aii_ncl_cache' },
@@ -718,7 +718,7 @@ sub configure_notified
     my $filter = $self->option('filter');
 
     while (my ($node, $time) = each (%h)) {
-        $node =~ s{\.xml$}{}; # the profiles-info is a filename, we want node
+        $node =~ s{\.(?:xml|json)$}{}; # the profiles-info is a filename, we want node
 	if ($filter && $node !~ m{$filter}) {
 	    $self->debug(6, "ignoring $node due to filter");
 	    next;
@@ -795,7 +795,7 @@ sub nodelist
     # allow the nodename to be specified as either simple nodename, or
     # as filename (i.e. .xml). However, to make sure our regexes make
     # sense, we normalize to forget about the .xml for now.
-    $rx =~ s{\.xml$}{}; 
+    $rx =~ s{\.(?:xml|json)$}{};
     my $prefix = $self->option (PREFIX) || '';
 
     if (!$profiles_info) {
@@ -821,7 +821,7 @@ sub nodelist
     $rx .= "($2)" if $fqdn;
     my @nl;
     foreach (@{$profiles_info->{profile}}) {
-	if ($_->{content} =~ m/$prefix($rx)\b/) {
+	if ($_->{content} =~ m/$prefix($rx)\.(?:xml|json)\b/) {
 	    my $host = $1;
 	    $self->debug (4, "Added $host to the list");
 	    push (@nl, $host);
@@ -925,7 +925,7 @@ sub dhcpcfg
     # Pass debug option
     if ( $self->option('debug') ) {
       push(@dhcpop,'--debug', $self->option('debug'));
-    } 
+    }
     return @dhcpop;
 }
 
@@ -1029,7 +1029,7 @@ sub firmware
     }
 }
 
-# Runs the Livecd method of the NBP plugins of the nodes given as 
+# Runs the Livecd method of the NBP plugins of the nodes given as
 # arguments
 sub livecd
 {
