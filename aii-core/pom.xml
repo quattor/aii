@@ -9,7 +9,7 @@
   <artifactId>server</artifactId>
 
   <packaging>pom</packaging>
-  <version>3.0.0-1</version>
+  <version>3.0.1-1</version>
   <name>build-profile</name>
   <url>http://quattor.org/cfg-modules/</url>
 
@@ -26,7 +26,7 @@
       <comments>Copyright (c) Responsible Organization</comments>
     </license>
   </licenses>
-  
+
   <developers>
     <developer>
       <name>Luis Fernando Muñoz Mejías</name>
@@ -76,11 +76,11 @@
     <RELEASE>1</RELEASE>
 
     <build-info>
-# 
+#
 # ${project.artifactId}, ${project.version}, ${maven.build.timestamp}
 #
 </build-info>
-  </properties>  
+  </properties>
 
   <repositories>
     <repository>
@@ -88,7 +88,7 @@
       <url>http://lapp-repo01.in2p3.fr:8081/nexus/content/repositories/releases/</url>
     </repository>
   </repositories>
-  
+
   <profiles>
 
     <profile>
@@ -137,7 +137,7 @@
 	    <artifactId>maven-resources-plugin</artifactId>
 
 	    <executions>
-	      
+
 	      <execution>
 		<id>filter-perl-sources</id>
 		<configuration>
@@ -151,7 +151,7 @@
 		      </includes>
 		    </resource>
 		  </resources>
-		</configuration> 
+		</configuration>
 	      </execution>
 
 	      <execution>
@@ -175,7 +175,7 @@
 		      </includes>
 		    </resource>
 		  </resources>
-		</configuration> 
+		</configuration>
 	      </execution>
 
 	    </executions>
@@ -184,9 +184,9 @@
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
             <extensions>true</extensions>
-            
+
             <executions>
-              
+
               <execution>
                 <id>tarballs</id>
                 <configuration combine.self="override">
@@ -195,9 +195,9 @@
 		  </descriptors>
                 </configuration>
               </execution>
-              
+
             </executions>
-            
+
           </plugin>
 
 	</plugins>
@@ -264,7 +264,7 @@
 		  </source>
 		</sources>
 	      </mapping>
-	      
+
 	      <mapping>
 		<directory>/usr/share/doc/pan</directory>
 		<filemode>644</filemode>
@@ -292,7 +292,7 @@
 		  </source>
 		</sources>
 	      </mapping>
-	      
+
 	    </mappings>
 	  </configuration>
 	</plugin>
