@@ -46,7 +46,7 @@ type structure_ks_ks_info = {
 	"installtype"	: string
 	"installnumber" ? string
 	"lang"		: string = "en_US.UTF-8"
-	# If you use more than one languages, mark the default one with "--default=your_lang"	
+	# If you use more than one languages, mark the default one with "--default=your_lang"
 	"langsupport"	? string [] = list ("en_US.UTF-8")
 	"mouse"		? string
 	"bootproto"	: string with match (SELF, "static|dhcp")
@@ -63,6 +63,8 @@ type structure_ks_ks_info = {
 	"xwindows"	? structure_ks_ksxinfo
 	"disable_service" ? string[]
 	"ignoredisk"    ? string[]
+	# Base packages needed for a Quattor client to run (CAF, CCM...)
+	"base_packages" : string[]
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
@@ -70,6 +72,7 @@ type structure_ks_ks_info = {
 	# post_install, post_reboot and install}. They
 	# are optional.
 	"packages_args" : string[] = list("--ignoremissing","--resolvedeps")
+	"end_script" :  string = ""
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;

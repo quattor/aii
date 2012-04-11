@@ -70,6 +70,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
 	       FORWARDPROXY	=> "forward",
+		 END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
 	   };
 my $localhost = hostname();
 
@@ -81,22 +82,7 @@ use constant   USEMODULE	=> "use " . MODULEBASE;
 use constant   KSDIROPT		=> 'osinstalldir';
 
 # Packages to be installed when setting up Quattor.
-use constant QUATTOR_LIST	=> qw (perl-Compress-Zlib
-				       perl-LC
-				       perl-AppConfig-caf
-				       perl-Proc-ProcessTable
-				       perl-IO-String
-				       perl-CAF
-				       ccm
-				       ncm-template
-				       ncm-ncd
-				       ncm-query
-				       rpmt-py
-				       spma
-				       ncm-spma
-				       cdp-listend
-				       ncm-cdispd
-				       );
+
 
 # Packages containing kernels. kernel-xen is not listed here, as it
 # depends on different versions of mkinitrd and e2fsprogs, and
@@ -305,7 +291,7 @@ EOF
 	print "ignoredisk --drives=",
 	    join (',', @{$tree->{ignoredisk}}), "\n";
     }
-    print "%packages ", join(" ",@{$tree->{packages_opts}}), "\n",
+    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
 
 }
@@ -477,12 +463,14 @@ EOF
 
     ksuserhooks ($config, PREENDHOOK);
 
+    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
+
     print <<EOF;
 
 # De-activate logical volumes. Needed on RHEL6, see:
 # https://bugzilla.redhat.com/show_bug.cgi?id=652417
 lvm vgchange -an
-
+$end
 EOF
 }
 
@@ -748,7 +736,9 @@ sub ksbasepackages
 {
     my $config = shift;
 
-    ksinstall_rpm ($config, QUATTOR_LIST);
+    my $pkgl = $config->getElement("/system/aii/osinstall/ks/base_packages")->getTree();
+
+    ksinstall_rpm ($config, @$pkgl);
 }
 
 sub ksquattor_config
@@ -996,6 +986,9 @@ EOF
     }
 
     ksuserhooks ($config, PREREBOOTHOOK);
+    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
+    print "$end\n";
+
 }
 
 # Closes the Kickstart file and returns everything to its normal
