@@ -13,7 +13,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.15</version>
+    <version>1.16</version>
   </parent>
 
   <developers>
@@ -57,11 +57,11 @@
     <RELEASE>1</RELEASE>
 
     <build-info>
-# 
+#
 # ${project.artifactId}, ${project.version}, ${maven.build.timestamp}
 #
 </build-info>
-  </properties>  
+  </properties>
 
   <dependencies>
     <dependency>
@@ -101,6 +101,12 @@
 	    </provides>
 	  </configuration>
 	</plugin>
+
+	<plugin>
+          <groupId>org.quattor.pan</groupId>
+          <artifactId>panc-maven-plugin</artifactId>
+          <version>9.0.0-RC3</version>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
