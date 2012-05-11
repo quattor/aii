@@ -999,8 +999,8 @@ EOF
 sub ksclose
 {
     my $fh = select;
-    $fh->close();
     select (STDOUT);
+    $fh->close();
 }
 
 # Prints the kickstart file.
