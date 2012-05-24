@@ -949,7 +949,7 @@ sub dhcp
     my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
     $self->debug (4, "Going to run: " .join (" ",@commands));
     my $output;
-    $out = CAF::Process->new(\@commands, log => $self)->output();
+    $output = CAF::Process->new(\@commands, log => $self)->output();
     if ($?) {
 	$self->error("Error when configuring $node: $output");
     }
