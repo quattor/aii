@@ -374,7 +374,13 @@ sub update_dhcp_config_file($) {
         $nodes_regexp .= $node->{NAME} . '|' . $node->{FQDN} . '|';
     }
     $nodes_regexp =~ s/\|$//; # remove last '|'
-    $nodes_regexp = '\\n\s*host\s+(' . $nodes_regexp . ')\s*\{[^}]*\}';
+    ##
+    ## primitive support for if {} else {} parameters host group
+    ## only starting from perl 5.10 can you use recursive regexp
+    ## fro recursive examples, see http://www.perlmonks.org/?node_id=547596 or
+    ## http://stackoverflow.com/questions/133601/can-regular-expressions-be-used-to-match-nested-patterns
+    ##
+    $nodes_regexp = '\\n\s*host\s+(' . $nodes_regexp . ')\s*\{[^{}]*(?:\{[^{}]*\}(?:[^{}]*\{[^{}]*\})?|[^{}]*)[^{}]*\}';
     $text =~ s/$nodes_regexp//gm;
 
     #
@@ -579,7 +585,7 @@ sub new_configure_entry {
     my $host       = shift;
     my $mac        = shift;
     my $tftpserver = shift;
-    my $additional = ($#_>0) ? join(' ', @_) : $_[0];
+    my $additional = join(' ', @_);
 
     my ($fqdn, @all_address, @all_tftp_address);
     my ($item);
@@ -659,6 +665,7 @@ sub new_configure_entry {
                      ST_IP_TFTP => $tftpserver,
                      MORE_OPT   => $additional} );
         $this_app->debug(2, "aii-dhcp: add new entry: host = $host mac = $mac");
+        $this_app->debug(3, "aii-dhcp: add new entry: additional opts -->$additional<--");
     }
 
     return(0);

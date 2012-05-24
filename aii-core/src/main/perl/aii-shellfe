@@ -912,14 +912,14 @@ sub dhcpcfg
     my ($self, $node, $cmd, $st, $mac) = @_;
 
     my @dhcpop = (DHCPCFG, "--$cmd", "$node", MAC, "$mac");
-    if ("$cmd" eq 'configure') {
+    if ("$cmd" eq CONFIGURE) {
 	my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
 	## check for tftpserver option
 	push(@dhcpop,'--tftpserver',$opts->{tftpserver})
 	  if (exists($opts->{tftpserver}));
 	## check for addoptions
 	## addoptions is a single string
-	push(@dhcpop,'--addoptions','\''.$opts->{addoptions}.'\'')
+	push(@dhcpop,'--addoptions',$opts->{addoptions})
 	  if (exists($opts->{addoptions}));
     }
     # Pass debug option
@@ -948,11 +948,16 @@ sub dhcp
 
     my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
     $self->debug (4, "Going to run: " .join (" ",@commands));
-    CAF::Process->new(\@commands, log => $self)->run()
-	unless $self->option ('noaction');
-    if ($?) {
-	$self->error ("Error when configuring $node");
-	$self->{status} = PARTERR_ST;
+    my $output;
+    if($self->option ('noaction')) {
+	$self->debug (4, "Noaction.");
+    } else {
+	$out = CAF::Process->new(\@commands, log => $self)->output();
+	if ($?) {
+	    $self->error("Error when configuring $node: $output");
+	}
+        $self->debug(4,"Output: $output");
+        $self->debug(4,"End output");
     }
 }
 
