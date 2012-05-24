@@ -949,16 +949,12 @@ sub dhcp
     my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
     $self->debug (4, "Going to run: " .join (" ",@commands));
     my $output;
-    if($self->option ('noaction')) {
-	$self->debug (4, "Noaction.");
-    } else {
-	$out = CAF::Process->new(\@commands, log => $self)->output();
-	if ($?) {
-	    $self->error("Error when configuring $node: $output");
-	}
-        $self->debug(4,"Output: $output");
-        $self->debug(4,"End output");
+    $out = CAF::Process->new(\@commands, log => $self)->output();
+    if ($?) {
+	$self->error("Error when configuring $node: $output");
     }
+    $self->debug(4,"Output: $output");
+    $self->debug(4,"End output");
 }
 
 # Runs the Install method of the NBP plugins of the nodes given as
@@ -1213,6 +1209,9 @@ sub finish {
 
 package main;
 
+use strict;
+use warnings;
+use CAF::Object;
 $ENV{PATH} = join (":", qw (/bin /usr/bin /usr/sbin /sbin));
 
 use LC::Exception qw (SUCCESS throw_error);
@@ -1220,6 +1219,8 @@ use LC::Exception qw (SUCCESS throw_error);
 our $this_app = aii_shellfev2->new ($0, @ARGV) or exit 1;
 our %SIG;
 our $ec = LC::Exception::Context->new->will_store_errors;
+$CAF::Object::NoAction = 1 if $this_app->option('noaction');
+
 
 $this_app->cmds;
 $this_app->finish;
