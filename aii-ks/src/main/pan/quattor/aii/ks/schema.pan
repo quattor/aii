@@ -34,6 +34,7 @@ type structure_ks_ksfirewall = {
 # Information needed for creating the Kickstart file
 type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
+	"acklist"	? type_absoluteURI[]
 	"auth"		: string[] = list ("enableshadow", "enablemd5")
 	"bootloader_location" : string = "mbr"
 	"bootloader_append" ? string

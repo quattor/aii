@@ -967,12 +967,10 @@ EOF
         };
     };
 
-    my $ackurl = $config->getElement (ACKURL)->getValue;
     print <<EOF;
 
 chmod +x /etc/rc.d/init.d/ks-post-reboot
 ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
-wget -q --output-document=- '$ackurl'
 EOF
 
     my @acklist;
