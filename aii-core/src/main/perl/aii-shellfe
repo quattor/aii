@@ -266,6 +266,10 @@ profile_prefix to an empty string in the configuration file
 
 The location to cache foreign profiles. This defaults to /tmp/aii.
 
+=item --lockdir <dir>
+
+The location where node lock files are stored. This defaults to /var/lock/quattor.
+
 =back
 
 =head1 CONFIGURATION FILE
@@ -347,7 +351,6 @@ use constant NBP	=> '/system/aii/nbp';
 use constant CDBURL	=> 'cdburl';
 use constant PREFIX	=> 'profile_prefix';
 use constant HOSTNAME	=> '/system/network/hostname';
-use constant LOCKDIR    => '/var/lock/quattor/';
 # we're going to at least deprecate the global lock, but leaving for now just in case
 use constant LOCKFILE	=> '/var/lock/quattor/aii';
 use constant RETRIES	=> 6;
@@ -523,6 +526,10 @@ sub app_options
          HELP    => 'where to cache foreign profiles',
          DEFAULT => "/tmp/aii" },
 
+       { NAME    => 'lockdir=s',
+         HELP    => 'where to store lock files',
+         DEFAULT => "/var/lock/quattor" },
+
 	 # Options for osinstall plug-ins
        { NAME    => 'osinstalldir=s',
 	 HELP    => 'Directory where Kickstart files will be installed',
@@ -607,7 +614,7 @@ sub _initialize
 sub lock_node
 {
     my ($self, $node) = @_;
-    my $lockfile = LOCKDIR . "$node";
+    my $lockfile = $self->option("lockdir") . "/$node";
     my $lock = CAF::Lock->new ($lockfile);
     if ($lock) {
 	$lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
