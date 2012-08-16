@@ -74,6 +74,7 @@ type structure_ks_ks_info = {
 	# are optional.
 	"packages_args" : string[] = list("--ignoremissing","--resolvedeps")
 	"end_script" :  string = ""
+	"part_label" : boolean = false # Does the "part" stanza support the --label option?
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
