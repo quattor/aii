@@ -33,6 +33,11 @@ script will change the PXE state for the node from network boot
 ("install") to local boot ("boot"). This field is set automatically
 using the variables AII_ACK_SRV and AII_ACK_CGI.
 
+=item * acklist : absolute URI[]
+
+An alternative to ackurl, allowing the use of more than one bootservers.
+If acklist is set, then ackurl is not used.
+
 =item * auth : string[]
 
 List of options for authentication. Defaults to ("enableshadow", "enablemd5").
@@ -66,6 +71,10 @@ installation.
 
 Whether an e-mail should be sent to the system administrator upon a
 successful installation. Defaults to false.
+
+=item * installnumber ? string
+
+Installation number used for support purposes.
 
 =item * installtype : string
 
@@ -111,7 +120,7 @@ FTP.
 =item * ignoredisk ? string[]
 
 List of devices that Anaconda will have to skip during the
-installation. List here any gpt-labeled disk you are using.
+installation.
 
 =item * packages : string[]
 
@@ -137,17 +146,34 @@ List of services to be disabled before the reboot, in order to avoid
 nasty behaviour such as, f.i, grabbing lots of RPMs from CERN because
 of Yum.
 
+=item * base_packages ? string[]
+
+Base packages needed for a Quattor client to run (CCM, NCM etc.). These
+packages will be installed during the post reboot phase.
+
 =item * extra_packages ? string[]
 
 List of additional packages needed to have the node running, before
 the SPMA actually runs. For instance, Xen kernels or special mkinitrd
-packages should be placed here.
+packages should be placed here. These packages are installed by
+the post-install script, before rebooting.
 
 =item * packages_args ? string[]
 
 List of switches to add to the kickstart "%packages" line.
 Defaults to "--resolvedeps --ignoremissing"; you probably
 want to keep those in the list.
+
+=item * end_script : string
+
+Closing tag used for Kickstart scripts (usually either empty or "%end"). Early
+Anaconda versions did not have such a closing tag. Later the use of %end became
+optional, and recent Anaconda releases made it mandatory.
+
+=item * part_label: boolean
+
+If set to true, then the "part" stanzas in the kickstart configuration will
+have a "--label" option to set the label of the file system.
 
 =item * firewall
 
