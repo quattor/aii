@@ -874,7 +874,7 @@ if [ -n "\$BOOT_ARRAY" ] ; then
                     s/[0-9]//g'`
         dpart=`echo "\$BOOT_ARRAY" | sed 's!/dev/'\$DISKS'!!g'`
         dpart=`expr \$dpart - 1`
-        eval PART_\$d=\$dpart
+        eval PART_\$DISKS=\$dpart
         ;;
     * )
         DISKS=""
