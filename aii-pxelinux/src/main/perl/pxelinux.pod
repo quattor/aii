@@ -17,7 +17,9 @@ The path to the initrd image to be used for the network boot.
 
 =item * kslocation : absoluteURI
 
-The absolute URL to the kickstart file.
+The absolute URL to the kickstart file. The substring LOCALHOST will be
+replaced with the name of the boot server, which may be useful if there
+are multiple boot servers.
 
 =item * ksdevice : string
 
