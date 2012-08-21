@@ -74,6 +74,7 @@ default $t->{label}
 EOF
 	       );
 
+    $fh->print ("    ipappend 2\n") if $ksdevice eq 'bootif';
     $fh->close();
 }
 

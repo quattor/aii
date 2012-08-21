@@ -23,7 +23,8 @@ The absolute URL to the kickstart file.
 
 The device to be used for grabbing the Kickstart file. Must be either
 C<link> for using the first device with link up, C<eth?> for network
-devices or C<fd> for floppy disks.
+devices, C<fd> for floppy disks or C<bootif> for the device used to
+download the PXE boot loader.
 
 =item * label : string
 
