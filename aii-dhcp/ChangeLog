@@ -1,0 +1,9 @@
+2011-02-25  Gabor Gombas
+
+	* Release: 1.0.1
+	- Use CAF::FileWriter to update dhcpd.conf
+	- Add support for bonding interfaces
+
+2008-01-11  Nick Williams
+
+	* Release: 1.0.0

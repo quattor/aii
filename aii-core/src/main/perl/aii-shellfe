@@ -366,14 +366,6 @@ use constant BOOTMETHOD	=> 'Boot';
 use constant REMOVEMETHOD	=> 'Unconfigure';
 use constant STATUSMETHOD	=> 'Status';
 use constant RESCUEMETHOD	=> 'Rescue';
-# Constants for aii-dhcp. These should be improved, and probably we
-# should get rid of aii-dhcp at all.
-use constant MACADDR	=> '/hardware/cards/nic/eth0/hwaddr';
-use constant HWCARDS	=> '/hardware/cards/nic';
-use constant DHCPCFG	=> "/usr/sbin/aii-dhcp";
-use constant DHCPOPTION => '/system/aii/dhcp/options';
-use constant DHCPPATH	=> '/system/aii/dhcp';
-use constant MAC	=> '--mac';
 use constant FIRMWAREMETHOD     => 'Firmware';
 use constant LIVECDMETHOD       => 'Livecd';
 use constant CAFILE	=> 'ca_file';
@@ -910,60 +902,6 @@ sub fetch_profiles
     return %h;
 }
 
-# Adds extra options to aii-dhcp configuration. This is the only part
-# of the core AII that has to explicitly look at the profile's values.
-# This part may be removed at a later version, when we have a proper
-# DHCP plug-in or component.
-sub dhcpcfg
-{
-    my ($self, $node, $cmd, $st, $mac) = @_;
-
-    my @dhcpop = (DHCPCFG, "--$cmd", "$node", MAC, "$mac");
-    if ("$cmd" eq CONFIGURE) {
-	my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
-	## check for tftpserver option
-	push(@dhcpop,'--tftpserver',$opts->{tftpserver})
-	  if (exists($opts->{tftpserver}));
-	## check for addoptions
-	## addoptions is a single string
-	push(@dhcpop,'--addoptions',$opts->{addoptions})
-	  if (exists($opts->{addoptions}));
-    }
-    # Pass debug option
-    if ( $self->option('debug') ) {
-      push(@dhcpop,'--debug', $self->option('debug'));
-    }
-    return @dhcpop;
-}
-
-# Runs aii-dhcp on the configuration object received as argument. It
-# uses the MAC of the first card marked with "boot"=true.
-sub dhcp
-{
-    my ($self, $node, $st, $cmd) = @_;
-
-    return unless $st->{configuration}->elementExists (DHCPPATH);
-    my $mac;
-    my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
-    foreach my $cfg (values (%$cards)) {
-	if ($cfg->{boot}) {
-	    $cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i;
-	    $mac = $1;
-	    last;
-	}
-    }
-
-    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
-    $self->debug (4, "Going to run: " .join (" ",@commands));
-    my $output;
-    $output = CAF::Process->new(\@commands, log => $self)->output();
-    if ($?) {
-	$self->error("Error when configuring $node: $output");
-    }
-    $self->debug(4,"Output: $output");
-    $self->debug(4,"End output");
-}
-
 # Runs the Install method of the NBP plugins of the nodes given as
 # arguments.
 sub install
@@ -1076,7 +1014,6 @@ sub remove
 	}
 
 	$self->iter_plugins($st, REMOVEMETHOD);
-	$self->dhcp ($node, $st, 'remove') unless $self->option (NODHCP);
 	$self->remove_cache_node($node);
     }
 }
@@ -1121,7 +1058,6 @@ sub configure
 	    next;
 	}
 	$self->iter_plugins($st, CONFIGURE);
-	$self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
 	$self->set_cache_time($node, $when);
     }
 }

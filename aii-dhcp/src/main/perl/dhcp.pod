@@ -1,0 +1,20 @@
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+
+The fields to be filled by the user are:
+
+=over
+
+=item * tftpserver ? string
+
+The IP address of the TFTP server to use.
+
+=item * options ? string{}
+
+Extra DHCP options to send to the host.
+
+=back
+
+=cut
