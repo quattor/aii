@@ -164,11 +164,15 @@ sub pxelink
 	my $dir = $this_app->option (NBPDIR);
 	my $lnname = "$dir/".hexip ($st->{ip});
 	if ($cmd || ! -l $lnname) {
-	    unlink ($lnname);
-	    # This must be stripped to work with chroot'edg
-	    # environments.
-	    $path =~ s{$dir/?}{};
-	    symlink ($path, $lnname);
+	    if ($NoAction) {
+		$this_app->info ("Would symlink $path to $lnname");
+	    } else {
+		unlink ($lnname);
+		# This must be stripped to work with chroot'edg
+		# environments.
+		$path =~ s{$dir/?}{};
+		symlink ($path, $lnname);
+	    }
 	}
     }
     return 0;
@@ -179,17 +183,13 @@ sub Install
 {
     my ($self, $cfg) = @_;
 
-    if ($NoAction) {
-	$self->info ("Would run " . ref ($self) . "::Install");
-	return 1;
-    }
     unless (pxelink ($cfg, INSTALL)==0) {
 	my $h = $cfg->getElement (HOSTNAME)->getValue;
 	my $d = $cfg->getElement (DOMAINNAME)->getValue;
 	$self->error ("Failed to change the status of $h.$d to install");
 	return 0;
     }
-    ksuserhooks ($cfg, INSTALL_HOOK_PATH);
+    ksuserhooks ($cfg, INSTALL_HOOK_PATH) unless $NoAction;
     return 1;
 }
 
@@ -198,17 +198,13 @@ sub Firmware
 {
     my ($self, $cfg) = @_;
 
-    if ($NoAction) {
-	$self->info ("Would run " . ref ($self) . "::Firmware");
-	return 1;
-    }
     unless (pxelink ($cfg, FIRMWARE)==0) {
 	my $h = $cfg->getElement (HOSTNAME)->getValue;
 	my $d = $cfg->getElement (DOMAINNAME)->getValue;
 	$self->error ("Failed to change the status of $h.$d to firmware");
 	return 0;
     }
-    ksuserhooks ($cfg, FIRMWARE_HOOK_PATH);
+    ksuserhooks ($cfg, FIRMWARE_HOOK_PATH) unless $NoAction;
     return 1;
 }
 
@@ -217,17 +213,13 @@ sub Livecd
 {
     my ($self, $cfg) = @_;
 
-    if ($NoAction) {
-	$self->info("Would run " . ref($self) . "::Livecd");
-	return 1;
-    }
     unless (pxelink ($cfg, LIVECD)==0) {
 	my $h = $cfg->getElement (HOSTNAME)->getValue;
 	my $d = $cfg->getElement (DOMAINNAME)->getValue;
 	$self->error("Failed to change the status of $h.$d to livecd");
 	return 0;
     }
-    ksuserhooks ($cfg, LIVECD_HOOK_PATH);
+    ksuserhooks ($cfg, LIVECD_HOOK_PATH) unless $NoAction;
     return 1;
 }
 
@@ -236,17 +228,13 @@ sub Rescue
 {
     my ($self, $cfg) = @_;
 
-    if ($NoAction) {
-	$self->info ("Would run " . ref ($self) . "::Rescue");
-	return 1;
-    }
     unless (pxelink ($cfg, RESCUE)==0) {
 	my $h = $cfg->getElement (HOSTNAME)->getValue;
 	my $d = $cfg->getElement (DOMAINNAME)->getValue;
 	$self->error ("Failed to change the status of $h.$d to rescue");
 	return 0;
     }
-    ksuserhooks ($cfg, RESCUE_HOOK_PATH);
+    ksuserhooks ($cfg, RESCUE_HOOK_PATH) unless $NoAction;
     return 1;
 }
 
@@ -301,12 +289,8 @@ sub Status
 sub Boot
 {
     my ($self, $cfg) = @_;
-    if ($NoAction) {
-	$self->info ("Would run ". ref ($self) ."::Boot");
-	return 1;
-    }
     pxelink ($cfg, BOOT);
-    ksuserhooks ($cfg, BOOT_HOOK_PATH);
+    ksuserhooks ($cfg, BOOT_HOOK_PATH) unless $NoAction;
     return 1;
 }
 
@@ -314,12 +298,6 @@ sub Boot
 sub Configure
 {
     my ($self, $cfg) = @_;
-
-    if ($NoAction) {
-	my $hostname = $cfg->getElement (HOSTNAME)->getValue;
-	$self->info ("Would execute " . ref ($self) . " on $hostname");
-	return 1;
-    }
 
     pxeprint ($cfg);
     pxelink ($cfg);

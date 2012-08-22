@@ -723,10 +723,6 @@ sub configure_notified
 	    next;
 	}
 	if ($self->get_cache_time($node) < $time) {
-            if ($self->option('noaction')) {
-                $self->debug(1, "Would configure (notify): $node");
-                next;
-            }
 	    my $when = time(); # we use a host local time, taken before we fetch
 	    my @nl = $self->nodelist ($node, $self->option('use_fqdn'));
 	    my %hn = eval { $self->fetch_profiles (@nl) };
@@ -908,10 +904,6 @@ sub install
 {
     my ($self, %nl) = @_;
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(4, "Would install: $node");
-            next;
-        }
 	$self->debug (1, "Installing: $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -940,10 +932,6 @@ sub boot
     my ($self, %nl) = @_;
 
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(1, "Would set to boot: $node");
-            next;
-        }
 	$self->debug (1, "Booting: $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -961,10 +949,6 @@ sub firmware
     my ($self, %nl) = @_;
 
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(1, "Would set to firmware: $node");
-            next;
-        }
 	$self->debug (1, "Updating firmware of $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -981,10 +965,6 @@ sub livecd
 {
     my ($self, %nl) = @_;
     while (my ($node, $st) = each (%nl))  {
-	if ($self->option('noaction')) {
-	    $self->debug(1, "Would set to livecd: $node");
-	    next;
-	}
 	$self->debug(1, "Setting to livecd: $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -1002,10 +982,6 @@ sub remove
     my ($self, %nl) = @_;
 
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(1, "Would remove: $node");
-            next;
-        }
 	$self->debug (1, "Removing $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -1014,7 +990,7 @@ sub remove
 	}
 
 	$self->iter_plugins($st, REMOVEMETHOD);
-	$self->remove_cache_node($node);
+	$self->remove_cache_node($node) unless $self->option('noaction');
     }
 }
 
@@ -1025,10 +1001,6 @@ sub rescue
     my ($self, %nl) = @_;
 
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(1, "Would rescue: $node");
-            next;
-        }
 	$self->debug (2, "Rescueing $node");
 	my $lock = $self->lock_node($node);
 	if (! $lock) {
@@ -1046,10 +1018,6 @@ sub configure
     my ($self, %nl) = @_;
 
     while (my ($node, $st) = each (%nl)) {
-        if ($self->option('noaction')) {
-            $self->debug(1, "Would configure: $node");
-            next;
-        }
     	my $when = time();
 	$self->debug (2, "Configuring $node");
 	my $lock = $self->lock_node($node);
@@ -1058,7 +1026,7 @@ sub configure
 	    next;
 	}
 	$self->iter_plugins($st, CONFIGURE);
-	$self->set_cache_time($node, $when);
+	$self->set_cache_time($node, $when) unless $self->option('noaction');
     }
 }
 
