@@ -35,11 +35,15 @@ use constant INSTALL	=> 'install';
 use constant BOOT	=> 'boot';
 use constant RESCUE	=> 'rescue';
 use constant RESCUEBOOT => 'rescueconfig';
+use constant FIRMWARE	=> 'firmware';
+use constant LIVECD	=> 'livecd';
 # Hooks for NBP plug-in
 use constant RESCUE_HOOK_PATH	=> '/system/aii/hooks/rescue';
 use constant INSTALL_HOOK_PATH	=> '/system/aii/hooks/install';
 use constant REMOVE_HOOK_PATH	=> '/system/aii/hooks/remove';
 use constant BOOT_HOOK_PATH	=> '/system/aii/hooks/boot';
+use constant FIRMWARE_HOOK_PATH	=> '/system/aii/hooks/firmware';
+use constant LIVECD_HOOK_PATH	=> '/system/aii/hooks/livecd';
 
 our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -56,6 +60,34 @@ sub filepath
     $this_app->debug(3, "NBP directory = $dir");
     return "$dir/$h.$d.cfg";
 }
+
+# Returns the absolute path of the PXE file to link to
+sub link_filepath
+{
+    my ($cfg, $cmd) = @_;
+
+    my $dir = $this_app->option (NBPDIR);
+
+    my $cfgpath = PXEROOT . "/" . $cmd;
+    if ($cfg->elementExists ($cfgpath)) {
+	my $linkname = $cfg->getElement ($cfgpath)->getValue;
+	return "$dir/$linkname";
+    } elsif ($cmd eq RESCUE) {
+	# Backwards compatibility: use the option set on the command line
+	# if the profile does not define a rescue image
+	$path = $this_app->option (RESCUEBOOT);
+	unless ($path =~ m{^([-.\w]+)$}) {
+	    $this_app->error ("Unexpected RESCUE configuration file");
+	}
+	return "$dir/$1";
+    } else {
+	my $h = $cfg->getElement (HOSTNAME)->getValue;
+	my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	$this_app->debug(3, "No $cmd defined for $h.$d");
+    }
+    return undef;
+}
+
 
 # Prints the PXE configuration file.
 sub pxeprint
@@ -109,14 +141,15 @@ sub pxelink
 	}
 	$path = $1;
 	$this_app->debug (5, "Local booting from $path");
-    } elsif ($cmd eq RESCUE) {
-	$path = $this_app->option (RESCUEBOOT);
-	unless ($path =~ m{^([-.\w]+)$}) {
-	    $this_app->error ("Unexpected RESCUE configuration file");
+    } elsif ($cmd eq RESCUE || $cmd eq LIVECD || $cmd eq FIRMWARE) {
+	$path = link_filepath($cfg, $cmd);
+	if (! -f $path) {
+	    my $h = $cfg->getElement (HOSTNAME)->getValue;
+	    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	    $this_app->error("Missing $cmd config file for $h.$d: $path");
 	    return -1;
 	}
-	$path = $1;
-	$this_app->debug (5, "Rescueing from: $path");
+	$this_app->debug (5, "Using $cmd from: $path");
     } elsif ($cmd eq INSTALL) {
 	$path = filepath ($cfg);
 	$this_app->debug (5, "Installing on $path");
@@ -151,10 +184,50 @@ sub Install
 	return 1;
     }
     unless (pxelink ($cfg, INSTALL)==0) {
-	$self->error ("Failed to change the status to install");
+	my $h = $cfg->getElement (HOSTNAME)->getValue;
+	my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	$self->error ("Failed to change the status of $h.$d to install");
 	return 0;
     }
     ksuserhooks ($cfg, INSTALL_HOOK_PATH);
+    return 1;
+}
+
+# Sets the node's status to firmware
+sub Firmware
+{
+    my ($self, $cfg) = @_;
+
+    if ($NoAction) {
+	$self->info ("Would run " . ref ($self) . "::Firmware");
+	return 1;
+    }
+    unless (pxelink ($cfg, FIRMWARE)==0) {
+	my $h = $cfg->getElement (HOSTNAME)->getValue;
+	my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	$self->error ("Failed to change the status of $h.$d to firmware");
+	return 0;
+    }
+    ksuserhooks ($cfg, FIRMWARE_HOOK_PATH);
+    return 1;
+}
+
+# Sets the node's status to livecd
+sub Livecd
+{
+    my ($self, $cfg) = @_;
+
+    if ($NoAction) {
+	$self->info("Would run " . ref($self) . "::Livecd");
+	return 1;
+    }
+    unless (pxelink ($cfg, LIVECD)==0) {
+	my $h = $cfg->getElement (HOSTNAME)->getValue;
+	my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	$self->error("Failed to change the status of $h.$d to livecd");
+	return 0;
+    }
+    ksuserhooks ($cfg, LIVECD_HOOK_PATH);
     return 1;
 }
 
@@ -168,7 +241,9 @@ sub Rescue
 	return 1;
     }
     unless (pxelink ($cfg, RESCUE)==0) {
-	$self->error ("Failed to change the status to rescue");
+	my $h = $cfg->getElement (HOSTNAME)->getValue;
+	my $d = $cfg->getElement (DOMAINNAME)->getValue;
+	$self->error ("Failed to change the status of $h.$d to rescue");
 	return 0;
     }
     ksuserhooks ($cfg, RESCUE_HOOK_PATH);
@@ -186,7 +261,9 @@ sub Status
     my $d = $cfg->getElement (DOMAINNAME)->getValue;
     my $fqdn = "$h.$d";
     my $boot = $this_app->option (LOCALBOOT);
-    my $rescue = $this_app->option (RESCUE);
+    my $rescue = link_filepath($cfg, RESCUE);
+    my $firmware = link_filepath($cfg, FIRMWARE);
+    my $livecd = link_filepath($cfg, LIVECD);
     foreach my $s (values (%$t)) {
 	next unless exists ($s->{ip});
 	my $ln = hexip ($s->{ip});
@@ -195,14 +272,21 @@ sub Status
 	if (-l "$dir/$ln") {
 	    $since = ctime(lstat("$dir/$ln")->ctime());
 	    my $name = readlink ("$dir/$ln");
-	    if (! -e "$dir/$name") {
+	    my $name_path = "$dir/$name";
+	    if (! -e $name_path) {
 		$st = "broken";
 	    } elsif ($name =~ m{^(?:.*/)?$fqdn\.cfg$}) {
 		$st = "install";
 	    } elsif ($name =~ m{^$boot$}) {
 		$st = "boot";
-	    } else {
+	    } elsif ($firmware && ($name_path =~ m{$firmware})) {
+		$st = "firmware";
+	    } elsif ($livecd && ($name_path =~ m{$livecd})) {
+		$st = "livecd";
+	    } elsif ($rescue && ($name_path =~ m{$rescue})) {
 		$st = "rescue";
+	    } else {
+		$st = "unknown";
 	    }
 	} else {
 	    $st = "undefined";

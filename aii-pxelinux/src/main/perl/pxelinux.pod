@@ -36,6 +36,21 @@ An informative label to be shown at boot time.
 
 Additional kernel parameters.
 
+=item * rescue ? string
+
+Name of the PXE configuration file used for rescue mode. Usually the
+OS version used to build the rescue image matches the OS of the live
+system, to avoid possible compatibility issues.
+
+=item * livecd ? string
+
+Name of the PXE configuration file used to boot a "Live CD" image.
+
+=item * firmware ? string
+
+Name of the PXE configuration used for firmware updates. Useful if some
+firmware cannot be updated from the live system.
+
 =back
 
 =head2 VARIABLES

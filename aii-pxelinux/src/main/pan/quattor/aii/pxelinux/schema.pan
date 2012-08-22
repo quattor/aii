@@ -12,6 +12,9 @@ type structure_pxelinux_pxe_info = {
 	"kslocation"	: type_absoluteURI
 	"label"		: string
 	"append"	? string
+	"rescue"	? string
+	"livecd"	? string
+	"firmware"	? string
 };
 
 bind "/system/aii/nbp/pxelinux" = structure_pxelinux_pxe_info;
