@@ -1,3 +1,8 @@
+2012-09-03  Victor Mendoza
+
+	* Release: 2.0.4
+	- Replace proxy server in install URL only if proxy type is "reverse"
+
 2011-06-24  Michel Jouvin
 
 	* Release: 1.2.4

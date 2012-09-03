@@ -226,12 +226,14 @@ sub kscommands
 
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
-        my ($proxyhost, $proxyport) = proxy($config);
+        my ($proxyhost, $proxyport, $proxytype) = proxy($config);
         if ($proxyhost) {
             if ($proxyport) {
                 $proxyhost .= ":$proxyport";
             }
-            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+            if ($proxytype eq "reverse") {
+                $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+            }
         }
     }
     print <<EOF;
@@ -585,7 +587,7 @@ sub ksinstall_rpm
     my @pkglist = kspkglist ($config, @pkgs);
     my $proxy_opts = "";
 
-    my ($proxyhost, $proxyport) = proxy($config);
+    my ($proxyhost, $proxyport, $proxytype) = proxy($config);
     if ($proxyhost) {
         $proxy_opts = "--httpproxy $proxyhost ";
         if ($proxyport) {
@@ -599,7 +601,7 @@ sub ksinstall_rpm
 
 sub proxy {
     my ($config) = @_;
-    my ($proxyhost, $proxyport);
+    my ($proxyhost, $proxyport, $proxytype);
     if ($config->elementExists (SPMAPROXY)) {
 	my $spma = $config->getElement (SPMA)->getTree;
 	my $proxy_host = $spma->{proxyhost};
@@ -616,8 +618,11 @@ sub proxy {
         if (exists $spma->{proxyport}) {
             $proxyport = $spma->{proxyport};
         }
+        if (exists $spma->{proxytype}) {
+            $proxytype = $spma->{proxytype};
+        }
     }
-    return ($proxyhost, $proxyport);
+    return ($proxyhost, $proxyport, $proxytype);
 }
 
 # Prints the Bash code to install all the kernels specified in the
