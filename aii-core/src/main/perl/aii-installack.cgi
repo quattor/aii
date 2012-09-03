@@ -40,17 +40,18 @@ if (!defined ($ENV{REMOTE_ADDR})) {
 #
 my $packed_address = pack('C4', split(/\./ ,$ENV{REMOTE_ADDR}));
 my $host = gethostbyaddr($packed_address, AF_INET);
-my $cdburl;
+my ($cdburl, $config);
 if ($host eq '') {
     print "[ERROR] aii-installack: invalid hostname ($ENV{REMOTE_ADDR})\n";
     exit 0;
 }
 
 if ($ENV{QUERY_STRING}) {
-	use CGI;
-	my $query = CGI->new;
-	$host = $query->param ('node') if $query->param ('node');
-	$cdburl = $query->param ('cdburl') if $query->param ('cdburl');
+    use CGI;
+    my $query = CGI->new;
+    $host = $query->param ('node') if $query->param ('node');
+    $cdburl = $query->param ('cdburl') if $query->param ('cdburl');
+    $config = $query->param ('bootconf') if $query->param ('bootconf');
 }
 
 
@@ -59,7 +60,7 @@ if ($ENV{QUERY_STRING}) {
 # Run shellfe via sudo
 #
 my @command = ("/usr/bin/sudo", "/usr/sbin/aii-shellfe",
-              "--boot", $host, "--nodhcp", "--noosinstall");
+               "--boot", $host, "--nodhcp", "--noosinstall");
 push (@command, '--cdburl', $cdburl) if $cdburl;
 push (@command, '--bootconfig', $config) if $config;
 if (system (@command)) {
@@ -68,4 +69,3 @@ if (system (@command)) {
     print "[INFO] aii-installack: host '$host' configured " .
           "to boot from local disk\n";
 }
-

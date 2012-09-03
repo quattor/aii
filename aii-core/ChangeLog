@@ -1,3 +1,8 @@
+2012-09-03  Victor Mendoza
+
+	* Release: 3.0.2
+	- $config was missing from aii-installack.cgi
+
 2011-06-24  Michel Jouvin
 
 	* Release: 2.4.6
