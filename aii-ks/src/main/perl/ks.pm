@@ -17,11 +17,9 @@ use EDG::WP4::CCM::Element qw (unescape);
 use NCM::Filesystem;
 use NCM::Partition qw (partition_compare);
 use NCM::BlockdevFactory qw (build);
-use NCM::Check;
 use FileHandle;
 use LC::Exception qw (throw_error);
 use Data::Dumper;
-use NCM::Template;
 use Exporter;
 use CAF::FileWriter;
 use Sys::Hostname;
@@ -88,6 +86,7 @@ use constant   KSDIROPT		=> 'osinstalldir';
 # depends on different versions of mkinitrd and e2fsprogs, and
 # installing them may cause a dependency hell.
 use constant KERNELLIST		=> qw (kernel-firmware kernel kernel-smp);
+
 
 # Opens the kickstart file and sets its handle as the default.
 sub ksopen
@@ -544,7 +543,7 @@ sub kspkglist
 
     my @pkgs = ();
     foreach my $pn (@pkgnames) {
-	my $path = PKG . NCM::Template::escape ($pn);
+	my $path = PKG . __PACKAGE__->escape ($pn);
 	next unless $config->elementExists ($path);
 	my $vers = $config->getElement ($path)->getTree;
 	while (my ($version, $vals) = each (%$vers)) {
