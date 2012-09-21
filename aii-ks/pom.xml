@@ -6,14 +6,14 @@
   <artifactId>ks</artifactId>
 
   <packaging>pom</packaging>
-  <version>2.0.4</version>
+  <version>2.0.5</version>
   <name>build-profile</name>
   <url>http://quattor.org/cfg-modules/</url>
 
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.16</version>
+    <version>1.19</version>
   </parent>
 
   <developers>
@@ -68,14 +68,14 @@
       <groupId>org.quattor.maven</groupId>
       <artifactId>assemblies</artifactId>
       <type>tar.gz</type>
-      <version>1.10</version>
+      <version>1.19</version>
       <classifier>assemblies</classifier>
     </dependency>
     <dependency>
       <groupId>org.quattor.maven</groupId>
       <artifactId>build-scripts</artifactId>
       <type>tar.gz</type>
-      <version>1.15</version>
+      <version>1.19</version>
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
