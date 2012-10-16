@@ -260,10 +260,11 @@ use strict;
 
 our @ISA= qw(CAF::Application CAF::Reporter);
 
-use MSDW::Version
-    'Parallel-Queue' => '1.9.1',
-;
-use Parallel::Queue;
+my $queue;
+eval {
+    require Parallel::Queue;
+    $queue = Parallel::Queue->new();
+};
 
 #
 # Public Methods/Functions for CAF
@@ -635,35 +636,43 @@ if ($local_server) {
 }
 
 if (@remote_servers) {
-    my $q = Parallel::Queue->new();
-    $q->setTrapStdio(1);
-    $q->setList(@remote_servers);
-    $q->setWidth(10);
-    $q->setTimeLimit("1h");
-    $q->setAction(\&run_remotely);
-    my $result = $q->run();
+    if ($queue) {
+        $queue->setTrapStdio(1);
+        $queue->setList(@remote_servers);
+        $queue->setWidth(10);
+        $queue->setTimeLimit("1h");
+        $queue->setAction(\&run_remotely);
+        my $result = $queue->run();
 
-    for my $index ( 0 .. $#remote_servers ) {
-	my $host = $remote_servers[$index];
-	my $status = $result->getStatus($index);
-        foreach my $line ( split(/\n+/,$result->getOutput($index))) {
-            my $h = $host;
-            $h =~ s{.*\@}{}; # remove username: we just care about hostname
-            print "[$h] $line\n";
+        for my $index ( 0 .. $#remote_servers ) {
+            my $host = $remote_servers[$index];
+            my $status = $result->getStatus($index);
+            foreach my $line ( split(/\n+/,$result->getOutput($index))) {
+                my $h = $host;
+                $h =~ s{.*\@}{}; # remove username: we just care about hostname
+                print "[$h] $line\n";
+            }
+            if ($status eq "fail") {
+                $this_app->error("aii-installfe: failed to run "
+                                 . "aii-shellfe remotely on $host");
+                $errcount++;
+            } elsif ($status eq "nofork") {
+                $this_app->error("aii-installfe: failed to fork "
+                                 . " to run aii-shellfe remotely");
+                $errcount++;
+            } elsif ($status eq "notime") {
+                $this_app->error("aii-installfe: ran out of time "
+                                 . "before we could process $host");
+                $errcount++;
+            }
         }
-	if ($status eq "fail") {
-	    $this_app->error("aii-installfe: failed to run "
-			     . "aii-shellfe remotely on $host");
-	    $errcount++;
-	} elsif ($status eq "nofork") {
-	    $this_app->error("aii-installfe: failed to fork "
-			     . " to run aii-shellfe remotely");
-	    $errcount++;
-	} elsif ($status eq "notime") {
-	    $this_app->error("aii-installfe: ran out of time "
-			     . "before we could process $host");
-	    $errcount++;
-	}
+    } else {
+        foreach my $host (@remote_servers) {
+            unless (run_remotely($host)) {
+                $this_app->error("aii-installfe: failed to run on $host");
+                $errcount++;
+            }
+        }
     }
 }
 
