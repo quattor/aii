@@ -16,7 +16,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.23</version>
+    <version>1.22</version>
   </parent>
 
   <licenses>
