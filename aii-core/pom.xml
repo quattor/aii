@@ -275,6 +275,9 @@
 		<sources>
 		  <source>
 		    <location>target/pan</location>
+		    <includes>
+		      <include>**/*</include>
+		    </includes>
 		  </source>
 		</sources>
 	      </mapping>
@@ -289,6 +292,9 @@
 		<sources>
 		  <source>
 		    <location>target/doc/man</location>
+		    <includes>
+		      <include>**/*</include>
+		    </includes>
 		  </source>
 		</sources>
 	      </mapping>
