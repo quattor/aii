@@ -100,11 +100,6 @@
 	  </configuration>
 	</plugin>
 
-	<plugin>
-          <groupId>org.quattor.pan</groupId>
-          <artifactId>panc-maven-plugin</artifactId>
-          <version>9.0.0-RC3</version>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
