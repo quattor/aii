@@ -75,7 +75,7 @@ sub link_filepath
     } elsif ($cmd eq RESCUE) {
 	# Backwards compatibility: use the option set on the command line
 	# if the profile does not define a rescue image
-	$path = $this_app->option (RESCUEBOOT);
+	my $path = $this_app->option (RESCUEBOOT);
 	unless ($path =~ m{^([-.\w]+)$}) {
 	    $this_app->error ("Unexpected RESCUE configuration file");
 	}
@@ -110,7 +110,7 @@ default $t->{label}
 EOF
 	       );
 
-    $fh->print ("    ipappend 2\n") if $ksdevice eq 'bootif';
+    $fh->print ("    ipappend 2\n") if $t->{ksdevice} eq 'bootif';
     $fh->close();
 }
 
