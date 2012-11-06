@@ -10,7 +10,7 @@
 
   <packaging>pom</packaging>
   <version>3.0.2-1</version>
-  <name>build-profile</name>
+  <name>AII server part</name>
   <url>http://quattor.org/cfg-modules/</url>
 
   <parent>

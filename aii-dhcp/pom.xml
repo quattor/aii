@@ -7,7 +7,7 @@
 
   <packaging>pom</packaging>
   <version>1.0.0</version>
-  <name>build-profile</name>
+  <name>AII DHCP config generator</name>
   <url>http://quattor.org/cfg-modules/</url>
 
   <parent>
