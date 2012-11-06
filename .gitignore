@@ -3,3 +3,6 @@ target
 .#*
 *#*
 *.orig
+.prove
+cover_db
+junit_output.xml
