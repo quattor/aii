@@ -68,14 +68,14 @@
       <groupId>org.quattor.maven</groupId>
       <artifactId>assemblies</artifactId>
       <type>tar.gz</type>
-      <version>1.10</version>
+      <version>1.23</version>
       <classifier>assemblies</classifier>
     </dependency>
     <dependency>
       <groupId>org.quattor.maven</groupId>
       <artifactId>build-scripts</artifactId>
       <type>tar.gz</type>
-      <version>1.15</version>
+      <version>1.23</version>
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
