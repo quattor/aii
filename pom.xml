@@ -1,22 +1,40 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
-    http://maven.apache.org/maven-v4_0_0.xsd">
+	 xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	 xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
+			     http://maven.apache.org/maven-v4_0_0.xsd">
 
-    <modelVersion>4.0.0</modelVersion>
-    <groupId>ca.intelliware</groupId>
-    <artifactId>myproject</artifactId>
-    <packaging>pom</packaging>
+  <modelVersion>4.0.0</modelVersion>
+  <groupId>org.quattor</groupId>
+  <artifactId>aii</artifactId>
+  <packaging>pom</packaging>
 
-    <version>3.0.2-SNAPSHOT</version>
+  <parent>
+    <groupId>org.sonatype.oss</groupId>
+    <artifactId>oss-parent</artifactId>
+    <version>7</version>
+  </parent>
+  <distributionManagement>
+    <repository>
+      <id>quattor.releases</id>
+      <name>Releases</name>
+      <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-releases/</url>
+    </repository>
+    <snapshotRepository>
+      <id>quattor.snapshots</id>
+      <name>Snapshots</name>
+      <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-snapshots/</url>
+    </snapshotRepository>
+  </distributionManagement>
 
-    <name>AII</name>
+  <version>3.0.2-SNAPSHOT</version>
 
-    <modules>
-        <module>aii-core</module>
-        <module>aii-dhcp</module>
-	<module>aii-ks</module>
-	<module>aii-pxelinux</module>
-    </modules>
+  <name>AII</name>
+
+  <modules>
+    <module>aii-core</module>
+    <module>aii-dhcp</module>
+    <module>aii-ks</module>
+    <module>aii-pxelinux</module>
+  </modules>
 
 </project>
