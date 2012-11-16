@@ -374,6 +374,14 @@ use constant KEY	=> 'key_file';
 use constant CERT	=> 'cert_file';
 # Option for notification client
 use constant LOCALCACHE => 'localnclcache';
+use constant MACADDR   => '/hardware/cards/nic/eth0/hwaddr';
+use constant HWCARDS   => '/hardware/cards/nic';
+use constant DHCPCFG   => "/usr/sbin/aii-dhcp";
+use constant DHCPOPTION => '/system/aii/dhcp/options';
+use constant DHCPPATH  => '/system/aii/dhcp';
+use constant MAC       => '--mac';
+
+
 
 our @ISA = qw (CAF::Application CAF::Reporter);
 
@@ -697,9 +705,70 @@ sub run_plugin
     }
 }
 
+# Adds extra options to aii-dhcp configuration. This is the only part
+# of the core AII that has to explicitly look at the profile's values.
+# This part may be removed at a later version, when we have a proper
+# DHCP plug-in or component.
+sub dhcpcfg
+{
+    my ($self, $node, $cmd, $st, $mac) = @_;
+
+    my @dhcpop = (DHCPCFG, "--$cmd", $node, MAC, $mac);
+    if ("$cmd" eq CONFIGURE) {
+       my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
+       ## check for tftpserver option
+       push(@dhcpop,'--tftpserver',$opts->{tftpserver})
+         if (exists($opts->{tftpserver}));
+       ## check for addoptions
+       ## addoptions is a single string
+       push(@dhcpop,'--addoptions',$opts->{addoptions})
+         if (exists($opts->{addoptions}));
+    }
+    # Pass debug option
+    if (my $dbg = $self->option('debug') ) {
+	$dbg =~ m{^(\d+)$};
+	push(@dhcpop,'--debug', $1);
+    }
+    return @dhcpop;
+}
+
+# Runs aii-dhcp on the configuration object received as argument. It
+# uses the MAC of the first card marked with "boot"=true.
+sub dhcp
+{
+    my ($self, $node, $st, $cmd) = @_;
+
+    return unless $st->{configuration}->elementExists (DHCPPATH);
+    my $mac;
+    my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
+    foreach my $cfg (values (%$cards)) {
+       if ($cfg->{boot}) {
+           $cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i;
+           $mac = $1;
+           last;
+       }
+    }
+
+    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
+    $self->debug (4, "Going to run: " .join (" ",@commands));
+    my $output;
+    $output = CAF::Process->new(\@commands, log => $self)->output();
+    if ($?) {
+       $self->error("Error when configuring $node: $output");
+    }
+    $self->debug(4,"Output: $output");
+    $self->debug(4,"End output");
+    if ($?) {
+       $self->error("Error when configuring $node: $output");
+    }
+    $self->debug(4,"Output: $output");
+    $self->debug(4,"End output");
+}
+
+
 sub iter_plugins {
     my ($self, $st, $hook) = @_;
-    foreach my $plug ('osinstall', 'nbp', 'discovery') {
+    foreach my $plug (qw(osinstall nbp discovery)) {
 	my $path = "/system/aii/$plug";
 	if (!$self->option("no$plug")) {
 	    $self->run_plugin($st, $path, $hook);
@@ -990,6 +1059,9 @@ sub remove
 	}
 
 	$self->iter_plugins($st, REMOVEMETHOD);
+	if (exists($st->{system}->{aii}->{dhcp})) {
+	    $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
+	}
 	$self->remove_cache_node($node) unless $self->option('noaction');
     }
 }
@@ -1026,6 +1098,9 @@ sub configure
 	    next;
 	}
 	$self->iter_plugins($st, CONFIGURE);
+	if (exists($st->{system}->{aii}->{dhcp})) {
+	    $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
+	}
 	$self->set_cache_time($node, $when) unless $self->option('noaction');
     }
 }
