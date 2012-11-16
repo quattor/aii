@@ -7,5 +7,4 @@
 
 unique template quattor/aii/pxelinux/rpms;
 
-"/software/packages"=pkg_repl("aii-pxelinux","1.1.12-1","noarch");
-
+"/software/packages"=pkg_repl("aii-pxelinux","${no-snapshot-version}-${rpm.release}","noarch");
