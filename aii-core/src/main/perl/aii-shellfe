@@ -350,6 +350,7 @@ use constant OSINSTALL	=> '/system/aii/osinstall';
 use constant NBP	=> '/system/aii/nbp';
 use constant CDBURL	=> 'cdburl';
 use constant PREFIX	=> 'profile_prefix';
+use constant SUFFIX	=> 'profile_format';
 use constant HOSTNAME	=> '/system/network/hostname';
 # we're going to at least deprecate the global lock, but leaving for now just in case
 use constant LOCKFILE	=> '/var/lock/quattor/aii';
@@ -521,6 +522,10 @@ sub app_options
        { NAME    => 'profile_prefix=s',
 	 HELP    => 'Default prefix for the profile name',
 	 DEFAULT => undef },
+
+       { NAME    => 'profile_format=s',
+	 HELP	 => 'Format the profile is encoded in',
+	 DEFAULT => 'xml' },
 
        { NAME    => 'cachedir=s',
          HELP    => 'where to cache foreign profiles',
@@ -862,7 +867,7 @@ sub nodelist
     # allow the nodename to be specified as either simple nodename, or
     # as filename (i.e. .xml). However, to make sure our regexes make
     # sense, we normalize to forget about the .xml for now.
-    $rx =~ s{\.(?:xml|json)$}{};
+    $rx =~ s{\.(?:xml|json)(?:\.gz)?$}{};
     my $prefix = $self->option (PREFIX) || '';
 
     if (!$profiles_info) {
@@ -924,11 +929,29 @@ sub fetch_profiles
 
     my $cdb = $self->option (CDBURL);
     my $prefix = $self->option (PREFIX) || '';
+    my $suffix = $self->option (SUFFIX) || '';
+
+    if ($suffix =~ m{^([-\w\.]*)$}) {
+	$suffix = $1;
+    } else {
+	$self->error ("Invalid suffix for profiles. Leaving");
+	$self->{status} = PARTERR_ST;
+	return ();
+    }
+
+    if ($cdb =~ m{([\w\-\.+]+://[+\w\.\-%?=/:]+)}) {
+	$cdb = $1;
+    } else {
+	$self->error ("Invalid base URL. Leaving");
+	$self->{status} = PARTERR_ST;
+	return ();
+    }
+
 
     foreach my $node (@nl) {
-	next if exists $h{node};
+	next if exists $h{$node};
 	my $ccmdir = $self->cachedir($node);
-	my $url = "$cdb/$prefix$node.xml";
+	my $url = "$cdb/$prefix$node.$suffix";
 	$self->debug (1, "Fetching profile: $url");
 
         if ((!-d $ccmdir) && !mkpath($ccmdir)) {
