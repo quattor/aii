@@ -713,7 +713,7 @@ sub dhcpcfg
 {
     my ($self, $node, $cmd, $st, $mac) = @_;
 
-    my @dhcpop = (DHCPCFG, "--$cmd", $node, MAC, $mac);
+    my @dhcpop = (DHCPCFG, MAC, $mac);
     if ("$cmd" eq CONFIGURE) {
        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
        ## check for tftpserver option
@@ -723,6 +723,9 @@ sub dhcpcfg
        ## addoptions is a single string
        push(@dhcpop,'--addoptions',$opts->{addoptions})
          if (exists($opts->{addoptions}));
+       push(@dhcpop, "--$cmd", $node);
+    } elsif ("$cmd" eq REMOVEMETHOD) {
+	push(@dhcpop, "--remove", $node);
     }
     # Pass debug option
     if (my $dbg = $self->option('debug') ) {
@@ -1059,7 +1062,7 @@ sub remove
 	}
 
 	$self->iter_plugins($st, REMOVEMETHOD);
-	if (exists($st->{system}->{aii}->{dhcp})) {
+	if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
 	    $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
 	}
 	$self->remove_cache_node($node) unless $self->option('noaction');
@@ -1098,7 +1101,7 @@ sub configure
 	    next;
 	}
 	$self->iter_plugins($st, CONFIGURE);
-	if (exists($st->{system}->{aii}->{dhcp})) {
+	if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
 	    $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
 	}
 	$self->set_cache_time($node, $when) unless $self->option('noaction');
