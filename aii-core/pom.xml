@@ -1,7 +1,4 @@
-<project
-    xmlns="http://maven.apache.org/POM/4.0.0"
-    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
   <modelVersion>4.0.0</modelVersion>
 
@@ -9,7 +6,7 @@
   <artifactId>server</artifactId>
 
   <packaging>pom</packaging>
-  <version>3.0.2-SNAPSHOT</version>
+  <version>3.0.2</version>
   <name>AII server part</name>
   <url>http://quattor.org/cfg-modules/</url>
 
@@ -225,7 +222,7 @@
 	      <require>ncm-ncd</require>
 	      <require>aii-server</require>
 	      <require>perl-CDB_File</require>
-	      <require>ccm >= 2.3.0</require>
+	      <require>ccm &gt;= 2.3.0</require>
 	    </requires>
 
 	    <mappings>
