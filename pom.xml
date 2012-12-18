@@ -30,6 +30,12 @@
 
   <name>AII</name>
 
+  <scm>
+    <connection>scm:git:git://github.com/quattor/aii.git</connection>
+    <developerConnection>scm:git:git@github.com:quattor/aii.git</developerConnection>
+    <url>https://github.com/quattor/aii</url>
+  </scm>
+
   <modules>
     <module>aii-core</module>
     <module>aii-dhcp</module>
