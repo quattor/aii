@@ -541,7 +541,7 @@ sub ksinstall_rpm
     my ($config, @pkgs) = @_;
 
     print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
-	" || fail 'Unable to install packages'";
+	" || fail 'Unable to install packages'\n";
 }
 
 sub proxy
@@ -859,8 +859,8 @@ sub yum_install_packages
     my %base = map($_ => 1, @{$config->getElement (BASE_PKGS)->getTree()});
 
     while (my ($pkg, $st) = each(%$t)) {
-	if ($pkg =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkg})) {
-	    my $pkgst = $pkg;
+	my $pkgst = unescape($pkg);
+	if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
 	    while (my ($version, $arch)) {
 		$pkgst .= "-$version";
 		if ($arch) {
