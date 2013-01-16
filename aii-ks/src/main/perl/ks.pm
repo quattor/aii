@@ -825,20 +825,27 @@ installonly_limit=3
 clean_dependencies_on_remove=1
 reposdir=/tmp/aii/yum/repos
 end_of_yum_conf
-
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
 EOF
 
+    my ($phost, $pport, $ptype) = proxy($config);
 
     foreach my $repo (@$repos) {
+	if ($ptype && $ptype eq 'reverse') {
+	    $repo->{protocols}->[0]->{url} =~ s{://.*?/}{$phost:$pport};
+	}
 	print <<EOF;
 [$repo->{name}]
 enabled=1
 baseurl=$repo->{protocols}->[0]->{url}
 name=$repo->{name}
 gpgcheck=0
-
 EOF
+	if ($ptype && $ptype eq 'forward') {
+	    print <<EOF;
+proxy=http://$phost:$pport/
+EOF
+	}
     }
 
     print "end_of_repos\n";
