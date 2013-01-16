@@ -29,7 +29,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (kspkglist kspkgurl ksuserhooks ksinstall_rpm);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
