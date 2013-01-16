@@ -861,10 +861,10 @@ sub yum_install_packages
     while (my ($pkg, $st) = each(%$t)) {
 	my $pkgst = unescape($pkg);
 	if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-	    while (my ($version, $arch)) {
-		$pkgst .= "-$version";
+	    while (my ($version, $arch) = each(%$st)) {
+		$pkgst .= "-" . unescape($version);
 		if ($arch) {
-		    push (@pkgs, map("$pkgst.$_", keys(%$arch)));
+		    push (@pkgs, map("$pkgst.$_", keys(%{$arch->{arch}})));
 		}
 	    }
 	    push (@pkgs, $pkgst);
