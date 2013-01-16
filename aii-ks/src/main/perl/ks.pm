@@ -68,7 +68,8 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
 	       FORWARDPROXY	=> "forward",
-		 END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
+	       END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
+	       BASE_PKGS	=> "/system/aii/osinstall/ks/base_packages",
 	   };
 my $localhost = hostname();
 
