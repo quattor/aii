@@ -583,22 +583,12 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    my @pkglist = kspkglist ($config, @pkgs);
-    my $proxy_opts = "";
-
-    my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-    if ($proxyhost) {
-        $proxy_opts = "--httpproxy $proxyhost ";
-        if ($proxyport) {
-            $proxy_opts .= "--httpport $proxyport ";
-        }
-    }
-    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
-      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
-	foreach @pkglist;
+    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+	" || fail 'Unable to install packages'";
 }
 
-sub proxy {
+sub proxy
+{
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
     if ($config->elementExists (SPMAPROXY)) {
@@ -915,6 +905,73 @@ sed -i '/splashimage/d' /boot/grub/grub.conf
 perl -pi -e 's/hd(\\d+)/"hd".(\$1 > 1 ? 0:\$1)/e' /boot/grub/grub.conf
 
 EOF
+}
+
+
+
+
+sub yum_setup
+{
+    my ($self, $config) = @_;
+
+    my $repos = $config->getElement (REPO)->getTree();
+
+    print <<'EOF';
+mkdir -p /tmp/aii/yum/repos
+cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
+[main]
+cachedir=/var/cache/yum/$basearch/$releasever
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+gpgcheck=1
+plugins=1
+installonly_limit=3
+clean_dependencies_on_remove=1
+reposdir=/tmp/aii/yum/repos
+end_of_yum_conf
+
+cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
+EOF
+
+
+    foreach my $repo (@$repos) {
+	print <<EOF;
+[$repo->{name}]
+enabled=1
+baseurl=$repo->{protocols}->[0]->{url}
+name=$repo->{name}
+gpgcheck=0
+
+EOF
+    }
+
+    print "end_of_repos\n";
+}
+
+sub yum_install_packages
+{
+    my ($self, $config) = @_;
+
+    my @pkgs;
+    my $t = $config->getElement (PKG)->getTree();
+    my %base = map($_ => 1, @{$config->getElement (BASE_PKGS)->getTree()});
+
+    while (my ($pkg, $st) = each(%$t)) {
+	if ($pkg =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkg})) {
+	    my $pkgst = $pkg;
+	    while (my ($version, $arch)) {
+		$pkgst .= "-$version";
+		if ($arch) {
+		    push (@pkgs, map("$pkgst.$_", keys(%$arch)));
+		}
+	    }
+	    push (@pkgs, $pkgst);
+	}
+    }
+    ksinstall_rpm(@pks);
 }
 
 # Prints the %post script. The post_reboot script is created inside
