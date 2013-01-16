@@ -70,8 +70,8 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       FORWARDPROXY	=> "forward",
 	       END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
 	       BASE_PKGS	=> "/system/aii/osinstall/ks/base_packages",
+	       LOCALHOST        => hostname()
 	   };
-my $localhost = hostname();
 
 # Base package path for user hooks.
 use constant   MODULEBASE	=> "AII::";
@@ -215,7 +215,6 @@ sub ksuserhooks
 	$hook->$method ($config, $nelpath);
     }
 }
-
 
 # Prints to the Kickstart all the non-partitioning directives.
 sub kscommands
@@ -558,7 +557,7 @@ sub proxy
             $proxyhost = $spma->{proxyhost};
 	} elsif (scalar(@proxies) > 1) {
 	    # optimize by picking the responding server as the proxy
-	    my ($me) = grep { /\b$localhost\b/ } @proxies;
+	    my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
 	    $me ||= $proxies[0];
             $proxyhost = $me;
 	}
