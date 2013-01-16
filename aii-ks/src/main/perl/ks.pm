@@ -898,8 +898,7 @@ EOF
     ksuserhooks ($config, POSTHOOK);
     my $tree = $config->getElement (KS)->getTree;
     $self->yum_setup ($config);
-    $self->yum_install_kernels ($config);
-    $self->yum_install_drivers ($config);
+    $self->yum_install_packages ($config);
     ksuserscript ($config, POSTSCRIPT);
     if ($tree->{bootloader_location} eq "mbr") {
 	ksfix_grub;
