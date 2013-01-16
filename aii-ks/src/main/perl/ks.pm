@@ -695,7 +695,6 @@ EOF
 
     print <<EOF;
 /usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
-/usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
 /usr/sbin/ncm-ncd --configure --all
 
 EOF
