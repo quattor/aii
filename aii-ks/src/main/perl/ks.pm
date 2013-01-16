@@ -535,49 +535,6 @@ EOF
 
 }
 
-# Returns the list of packages specified on the profile with the given
-# names.
-sub kspkglist
-{
-    my ($config, @pkgnames) = @_;
-
-    my @pkgs = ();
-    foreach my $pn (@pkgnames) {
-	my $path = PKG . __PACKAGE__->escape ($pn);
-	next unless $config->elementExists ($path);
-	my $vers = $config->getElement ($path)->getTree;
-	while (my ($version, $vals) = each (%$vers)) {
-	    my $v = unescape ($version);
-	    my $archs = $vals->{arch};
-            if ( exists ($vals->{repository}) ) {
-                # Previous ncm-spma <2.0 schema
-	        my $rep = $vals->{repository};
-	        push (@pkgs, { pkg=>"$pn-$v.$_.rpm",
-			       rep=>$rep
-			     }) foreach @$archs;
-            } else {
-                # New ncm-spma v2.0 schema
-                while (my ($arch, $rep) = each (%$archs)) {
-                   push(@pkgs, { pkg=>"$pn-$v.$arch.rpm", rep=>$rep});
-                }
-            }
-	}
-    }
-    return @pkgs;
-}
-
-# Returns the URL to the package given as argument.
-sub kspkgurl
-{
-    my ($config, $pkg) = @_;
-    my $repos = $config->getElement (REPO)->getTree;
-    $this_app->debug (5, "Generating package list for $pkg->{pkg}");
-    foreach (@$repos) {
-	return "$_->{protocols}->[0]->{url}/$pkg->{pkg}"
-	  if $_->{name} eq $pkg->{rep};
-    }
-}
-
 # Prints the statements needed to install a given set of RPMs
 sub ksinstall_rpm
 {
@@ -614,58 +571,6 @@ sub proxy
     return ($proxyhost, $proxyport, $proxytype);
 }
 
-# Prints the Bash code to install all the kernels specified in the
-# profile and sets the default (the one on /system/kernel/version) as
-# grub's default.
-sub ksinstall_kernels
-{
-    my $config = shift;
-
-    print <<EOF;
-
-# The kernel must be upgraded now. See bugs #5007 and #28380.
-EOF
-
-    ksinstall_rpm ($config, KERNELLIST);
-
-    # Set the default kernel
-    my $kv = $config->getElement (KERNELVERSION)->getValue;
-    print <<EOF;
-
-# This will make us boot using the kernel specified in the profile,
-# see bug #28380
-default=\$(grep vmlinuz /boot/grub/grub.conf| \\
-    nl -v-1|grep "$kv\[[:blank:]]"|head -n1| \\
-    awk '{print \$1}')
-if [ ! -z "\$default" ]
-then
-    sed -i "s/^\\(default\\)=.*/\\1=\$default/" /boot/grub/grub.conf
-fi
-EOF
-}
-
-# Prints the code for installing the drivers for the network
-# interfaces.
-sub ksinstall_drivers
-{
-    my $config = shift;
-
-    my $cards = $config->getElement (CARDS)->getTree;
-
-    my @pkgs = ();
-    foreach my $card (values (%$cards)) {
-	push (@pkgs, $card->{driverrpms})
-	  if (exists $card->{driverrpms});
-    }
-
-    if (scalar @pkgs) {
-	print <<EOF;
-
-# Install the drivers for the network devices
-EOF
-	ksinstall_rpm ($config, @pkgs);
-    }
-}
 
 # Prints the header functions and definitions of the post_reboot
 # script.
@@ -722,17 +627,6 @@ tail -f /root/ks-post-install.log &>/dev/console &
 set +x
 
 EOF
-}
-
-# Prints the packages needed for configuring a Quattor system that
-# uses SPMA.
-sub ksbasepackages
-{
-    my $config = shift;
-
-    my $pkgl = $config->getElement("/system/aii/osinstall/ks/base_packages")->getTree();
-
-    ksinstall_rpm ($config, @$pkgl);
 }
 
 sub ksquattor_config
@@ -829,7 +723,6 @@ sub post_reboot_script
     my ($self, $config) = @_;
 
     kspostreboot_header ($config);
-    ksbasepackages ($config);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
     ksuserhooks ($config, POSTREBOOTENDHOOK);
@@ -971,7 +864,7 @@ sub yum_install_packages
 	    push (@pkgs, $pkgst);
 	}
     }
-    ksinstall_rpm(@pks);
+    ksinstall_rpm(@pkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
@@ -997,10 +890,9 @@ EOF
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
     my $tree = $config->getElement (KS)->getTree;
-    ksinstall_rpm ($config, @{$tree->{extra_packages}})
-      if exists $tree->{extra_packages};
-    ksinstall_kernels ($config);
-    ksinstall_drivers ($config);
+    $self->yum_setup ($config);
+    $self->yum_install_kernels ($config);
+    $self->yum_install_drivers ($config);
     ksuserscript ($config, POSTSCRIPT);
     if ($tree->{bootloader_location} eq "mbr") {
 	ksfix_grub;
