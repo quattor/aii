@@ -850,6 +850,27 @@ EOF
     print "end_of_repos\n";
 }
 
+sub process_pkgs
+{
+    my ($self, $pkg, $ver) = @_;
+
+    my @ret;
+    if ($ver) {
+	while (my ($version, $arch) = each(%$ver)) {
+	    my $p = sprintf("%s-%s", $pkg, unescape($version));
+	    if ($arch) {
+		push(@ret, map("$p.$_", keys(%{$arch->{arch}})));
+	    } else {
+		push(@ret, $p);
+	    }
+	}
+	return @ret;
+    }
+
+    return $pkg;
+}
+
+
 sub yum_install_packages
 {
     my ($self, $config) = @_;
@@ -858,16 +879,15 @@ sub yum_install_packages
     my $t = $config->getElement (PKG)->getTree();
     my %base = map($_ => 1, @{$config->getElement (BASE_PKGS)->getTree()});
 
+    print <<EOF;
+# This one will be reinstalled by Yum in the correct version for our
+# kernels.
+rpm -e --nodeps kernel-firmware
+EOF
     while (my ($pkg, $st) = each(%$t)) {
 	my $pkgst = unescape($pkg);
 	if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-	    while (my ($version, $arch) = each(%$st)) {
-		$pkgst .= "-" . unescape($version);
-		if ($arch) {
-		    push (@pkgs, map("$pkgst.$_", keys(%{$arch->{arch}})));
-		}
-	    }
-	    push (@pkgs, $pkgst);
+	    push (@pkgs, $self->process_pkgs($pkgst, $st));
 	}
     }
     ksinstall_rpm(@pkgs);
