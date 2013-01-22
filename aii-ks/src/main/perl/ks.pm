@@ -877,7 +877,7 @@ sub yum_install_packages
 
     my @pkgs;
     my $t = $config->getElement (PKG)->getTree();
-    my %base = map($_ => 1, @{$config->getElement (BASE_PKGS)->getTree()});
+    my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
 
     print <<EOF;
 # This one will be reinstalled by Yum in the correct version for our
