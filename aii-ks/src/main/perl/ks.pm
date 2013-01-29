@@ -29,7 +29,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (kspkglist kspkgurl ksuserhooks ksinstall_rpm);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
@@ -68,9 +68,10 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
 	       NAMESERVER	=> "/system/network/nameserver/0",
 	       FORWARDPROXY	=> "forward",
-		 END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
+	       END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
+	       BASE_PKGS	=> "/system/aii/osinstall/ks/base_packages",
+	       LOCALHOST        => hostname()
 	   };
-my $localhost = hostname();
 
 # Base package path for user hooks.
 use constant   MODULEBASE	=> "AII::";
@@ -214,7 +215,6 @@ sub ksuserhooks
 	$hook->$method ($config, $nelpath);
     }
 }
-
 
 # Prints to the Kickstart all the non-partitioning directives.
 sub kscommands
@@ -535,70 +535,17 @@ EOF
 
 }
 
-# Returns the list of packages specified on the profile with the given
-# names.
-sub kspkglist
-{
-    my ($config, @pkgnames) = @_;
-
-    my @pkgs = ();
-    foreach my $pn (@pkgnames) {
-	my $path = PKG . __PACKAGE__->escape ($pn);
-	next unless $config->elementExists ($path);
-	my $vers = $config->getElement ($path)->getTree;
-	while (my ($version, $vals) = each (%$vers)) {
-	    my $v = unescape ($version);
-	    my $archs = $vals->{arch};
-            if ( exists ($vals->{repository}) ) {
-                # Previous ncm-spma <2.0 schema
-	        my $rep = $vals->{repository};
-	        push (@pkgs, { pkg=>"$pn-$v.$_.rpm",
-			       rep=>$rep
-			     }) foreach @$archs;
-            } else {
-                # New ncm-spma v2.0 schema
-                while (my ($arch, $rep) = each (%$archs)) {
-                   push(@pkgs, { pkg=>"$pn-$v.$arch.rpm", rep=>$rep});
-                }
-            }
-	}
-    }
-    return @pkgs;
-}
-
-# Returns the URL to the package given as argument.
-sub kspkgurl
-{
-    my ($config, $pkg) = @_;
-    my $repos = $config->getElement (REPO)->getTree;
-    $this_app->debug (5, "Generating package list for $pkg->{pkg}");
-    foreach (@$repos) {
-	return "$_->{protocols}->[0]->{url}/$pkg->{pkg}"
-	  if $_->{name} eq $pkg->{rep};
-    }
-}
-
 # Prints the statements needed to install a given set of RPMs
 sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    my @pkglist = kspkglist ($config, @pkgs);
-    my $proxy_opts = "";
-
-    my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-    if ($proxyhost) {
-        $proxy_opts = "--httpproxy $proxyhost ";
-        if ($proxyport) {
-            $proxy_opts .= "--httpport $proxyport ";
-        }
-    }
-    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
-      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
-	foreach @pkglist;
+    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+	" || fail 'Unable to install packages'\n";
 }
 
-sub proxy {
+sub proxy
+{
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
     if ($config->elementExists (SPMAPROXY)) {
@@ -610,7 +557,7 @@ sub proxy {
             $proxyhost = $spma->{proxyhost};
 	} elsif (scalar(@proxies) > 1) {
 	    # optimize by picking the responding server as the proxy
-	    my ($me) = grep { /\b$localhost\b/ } @proxies;
+	    my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
 	    $me ||= $proxies[0];
             $proxyhost = $me;
 	}
@@ -624,58 +571,6 @@ sub proxy {
     return ($proxyhost, $proxyport, $proxytype);
 }
 
-# Prints the Bash code to install all the kernels specified in the
-# profile and sets the default (the one on /system/kernel/version) as
-# grub's default.
-sub ksinstall_kernels
-{
-    my $config = shift;
-
-    print <<EOF;
-
-# The kernel must be upgraded now. See bugs #5007 and #28380.
-EOF
-
-    ksinstall_rpm ($config, KERNELLIST);
-
-    # Set the default kernel
-    my $kv = $config->getElement (KERNELVERSION)->getValue;
-    print <<EOF;
-
-# This will make us boot using the kernel specified in the profile,
-# see bug #28380
-default=\$(grep vmlinuz /boot/grub/grub.conf| \\
-    nl -v-1|grep "$kv\[[:blank:]]"|head -n1| \\
-    awk '{print \$1}')
-if [ ! -z "\$default" ]
-then
-    sed -i "s/^\\(default\\)=.*/\\1=\$default/" /boot/grub/grub.conf
-fi
-EOF
-}
-
-# Prints the code for installing the drivers for the network
-# interfaces.
-sub ksinstall_drivers
-{
-    my $config = shift;
-
-    my $cards = $config->getElement (CARDS)->getTree;
-
-    my @pkgs = ();
-    foreach my $card (values (%$cards)) {
-	push (@pkgs, $card->{driverrpms})
-	  if (exists $card->{driverrpms});
-    }
-
-    if (scalar @pkgs) {
-	print <<EOF;
-
-# Install the drivers for the network devices
-EOF
-	ksinstall_rpm ($config, @pkgs);
-    }
-}
 
 # Prints the header functions and definitions of the post_reboot
 # script.
@@ -732,17 +627,6 @@ tail -f /root/ks-post-install.log &>/dev/console &
 set +x
 
 EOF
-}
-
-# Prints the packages needed for configuring a Quattor system that
-# uses SPMA.
-sub ksbasepackages
-{
-    my $config = shift;
-
-    my $pkgl = $config->getElement("/system/aii/osinstall/ks/base_packages")->getTree();
-
-    ksinstall_rpm ($config, @$pkgl);
 }
 
 sub ksquattor_config
@@ -811,7 +695,6 @@ EOF
 
     print <<EOF;
 /usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
-/usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
 /usr/sbin/ncm-ncd --configure --all
 
 EOF
@@ -839,7 +722,6 @@ sub post_reboot_script
     my ($self, $config) = @_;
 
     kspostreboot_header ($config);
-    ksbasepackages ($config);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
     ksuserhooks ($config, POSTREBOOTENDHOOK);
@@ -917,6 +799,100 @@ perl -pi -e 's/hd(\\d+)/"hd".(\$1 > 1 ? 0:\$1)/e' /boot/grub/grub.conf
 EOF
 }
 
+
+
+
+sub yum_setup
+{
+    my ($self, $config) = @_;
+
+    my $repos = $config->getElement (REPO)->getTree();
+
+    print <<'EOF';
+mkdir -p /tmp/aii/yum/repos
+cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
+[main]
+cachedir=/var/cache/yum/$basearch/$releasever
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+obsoletes=1
+gpgcheck=1
+plugins=1
+installonly_limit=3
+clean_dependencies_on_remove=1
+reposdir=/tmp/aii/yum/repos
+end_of_yum_conf
+cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
+EOF
+
+    my ($phost, $pport, $ptype) = proxy($config);
+
+    foreach my $repo (@$repos) {
+	if ($ptype && $ptype eq 'reverse') {
+	    $repo->{protocols}->[0]->{url} =~ s{://.*?/}{$phost:$pport};
+	}
+	print <<EOF;
+[$repo->{name}]
+enabled=1
+baseurl=$repo->{protocols}->[0]->{url}
+name=$repo->{name}
+gpgcheck=0
+EOF
+	if ($ptype && $ptype eq 'forward') {
+	    print <<EOF;
+proxy=http://$phost:$pport/
+EOF
+	}
+    }
+
+    print "end_of_repos\n";
+}
+
+sub process_pkgs
+{
+    my ($self, $pkg, $ver) = @_;
+
+    my @ret;
+    if ($ver) {
+	while (my ($version, $arch) = each(%$ver)) {
+	    my $p = sprintf("%s-%s", $pkg, unescape($version));
+	    if ($arch) {
+		push(@ret, map("$p.$_", keys(%{$arch->{arch}})));
+	    } else {
+		push(@ret, $p);
+	    }
+	}
+	return @ret;
+    }
+
+    return $pkg;
+}
+
+
+sub yum_install_packages
+{
+    my ($self, $config) = @_;
+
+    my @pkgs;
+    my $t = $config->getElement (PKG)->getTree();
+    my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
+
+    print <<EOF;
+# This one will be reinstalled by Yum in the correct version for our
+# kernels.
+rpm -e --nodeps kernel-firmware
+EOF
+    while (my ($pkg, $st) = each(%$t)) {
+	my $pkgst = unescape($pkg);
+	if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
+	    push (@pkgs, $self->process_pkgs($pkgst, $st));
+	}
+    }
+    ksinstall_rpm(@pkgs);
+}
+
 # Prints the %post script. The post_reboot script is created inside
 # this method.
 sub post_install_script
@@ -940,10 +916,8 @@ EOF
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
     my $tree = $config->getElement (KS)->getTree;
-    ksinstall_rpm ($config, @{$tree->{extra_packages}})
-      if exists $tree->{extra_packages};
-    ksinstall_kernels ($config);
-    ksinstall_drivers ($config);
+    $self->yum_setup ($config);
+    $self->yum_install_packages ($config);
     ksuserscript ($config, POSTSCRIPT);
     if ($tree->{bootloader_location} eq "mbr") {
 	ksfix_grub;
