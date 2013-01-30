@@ -845,6 +845,12 @@ EOF
 proxy=http://$phost:$pport/
 EOF
 	}
+
+	if (exists($repo->{priority})) {
+	    print <<EOF;
+priority=$repo->{priority}
+EOF
+	}
     }
 
     print "end_of_repos\n";
