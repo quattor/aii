@@ -398,7 +398,7 @@ sub pre_install_script
 # Make sure messages show up on the serial console
 exec >/tmp/pre-log.log 2>&1
 tail -f /tmp/pre-log.log > /dev/console &
-set +x
+set -x
 
 # Hack for RHEL 6: force re-reading the partition table
 #
@@ -624,7 +624,7 @@ hostname $hostname.$domain
 
 exec &> /root/ks-post-install.log
 tail -f /root/ks-post-install.log &>/dev/console &
-set +x
+set -x
 
 EOF
 }
@@ -845,6 +845,12 @@ EOF
 proxy=http://$phost:$pport/
 EOF
 	}
+
+	if (exists($repo->{priority})) {
+	    print <<EOF;
+priority=$repo->{priority}
+EOF
+	}
     }
 
     print "end_of_repos\n";
@@ -902,7 +908,7 @@ sub post_install_script
 
 %post
 
-set +x
+set -x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
 
