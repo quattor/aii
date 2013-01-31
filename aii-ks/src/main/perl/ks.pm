@@ -694,8 +694,8 @@ EOF
     }
 
     print <<EOF;
-/usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
-/usr/sbin/ncm-ncd --configure --all
+/usr/sbin/ncm-ncd --verbose --configure spma || fail "ncm-ncd --configure spma failed"
+/usr/sbin/ncm-ncd --verbose --configure --all
 
 EOF
 }
