@@ -889,6 +889,9 @@ sub yum_install_packages
 # This one will be reinstalled by Yum in the correct version for our
 # kernels.
 rpm -e --nodeps kernel-firmware
+# This one may interfere with the versions of Yum required on SL5.  If
+# it's needed at all, it will be reinstalled by the SPMA component.
+rpm -e --nodeps yum-conf
 EOF
     while (my ($pkg, $st) = each(%$t)) {
 	my $pkgst = unescape($pkg);
