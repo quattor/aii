@@ -56,6 +56,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       CARDS		=> "/hardware/cards/nic",
 	       SPMAPROXY	=> "/software/components/spma/proxy",
 	       SPMA		=> "/software/components/spma",
+	       SPMA_OBSOLETES	=> "/software/components/spma/process_obsoletes",
 	       ROOTMAIL		=> "/system/rootmail",
 	       AII_PROFILE	=> "/system/aii/osinstall/ks/node_profile",
 	       CCM_PROFILE	=> "/software/components/ccm/profile",
@@ -806,23 +807,24 @@ sub yum_setup
 {
     my ($self, $config) = @_;
 
+    my $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
     my $repos = $config->getElement (REPO)->getTree();
 
-    print <<'EOF';
+    print <<EOF;
 mkdir -p /tmp/aii/yum/repos
 cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
 [main]
-cachedir=/var/cache/yum/$basearch/$releasever
+cachedir=/var/cache/yum/\$basearch/\$releasever
 keepcache=0
 debuglevel=2
 logfile=/var/log/yum.log
 exactarch=1
-obsoletes=1
 gpgcheck=1
 plugins=1
 installonly_limit=3
 clean_dependencies_on_remove=1
 reposdir=/tmp/aii/yum/repos
+obsoletes=$obsoletes
 end_of_yum_conf
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
 EOF
