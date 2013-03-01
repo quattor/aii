@@ -150,6 +150,8 @@ sub ksnetwork
 			      "but no IP given to the interface");
 	    return;
     }
+
+    print "--mtu=$net->{mtu} " if exists($net->{mtu});
     my $gw = '--gateway=';
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
