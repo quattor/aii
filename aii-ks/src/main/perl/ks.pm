@@ -253,6 +253,12 @@ EOF
 	print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
 
+    if (exists($tree->{logging})) {
+	print "logging --host=$tree->{logging}->{host} ",
+	    "--port=$tree->{logging}->{port}";
+	print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
+	print "\n";
+    }
     print "bootloader  --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
