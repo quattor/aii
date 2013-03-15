@@ -72,7 +72,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
 	       BASE_PKGS	=> "/system/aii/osinstall/ks/base_packages",
 	       LOCALHOST        => hostname(),
-	       ENABLE_SSHD      => "/system/aii/osinstall/ks/enable_sshd",
+	       ENABLE_SSHD      => "enable_sshd",
 	   };
 
 # Base package path for user hooks.
@@ -248,8 +248,7 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    if ($config->elementExists(ENABLE_SSHD) &&
-	    $config->getElement(ENABLE_SSHD)->getTree()){
+    if ($tree->{enable_sshd}) {
 	print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
 
