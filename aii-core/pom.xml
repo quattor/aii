@@ -173,6 +173,30 @@
 		</configuration>
 	      </execution>
 
+              <execution>
+                <id>filter-eg-sources</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <encoding>UTF-8</encoding>
+                  <delimiters>
+                    <delimiter>${*}</delimiter>
+                  </delimiters>
+                  <outputDirectory>${project.build.directory}/doc/eg</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/main/eg</directory>
+                      <filtering>true</filtering>
+                      <includes>
+                        <include>*</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
+
 	    </executions>
 	  </plugin>
 
@@ -257,6 +281,12 @@
 		      <include>ChangeLog</include>
 		    </includes>
 		  </source>
+                  <source>
+                    <location>target/doc</location>
+                    <includes>
+                      <include>eg/*</include>
+                    </includes>
+                  </source>
 		</sources>
 	      </mapping>
 
