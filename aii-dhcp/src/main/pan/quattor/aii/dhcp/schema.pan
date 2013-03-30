@@ -3,7 +3,7 @@
 # ${author-info}
 # ${build-info}
 
-unique template quattor/aii/dhcp/schema;
+unique template quattor/aii/${project.artifactId}/schema;
 
 # Information needed for creating the Kickstart file
 type structure_dhcp_dhcp_info = {
@@ -11,4 +11,4 @@ type structure_dhcp_dhcp_info = {
 	"options"	? string{}
 };
 
-bind "/system/aii/dhcp" = structure_dhcp_dhcp_info;
+bind "/system/aii/${project.artifactId}" = structure_dhcp_dhcp_info;
