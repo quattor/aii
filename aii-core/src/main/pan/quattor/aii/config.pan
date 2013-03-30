@@ -63,4 +63,4 @@ variable AII_DHCP_ADDOPTIONS ?= null;
 ###################################
 
 variable AII_CONFIG_SITE ?= null;
-include {if_exists(AII_CONFIG_SITE);};
+include {if_exists(to_string(AII_CONFIG_SITE));};
