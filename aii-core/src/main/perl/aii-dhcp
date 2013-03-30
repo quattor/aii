@@ -405,44 +405,61 @@ sub update_dhcp_config_file($) {
         $this_app->verbose("aii-dhcp: found subnet $netandmasks[$i] " . 
                       "mask $netandmasks[$i+1]");
     }
+    # If subnets are not defined in the DHCP configuration file managed by AII,
+    # just add an empty subnet. This will have the effect of disabling all the checks
+    # related to subnets.
+    my $subnet_defined = 1;
+    if ( @subnets == 0 ) {
+      push (@subnets,{});
+      $subnet_defined = 0;
+    }
 
     #
     # for each subnet, write entries that belong to it
     #
     my ($net, $mac, $newnodes, $netfound);
+    my $indent = "  ";
+    unless ( $subnet_defined ) {
+      $indent = "";
+    }
     
     foreach $net (@subnets) {
         $newnodes = '';
-
+ 
         foreach $node (@NTC) {
 
             # Does the node belong to this subnet?
-            if (($node->{IP} & $net->{MASK}) == $net->{NET}) {
+            # Always true if no subnet defined.
+            if ( !$subnet_defined || (($node->{IP} & $net->{MASK}) == $net->{NET}) ) {
 
                 $node->{OK} = 1;
 
                 # basic host declaration
-                $newnodes .= "\n\thost $node->{NAME} {  # added by aii-dhcp\n";
+                $newnodes .= "\n".$indent."host $node->{NAME} {  # added by aii-dhcp\n";
 		
                 foreach $mac (split(' ', $node->{MAC})) {
-                    $newnodes .= "\t  hardware ethernet $mac;\n";
+                    $newnodes .= "$indent  hardware ethernet $mac;\n";
                 }
                 
-                $newnodes .= "\t  fixed-address $node->{ST_IP};\n";
+                $newnodes .= "$indent  fixed-address $node->{ST_IP};\n";
 
                 # TFTP server
                 if ($node->{ST_IP_TFTP}) {
-                    $newnodes.="\t  next-server $node->{ST_IP_TFTP};\n";
+                    $newnodes.="$indent  next-server $node->{ST_IP_TFTP};\n";
                 }
    
                 # additional options
                 if ($node->{MORE_OPT}) {
-                    $newnodes .= "\t  $node->{MORE_OPT}\n";
+                    $newnodes .= "$indent  $node->{MORE_OPT}\n";
                 }
  
-                $newnodes.="\t}\n";
-                $this_app->verbose("aii-dhcp: added node $node->{NAME} ".
-                              "to subnet $net->{ST_NET}");
+                $newnodes.="$indent}\n";
+                if ( $subnet_defined ) {   
+                    $this_app->verbose("aii-dhcp: added node $node->{NAME} ".
+                                       "to subnet $net->{ST_NET}");
+                } else {
+                    $this_app->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");                  
+                }
             }
 
         }
@@ -450,10 +467,14 @@ sub update_dhcp_config_file($) {
         # Insert the nodes to the current subnet
         if ($newnodes ne '') {
             $this_app->debug(1,"aii-dhcp: newnodes=|$newnodes|\n");
-            $text =~ s/( \s*  subnet  \s+ \Q$net->{ST_NET}\E  \s+
-                     netmask \s+ \Q$net->{ST_MASK}\E \s+ \{
-                     ([^{}]+\{[^{}]+\})*)
-                     ([^}]+)(\})/$1$3$newnodes$4/x;
+            if ( $subnet_defined ) {
+                $text =~ s/( \s*  subnet  \s+ \Q$net->{ST_NET}\E  \s+
+                         netmask \s+ \Q$net->{ST_MASK}\E \s+ \{
+                         ([^{}]+\{[^{}]+\})*)
+                         ([^}]+)(\})/$1$3$newnodes$4/x;
+            } else {
+                $text .= $newnodes;
+            };
         }
 
     }
