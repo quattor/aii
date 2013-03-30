@@ -2,6 +2,6 @@
 # ${developer-info
 # ${author-info}
 # ${build-info}
-template quattor/aii/dhcp/config;
+template quattor/aii/${project.artifactId}/config;
 
-include {'quattor/aii/dhcp/schema'};
+include {'quattor/aii/${project.artifactId}/schema'};
