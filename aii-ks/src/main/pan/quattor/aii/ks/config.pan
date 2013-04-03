@@ -410,3 +410,8 @@ variable AII_OSINSTALL_BASE_PACKAGES ?= list ("perl-Compress-Zlib",
 );
 
 "/system/aii/osinstall/ks/base_packages" ?= AII_OSINSTALL_BASE_PACKAGES;
+
+# Define if volgroup statement is required for LVM-based file systems.
+# Default is for SL4/5
+"/system/aii/osinstall/ks/volgroup_required" = true;
+
