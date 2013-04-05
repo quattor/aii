@@ -871,7 +871,7 @@ sub process_pkgs
     my ($self, $pkg, $ver) = @_;
 
     my @ret;
-    if ($ver) {
+    if (%$ver) {
 	while (my ($version, $arch) = each(%$ver)) {
 	    my $p = sprintf("%s-%s", $pkg, unescape($version));
 	    if ($arch) {
