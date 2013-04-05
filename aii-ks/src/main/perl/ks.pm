@@ -549,8 +549,9 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
-	" || fail 'Unable to install packages'\n";
+    print "# Weird error handling because Yum's sucks\n",
+	"yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+	"2>&1 |&& fail 'Unable to install packages'\n";
 }
 
 sub proxy
@@ -849,6 +850,7 @@ enabled=1
 baseurl=$repo->{protocols}->[0]->{url}
 name=$repo->{name}
 gpgcheck=0
+skip_if_unavailable=1
 EOF
 	if ($ptype && $ptype eq 'forward') {
 	    print <<EOF;
