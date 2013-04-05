@@ -549,9 +549,8 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    print "# Weird error handling because Yum's sucks\n",
-	"yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
-	"2>&1 |&& fail 'Unable to install packages'\n";
+    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+	 "|| fail 'Unable to install packages'\n";
 }
 
 sub proxy
