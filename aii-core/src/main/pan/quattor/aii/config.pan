@@ -18,11 +18,15 @@ include { 'quattor/functions/network' };
 include { 'quattor/functions/filesystem' };
 include { 'quattor/aii/schema' };
 
+# First include AII site configuration, if any
+variable AII_CONFIG_SITE ?= null;
+include {if_exists(to_string(AII_CONFIG_SITE));};
 
 # For convenience
 variable AII_DOMAIN ?= value('/system/network/domainname');
 variable AII_HOSTNAME ?= value('/system/network/hostname');
 
+# Configure AII plugins
 variable AII_OSINSTALL_GEN ?= "quattor/aii/ks/config";
 variable AII_NBP_GEN ?= "quattor/aii/pxelinux/config";
 
@@ -62,5 +66,3 @@ variable AII_DHCP_ADDOPTIONS ?= null;
 # End of DHCP daemon configuration
 ###################################
 
-variable AII_CONFIG_SITE ?= null;
-include {if_exists(to_string(AII_CONFIG_SITE));};
