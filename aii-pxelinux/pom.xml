@@ -6,7 +6,7 @@
   <artifactId>pxelinux</artifactId>
 
   <packaging>pom</packaging>
-  <version>13.1.0-rc3</version>
+  <version>13.1.0-rc4-SNAPSHOT</version>
   <name>AII PXE-linux generator</name>
   <url>http://quattor.org/cfg-modules/</url>
 
