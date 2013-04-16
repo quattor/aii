@@ -148,7 +148,8 @@ sub ksnetwork
 	    return;
     }
 
-    print "--mtu=$net->{mtu} " if exists($net->{mtu});
+    my $mtu = exists($net->{mtu}) ? "--mtu=$net->{mtu} " : "";
+
     my $gw = '--gateway=';
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
@@ -170,7 +171,7 @@ EOF
 
     my $ns = $config->getElement(NAMESERVER)->getValue;
     print <<EOF;
-network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn
+network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn $mtu
 EOF
 
 }
