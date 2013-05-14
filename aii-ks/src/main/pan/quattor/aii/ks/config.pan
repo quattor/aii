@@ -392,7 +392,7 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 # http://www.redhat.com/docs/manuals/enterprise/RHEL-3-Manual/sysadmin-guide/ch-kickstart2.html
 #
 
-variable AII_OSINSTALL_BASE_PACKAGES ?= list ("perl-Compress-Zlib",
+variable AII_OSINSTALL_BASE_PACKAGES ?= list (
     "perl-LC",
     "perl-AppConfig-caf",
     "perl-Proc-ProcessTable",
