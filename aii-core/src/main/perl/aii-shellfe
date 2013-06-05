@@ -876,7 +876,8 @@ sub nodelist
         $self->debug (4, "Downloading profiles-info: $url");
         my $rp = $ua->get ($url);
         unless ($rp->is_success) {
-                $self->error ("Couldn't download $url. Aborting");
+                $self->error ("Couldn't download $url. Aborting ",
+                              $rp->status_line());
                 $self->{state} = 1;
                 return;
         }
