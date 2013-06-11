@@ -916,7 +916,7 @@ EOF
             push (@pkgs, $self->process_pkgs($pkgst, $st));
         }
     }
-    ksinstall_rpm(@pkgs);
+    ksinstall_rpm($config, @pkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
