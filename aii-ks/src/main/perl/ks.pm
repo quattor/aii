@@ -1,7 +1,14 @@
-# ${license-info}
+# #
+# Software subject to following license(s):
+#   The Apache Software License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.txt)
+#   null
+#
+
 # ${developer-info
 # ${author-info}
-# ${build-info}
+# #
+      # ks, 13.5.1-SNAPSHOT, 20130611.2355.37
+      #
 #
 # Note: all methods in this component are called in a
 # $self->$method ($config) way, unless explicitly stated.
@@ -71,6 +78,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                FORWARDPROXY     => "forward",
                END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
+               DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
                ENABLE_SSHD      => "enable_sshd",
            };
@@ -555,7 +563,12 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+    my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
+    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y";
+
+    $cmd .= " --disablerepo=" . join(",", @$disabled) if @$disabled;
+
+    print $cmd, join("\\\n    ", @pkgs),
          "|| fail 'Unable to install packages'\n";
 }
 
@@ -912,11 +925,11 @@ rpm -e --nodeps yum-conf
 EOF
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
-        if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
+        if ($pkgst =~ m{^(kernel\*|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
             push (@pkgs, $self->process_pkgs($pkgst, $st));
         }
     }
-    ksinstall_rpm(@pkgs);
+    ksinstall_rpm($config, @pkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
