@@ -13,7 +13,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.29</version>
+    <version>1.31</version>
   </parent>
 
   <developers>
@@ -78,13 +78,6 @@
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
-
-  <repositories>
-    <repository>
-      <id>quattor-releases</id>
-      <url>http://lapp-repo01.in2p3.fr:8081/nexus/content/repositories/releases/</url>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>
