@@ -912,7 +912,7 @@ rpm -e --nodeps yum-conf
 EOF
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
-        if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
+        if ($pkgst =~ m{^(kernel\*|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
             push (@pkgs, $self->process_pkgs($pkgst, $st));
         }
     }
