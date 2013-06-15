@@ -78,13 +78,6 @@
     </dependency>
   </dependencies>
 
-  <repositories>
-    <repository>
-      <id>quattor-releases</id>
-      <url>http://lapp-repo01.in2p3.fr:8081/nexus/content/repositories/releases/</url>
-    </repository>
-  </repositories>
-
   <build>
     <pluginManagement>
       <plugins>
