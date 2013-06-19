@@ -1,19 +1,9 @@
-# #
-# Software subject to following license(s):
-#   The Apache Software License, Version 2.0 (http://www.apache.org/licenses/LICENSE-2.0.txt)
-#   null
-#
-
+# ${license-info}
 # ${developer-info
 # ${author-info}
-# #
-      # ks, 13.5.1-SNAPSHOT, 20130611.2355.37
-      #
-#
-# Note: all methods in this component are called in a
-# $self->$method ($config) way, unless explicitly stated.
+# ${build-info}
 
-#package NCM::Component::ks;
+
 package NCM::Component::ks;
 
 use strict;
