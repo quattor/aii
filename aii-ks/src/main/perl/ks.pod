@@ -158,6 +158,14 @@ the SPMA actually runs. For instance, Xen kernels or special mkinitrd
 packages should be placed here. These packages are installed by
 the post-install script, before rebooting.
 
+=item * disabled_repos ? string[]
+
+List of Yum repositories that should be disabled during the C<%post>
+phase.  Useful on RH 5 systems, where Yum can't skip repositories that
+need some additional configurations.
+
+It accepts wildcards, as Yum does.
+
 =item * packages_args ? string[]
 
 List of switches to add to the kickstart "%packages" line.

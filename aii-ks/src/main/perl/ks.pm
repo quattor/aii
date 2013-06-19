@@ -2,11 +2,8 @@
 # ${developer-info
 # ${author-info}
 # ${build-info}
-#
-# Note: all methods in this component are called in a
-# $self->$method ($config) way, unless explicitly stated.
 
-#package NCM::Component::ks;
+
 package NCM::Component::ks;
 
 use strict;
@@ -71,6 +68,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                FORWARDPROXY     => "forward",
                END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
+               DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
                ENABLE_SSHD      => "enable_sshd",
            };
@@ -555,7 +553,12 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+    my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
+    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y";
+
+    $cmd .= " --disablerepo=" . join(",", @$disabled) if @$disabled;
+
+    print $cmd, join("\\\n    ", @pkgs),
          "|| fail 'Unable to install packages'\n";
 }
 
@@ -916,7 +919,7 @@ EOF
             push (@pkgs, $self->process_pkgs($pkgst, $st));
         }
     }
-    ksinstall_rpm(@pkgs);
+    ksinstall_rpm($config, @pkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
