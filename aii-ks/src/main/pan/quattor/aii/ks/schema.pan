@@ -33,7 +33,7 @@ type structure_ks_ksfirewall = {
 
 # Information needed for logging into syslog
 type structure_ks_logging = {
-    "host" : type_host
+    "host" : type_hostname
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
 };
