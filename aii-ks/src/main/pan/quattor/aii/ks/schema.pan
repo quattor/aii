@@ -33,7 +33,7 @@ type structure_ks_ksfirewall = {
 
 # Information needed for logging into syslog
 type structure_ks_logging = {
-    "host" : type_host
+    "host" : type_hostname
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
 };
@@ -75,6 +75,8 @@ type structure_ks_ks_info = {
 	"ignoredisk"    ? string[]
 	# Base packages needed for a Quattor client to run (CAF, CCM...)
 	"base_packages" : string[]
+        # Repositories to disable while SPMA is not available
+        "disabled_repos" : string[] = list()
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
