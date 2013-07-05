@@ -31,13 +31,6 @@ type structure_ks_ksfirewall = {
 	"ports"		: long[] = list (7777)
 };
 
-# Information needed for logging into syslog
-type structure_ks_logging = {
-    "host" : type_hostname
-    "port" : type_port = 514
-    "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
-};
-
 # Information needed for creating the Kickstart file
 type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
@@ -57,7 +50,6 @@ type structure_ks_ks_info = {
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"
 	"langsupport"	? string [] = list ("en_US.UTF-8")
-	"logging"	? structure_ks_logging
 	"mouse"		? string
 	"bootproto"	: string with match (SELF, "static|dhcp")
 	"keyboard"	: string = "us"
@@ -75,8 +67,6 @@ type structure_ks_ks_info = {
 	"ignoredisk"    ? string[]
 	# Base packages needed for a Quattor client to run (CAF, CCM...)
 	"base_packages" : string[]
-        # Repositories to disable while SPMA is not available
-        "disabled_repos" : string[] = list()
 	# Additional packages to be installed before the reboot, and
 	# thus, before SPMA runs
 	"extra_packages" ? string[]
