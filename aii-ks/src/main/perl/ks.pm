@@ -734,6 +734,18 @@ exec &> /root/ks-post-install.log
 tail -f /root/ks-post-install.log &>/dev/console &
 set +x
 
+# Wait up to 2 minutes until the network comes up
+i=0
+while ! nslookup \\`hostname\\` > /dev/null
+do
+    sleep 1
+    let i = \\\$i+1
+    if [ \\\$i -gt 120 ]
+    then
+       fail "Network does not come up"
+    fi
+done
+
 EOF
 }
 
