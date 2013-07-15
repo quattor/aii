@@ -554,7 +554,7 @@ sub ksinstall_rpm
     my ($config, @pkgs) = @_;
 
     my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
-    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y";
+    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
 
     $cmd .= " --disablerepo=" . join(",", @$disabled) if @$disabled;
 
