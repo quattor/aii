@@ -37,28 +37,28 @@
       <name>Michel Jouvin</name>
       <email>jouvin@lal.in2p3.fr</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
     <contributor>
       <name>Ben Jones</name>
       <email>Ben.Jones@morganstanley.com</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
     <contributor>
       <name>Gabor Gombas</name>
       <email>Gabor.Gombas@morganstanley.com</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
     <contributor>
       <name>Nick Williams</name>
       <email>Nick.Williams@morganstanley.com</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
   </contributors>
@@ -84,26 +84,26 @@
       <id>cfg-module-rpm</id>
 
       <activation>
-	<file>
+        <file>
           <exists>/usr/bin/rpmbuild</exists>
-	</file>
+        </file>
       </activation>
 
       <build>
-	<plugins>
-	  <plugin>
-	    <groupId>org.codehaus.mojo</groupId>
-	    <artifactId>rpm-maven-plugin</artifactId>
-	    <executions>
-	      <execution>
-		<id>build-rpm</id>
-		<goals>
-		  <goal>attached-rpm</goal>
-		</goals>
-	      </execution>
-	    </executions>
-	  </plugin>
-	</plugins>
+        <plugins>
+          <plugin>
+            <groupId>org.codehaus.mojo</groupId>
+            <artifactId>rpm-maven-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>build-rpm</id>
+                <goals>
+                  <goal>attached-rpm</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
       </build>
     </profile>
 
@@ -112,59 +112,59 @@
       <id>cfg-module-dist</id>
 
       <activation>
-	<file>
-	  <missing>deactivate.cfg.module.dist</missing>
-	</file>
+        <file>
+          <missing>deactivate.cfg.module.dist</missing>
+        </file>
       </activation>
 
       <build>
-	<plugins>
+        <plugins>
 
-	  <plugin>
-	    <groupId>org.apache.maven.plugins</groupId>
-	    <artifactId>maven-resources-plugin</artifactId>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-resources-plugin</artifactId>
 
-	    <executions>
+            <executions>
 
-	      <execution>
-		<id>filter-perl-sources</id>
-		<configuration>
-		  <outputDirectory>${project.build.directory}/lib/perl</outputDirectory>
-		  <resources>
-		    <resource>
-		      <directory>src/main/perl</directory>
-		      <filtering>true</filtering>
-		      <includes>
-			<include>aii-*</include>
-		      </includes>
-		    </resource>
-		  </resources>
-		</configuration>
-	      </execution>
+              <execution>
+                <id>filter-perl-sources</id>
+                <configuration>
+                  <outputDirectory>${project.build.directory}/lib/perl</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/main/perl</directory>
+                      <filtering>true</filtering>
+                      <includes>
+                        <include>aii-*</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
 
-	      <execution>
-		<id>filter-pod-sources</id>
-		<phase>process-sources</phase>
-		<goals>
-		  <goal>copy-resources</goal>
-		</goals>
-		<configuration>
-		  <encoding>UTF-8</encoding>
-		  <delimiters>
-		    <delimiter>${*}</delimiter>
-		  </delimiters>
-		  <outputDirectory>${project.build.directory}/doc/pod</outputDirectory>
-		  <resources>
-		    <resource>
-		      <directory>src/main/perl</directory>
-		      <filtering>true</filtering>
-		      <includes>
-			<include>aii-*</include>
-		      </includes>
-		    </resource>
-		  </resources>
-		</configuration>
-	      </execution>
+              <execution>
+                <id>filter-pod-sources</id>
+                <phase>process-sources</phase>
+                <goals>
+                  <goal>copy-resources</goal>
+                </goals>
+                <configuration>
+                  <encoding>UTF-8</encoding>
+                  <delimiters>
+                    <delimiter>${*}</delimiter>
+                  </delimiters>
+                  <outputDirectory>${project.build.directory}/doc/pod</outputDirectory>
+                  <resources>
+                    <resource>
+                      <directory>src/main/perl</directory>
+                      <filtering>true</filtering>
+                      <includes>
+                        <include>aii-*</include>
+                      </includes>
+                    </resource>
+                  </resources>
+                </configuration>
+              </execution>
 
               <execution>
                 <id>filter-eg-sources</id>
@@ -190,8 +190,8 @@
                 </configuration>
               </execution>
 
-	    </executions>
-	  </plugin>
+            </executions>
+          </plugin>
 
           <plugin>
             <artifactId>maven-assembly-plugin</artifactId>
@@ -202,9 +202,9 @@
               <execution>
                 <id>tarballs</id>
                 <configuration combine.self="override">
-		  <descriptors>
-		    <descriptor>target/dependency/assemblies/bin.xml</descriptor>
-		  </descriptors>
+                  <descriptors>
+                    <descriptor>target/dependency/assemblies/bin.xml</descriptor>
+                  </descriptors>
                 </configuration>
               </execution>
 
@@ -212,7 +212,7 @@
 
           </plugin>
 
-	</plugins>
+        </plugins>
       </build>
     </profile>
 
@@ -224,102 +224,102 @@
 
       <plugins>
 
-	<plugin>
-	  <groupId>org.codehaus.mojo</groupId>
-	  <artifactId>rpm-maven-plugin</artifactId>
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>rpm-maven-plugin</artifactId>
 
-	  <configuration>
-	    <summary>aii-${project.artifactId}</summary>
-	    <name>aii-${project.artifactId}</name>
-	    <provides>
-	      <provide>aii-${project.artifactId}</provide>
-	    </provides>
-	    <needarch>noarch</needarch>
-	    <requires>
-	      <require>ncm-ncd</require>
-	      <require>aii-server</require>
-	      <require>perl-CDB_File</require>
-	      <require>ccm &gt;= 2.3.0</require>
-	    </requires>
+          <configuration>
+            <summary>aii-${project.artifactId}</summary>
+            <name>aii-${project.artifactId}</name>
+            <provides>
+              <provide>aii-${project.artifactId}</provide>
+            </provides>
+            <needarch>noarch</needarch>
+            <requires>
+              <require>ncm-ncd</require>
+              <require>aii-server</require>
+              <require>perl-CDB_File</require>
+              <require>ccm &gt;= 2.3.0</require>
+            </requires>
 
-	    <mappings>
+            <mappings>
 
-	      <mapping>
-		<directory>/usr/sbin</directory>
-		<filemode>755</filemode>
-		<username>root</username>
-		<groupname>root</groupname>
-		<directoryIncluded>false</directoryIncluded>
-		<sources>
-		  <source>
-		    <location>target/lib/perl</location>
-		    <excludes>
-		      <exclude>*.pod</exclude>
-		    </excludes>
-		  </source>
-		</sources>
-	      </mapping>
+              <mapping>
+                <directory>/usr/sbin</directory>
+                <filemode>755</filemode>
+                <username>root</username>
+                <groupname>root</groupname>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>target/lib/perl</location>
+                    <excludes>
+                      <exclude>*.pod</exclude>
+                    </excludes>
+                  </source>
+                </sources>
+              </mapping>
 
-	      <mapping>
-		<directory>/usr/share/doc/aii-${project.artifactId}-${project.version}</directory>
-		<filemode>644</filemode>
-		<username>root</username>
-		<groupname>root</groupname>
-		<documentation>true</documentation>
-		<directoryIncluded>false</directoryIncluded>
-		<sources>
-		  <source>
-		    <location>${basedir}</location>
-		    <includes>
-		      <include>ChangeLog</include>
-		    </includes>
-		  </source>
+              <mapping>
+                <directory>/usr/share/doc/aii-${project.artifactId}-${project.version}</directory>
+                <filemode>644</filemode>
+                <username>root</username>
+                <groupname>root</groupname>
+                <documentation>true</documentation>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>${basedir}</location>
+                    <includes>
+                      <include>ChangeLog</include>
+                    </includes>
+                  </source>
                   <source>
                     <location>target/doc</location>
                     <includes>
                       <include>eg/*</include>
                     </includes>
                   </source>
-		</sources>
-	      </mapping>
+                </sources>
+              </mapping>
 
-	      <mapping>
-		<directory>/usr/share/doc/pan</directory>
-		<filemode>644</filemode>
-		<username>root</username>
-		<groupname>root</groupname>
-		<documentation>true</documentation>
-		<directoryIncluded>false</directoryIncluded>
-		<sources>
-		  <source>
-		    <location>target/pan</location>
-		    <includes>
-		      <include>**/*</include>
-		    </includes>
-		  </source>
-		</sources>
-	      </mapping>
+              <mapping>
+                <directory>/usr/share/doc/pan</directory>
+                <filemode>644</filemode>
+                <username>root</username>
+                <groupname>root</groupname>
+                <documentation>true</documentation>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>target/pan</location>
+                    <includes>
+                      <include>**/*</include>
+                    </includes>
+                  </source>
+                </sources>
+              </mapping>
 
-	      <mapping>
-		<directory>/usr/share/doc/man</directory>
-		<filemode>644</filemode>
-		<username>root</username>
-		<groupname>root</groupname>
-		<documentation>true</documentation>
-		<directoryIncluded>false</directoryIncluded>
-		<sources>
-		  <source>
-		    <location>target/doc/man</location>
-		    <includes>
-		      <include>**/*</include>
-		    </includes>
-		  </source>
-		</sources>
-	      </mapping>
+              <mapping>
+                <directory>/usr/share/doc/man</directory>
+                <filemode>644</filemode>
+                <username>root</username>
+                <groupname>root</groupname>
+                <documentation>true</documentation>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>target/doc/man</location>
+                    <includes>
+                      <include>**/*</include>
+                    </includes>
+                  </source>
+                </sources>
+              </mapping>
 
-	    </mappings>
-	  </configuration>
-	</plugin>
+            </mappings>
+          </configuration>
+        </plugin>
       </plugins>
 
     </pluginManagement>
