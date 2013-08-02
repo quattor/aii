@@ -257,6 +257,10 @@
 		      <exclude>*.pod</exclude>
 		    </excludes>
 		  </source>
+                  <softlinkSource>
+                    <destination>quattor-installer</destination>
+                    <location>aii-shellfe</location>
+                  </softlinkSource>
 		</sources>
 	      </mapping>
 
