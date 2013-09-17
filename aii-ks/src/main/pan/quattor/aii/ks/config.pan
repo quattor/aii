@@ -322,6 +322,13 @@ variable AII_OSINSTALL_PACKAGES ?= list ("openssh",
     "perl-Crypt-SSLeay",
     "lsof",
     "perl-IO-String",
+    "perl-Proc-ProcessTable",
+    "perl-common-sense",
+    "perl-JSON-XS",
+    "perl-GSSAPI",
+    "perl-Template-Toolkit",
+    "yum-priorities",
+    "yum-versionlock",
     "curl");
 
 
@@ -395,13 +402,7 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 variable AII_OSINSTALL_BASE_PACKAGES ?= list (
     "perl-LC",
     "perl-AppConfig-caf",
-    "perl-Proc-ProcessTable",
-    "perl-IO-String",
     "perl-CAF",
-    "perl-common-sense",
-    "perl-JSON-XS",
-    "perl-parent",
-    "perl-GSSAPI",
     "ccm",
     "ncm-template",
     "ncm-ncd",
