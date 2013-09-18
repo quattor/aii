@@ -68,7 +68,7 @@ type structure_ks_ks_info = {
 	"pre_install_script" ? type_absoluteURI
 	"post_install_script" ? type_absoluteURI
 	"post_reboot_script" ? type_absoluteURI
-	"repo"          ? string
+	"repo"          ? string[]
 	"timezone"	: string
 	"selinux"	? string with match (SELF, "disabled|enforcing|permissive")
 	"xwindows"	? structure_ks_ksxinfo
