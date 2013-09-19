@@ -327,8 +327,6 @@ variable AII_OSINSTALL_PACKAGES ?= list ("openssh",
     "perl-JSON-XS",
     "perl-GSSAPI",
     "perl-Template-Toolkit",
-    "yum-priorities",
-    "yum-versionlock",
     "curl");
 
 
