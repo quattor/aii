@@ -247,6 +247,10 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
+    if (exists $tree->{repo}) {
+        print "repo $_ \n" foreach @{$tree->{repo}};
+    }
+
     if ($tree->{enable_sshd}) {
         print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
