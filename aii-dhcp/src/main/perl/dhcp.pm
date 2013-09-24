@@ -71,6 +71,8 @@ sub update_dhcp_config_file {
     my @NTR = @$ntr;
     my ($nodes_regexp, $node);
 
+    my $indent = "    ";
+
     #
     # Remove existing nodes (both NodesToConfigure and NodesToRemove)
     #
@@ -90,7 +92,7 @@ sub update_dhcp_config_file {
     my @netandmasks = ($text =~
                        /\n\s*subnet\s+([\d\.]+)\s+netmask\s+([\d\.]+)/g);
     if ($#netandmasks % 2 == 0) {
-        $self->error("aii-dhcp: syntax error on dhcpd.conf: " . 
+        $self->error("aii-dhcp: syntax error on dhcpd.conf: " .
                     "netmask/network missing in subnet declaration");
         return(1, '');
     }
@@ -101,7 +103,7 @@ sub update_dhcp_config_file {
                    MASK    => unpack('N',Socket::inet_aton($netandmasks[$i+1])),
                    ST_NET  => $netandmasks[$i],
                    ST_MASK => $netandmasks[$i+1]});
-        $self->verbose("aii-dhcp: found subnet $netandmasks[$i] " . 
+        $self->verbose("aii-dhcp: found subnet $netandmasks[$i] " .
                        "mask $netandmasks[$i+1]");
     }
     # If subnets are not defined in the DHCP configuration file managed by AII,
@@ -133,11 +135,11 @@ sub update_dhcp_config_file {
 
                 # basic host declaration
                 push @newnodes, "\n".$indent."host $node->{NAME} {  # added by aii-dhcp";
-        
+
                 foreach $mac (split(' ', $node->{MAC})) {
                     push @newnodes, "$indent\t  hardware ethernet $mac;";
                 }
-        
+
                 push @newnodes, "$indent\t  fixed-address $node->{ST_IP};";
 
                 # TFTP server
@@ -149,13 +151,13 @@ sub update_dhcp_config_file {
                 if ($node->{MORE_OPT}) {
                     push @newnodes, "$indent\t  $node->{MORE_OPT}";
                 }
- 
+
                 push @newnodes, "$indent\t}";
-                if ( $subnet_defined ) {   
+                if ( $subnet_defined ) {
                     $self->verbose("aii-dhcp: added node $node->{NAME} ".
                                    "to subnet $net->{ST_NET}");
                 } else {
-                    $self->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");                  
+                    $self->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");
                 }
             }
 
@@ -169,9 +171,9 @@ sub update_dhcp_config_file {
         my $braces = 0;
         my $found_net;
         if ( $subnet_defined ) {
-            $found_net = 0;      
+            $found_net = 0;
         } else {
-            $found_net = 1;                
+            $found_net = 1;
         }
 
         for my $line (@text) {
@@ -263,7 +265,7 @@ sub update_dhcp_config {
     $self->debug(3, "Locked dhcp configuration");
     $self->debug(3,"DHCP configuration file : $filename");
     if (!open(FILE, "< $filename")) {
-        $self->error("dhcp: update configuration: ". 
+        $self->error("dhcp: update configuration: ".
                          "file access error $filename");
         return(1);
     }
@@ -386,4 +388,3 @@ sub Unconfigure
 1;
 
 __END__
-
