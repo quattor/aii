@@ -560,7 +560,7 @@ sub ksinstall_rpm
     my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
     my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
 
-    $cmd .= " --disablerepo=" . join(",", @$disabled) if @$disabled;
+    $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
     print $cmd, join("\\\n    ", @pkgs),
          "|| fail 'Unable to install packages'\n";
