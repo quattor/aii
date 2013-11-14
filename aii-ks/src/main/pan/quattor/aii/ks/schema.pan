@@ -47,6 +47,7 @@ type structure_ks_ks_info = {
 	"bootloader_append" ? string
 	"bootdisk_order" ? string[] # From DESYs template
 	"clearmbr"	: boolean = true
+	"enable_service" ? string[]
 	"enable_sshd"   : boolean = false
 	"clearpart"	? string []
 	"driverdisk"	? type_absoluteURI[]
