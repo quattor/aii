@@ -33,51 +33,54 @@ our @EXPORT_OK = qw (kspkglist kspkgurl ksuserhooks ksinstall_rpm);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
-use constant { KS		=> "/system/aii/osinstall/ks",
-	       HOSTNAME		=> "/system/network/hostname",
-	       DOMAINNAME	=> "/system/network/domainname",
-	       FS		=> "/system/filesystems/",
-	       PART		=> "/system/blockdevices/partitions",
-	       REPO		=> "/software/repositories",
-	       PRESCRIPT	=> "/system/aii/osinstall/ks/pre_install_script",
-	       PREHOOK		=> "/system/aii/hooks/pre_install",
-	       PREENDHOOK	=> "/system/aii/hooks/pre_install_end",
-	       POSTREBOOTSCRIPT	=> "/system/aii/osinstall/ks/post_reboot_script",
-	       POSTREBOOTHOOK	=> "/system/aii/hooks/post_reboot",
-	       POSTREBOOTENDHOOK	=> "/system/aii/hooks/post_reboot_end",
-	       POSTSCRIPT	=> "/system/aii/osinstall/ks/post_install_script",
-	       POSTHOOK		=> "/system/aii/hooks/post_install",
-	       ANACONDAHOOK	=> "/system/aii/hooks/anaconda",
-	       PREREBOOTHOOK	=> "/system/aii/hooks/pre_reboot",
-	       PKG		=> "/software/packages/",
-	       KERNELVERSION	=> "/system/kernel/version",
-	       ACKURL		=> "/system/aii/osinstall/ks/ackurl",
-	       ACKLIST          => "/system/aii/osinstall/ks/acklist",
-	       CARDS		=> "/hardware/cards/nic",
-	       SPMAPROXY	=> "/software/components/spma/proxy",
-	       SPMA		=> "/software/components/spma",
-	       ROOTMAIL		=> "/system/rootmail",
-	       AII_PROFILE	=> "/system/aii/osinstall/ks/node_profile",
-	       CCM_PROFILE	=> "/software/components/ccm/profile",
-	       CCM_TRUST	=> "/software/components/ccm/trust",
-	       CCM_KEY		=> "/software/components/ccm/key_file",
-	       CCM_CERT		=> "/software/components/ccm/cert_file",
-	       CCM_CA		=> "/software/components/ccm/ca_file",
-	       CCM_WORLDR	=> "/software/components/ccm/world_readable",
+use constant { KS               => "/system/aii/osinstall/ks",
+               HOSTNAME         => "/system/network/hostname",
+               DOMAINNAME       => "/system/network/domainname",
+               FS               => "/system/filesystems/",
+               PART             => "/system/blockdevices/partitions",
+               REPO             => "/software/repositories",
+               PRESCRIPT        => "/system/aii/osinstall/ks/pre_install_script",
+               PREHOOK          => "/system/aii/hooks/pre_install",
+               PREENDHOOK       => "/system/aii/hooks/pre_install_end",
+               POSTREBOOTSCRIPT => "/system/aii/osinstall/ks/post_reboot_script",
+               POSTREBOOTHOOK   => "/system/aii/hooks/post_reboot",
+               POSTREBOOTENDHOOK        => "/system/aii/hooks/post_reboot_end",
+               POSTSCRIPT       => "/system/aii/osinstall/ks/post_install_script",
+               POSTHOOK         => "/system/aii/hooks/post_install",
+               ANACONDAHOOK     => "/system/aii/hooks/anaconda",
+               PREREBOOTHOOK    => "/system/aii/hooks/pre_reboot",
+               PKG              => "/software/packages/",
+               KERNELVERSION    => "/system/kernel/version",
+               ACKURL           => "/system/aii/osinstall/ks/ackurl",
+               ACKLIST          => "/system/aii/osinstall/ks/acklist",
+               CARDS            => "/hardware/cards/nic",
+               SPMAPROXY        => "/software/components/spma/proxy",
+               SPMA             => "/software/components/spma",
+               SPMA_OBSOLETES   => "/software/components/spma/process_obsoletes",
+               ROOTMAIL         => "/system/rootmail",
+               AII_PROFILE      => "/system/aii/osinstall/ks/node_profile",
+               CCM_PROFILE      => "/software/components/ccm/profile",
+               CCM_TRUST        => "/software/components/ccm/trust",
+               CCM_KEY          => "/software/components/ccm/key_file",
+               CCM_CERT         => "/software/components/ccm/cert_file",
+               CCM_CA           => "/software/components/ccm/ca_file",
+               CCM_WORLDR       => "/software/components/ccm/world_readable",
                CCM_DBFORMAT     => "/software/components/ccm/dbformat",
-	       EMAIL_SUCCESS	=> "/system/aii/osinstall/ks/email_success",
-	       NAMESERVER	=> "/system/network/nameserver/0",
-	       FORWARDPROXY	=> "forward",
-		 END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
-	   };
-my $localhost = hostname();
+               EMAIL_SUCCESS    => "/system/aii/osinstall/ks/email_success",
+               NAMESERVER       => "/system/network/nameserver/0",
+               FORWARDPROXY     => "forward",
+               END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
+               BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
+               LOCALHOST        => hostname(),
+               ENABLE_SSHD      => "enable_sshd",
+           };
 
 # Base package path for user hooks.
-use constant   MODULEBASE	=> "AII::";
-use constant   USEMODULE	=> "use " . MODULEBASE;
+use constant   MODULEBASE       => "AII::";
+use constant   USEMODULE        => "use " . MODULEBASE;
 
 # Configuration variable for the osinstall directory.
-use constant   KSDIROPT		=> 'osinstalldir';
+use constant   KSDIROPT         => 'osinstalldir';
 
 # Packages to be installed when setting up Quattor.
 
@@ -85,7 +88,7 @@ use constant   KSDIROPT		=> 'osinstalldir';
 # Packages containing kernels. kernel-xen is not listed here, as it
 # depends on different versions of mkinitrd and e2fsprogs, and
 # installing them may cause a dependency hell.
-use constant KERNELLIST		=> qw (kernel-firmware kernel kernel-smp);
+use constant KERNELLIST         => qw (kernel-firmware kernel kernel-smp);
 
 
 # Opens the kickstart file and sets its handle as the default.
@@ -100,7 +103,7 @@ sub ksopen
     $self->debug(3,"Kickstart file directory = $ksdir");
 
     my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
-				    mode => 0664, log => $this_app);
+                                    mode => 0664, log => $this_app);
     select ($ks);
 }
 
@@ -131,9 +134,9 @@ sub ksnetwork
     my ($tree, $config) = @_;
 
     if ($tree->{bootproto} eq 'dhcp') {
-	$this_app->debug (5, "Node configures its network via DHCP");
-	print "network --bootproto=dhcp\n";
-	return;
+        $this_app->debug (5, "Node configures its network via DHCP");
+        print "network --bootproto=dhcp\n";
+        return;
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
@@ -143,10 +146,16 @@ sub ksnetwork
     $this_app->debug (5, "Node will boot from $dev");
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless (exists ($net->{ip})) {
-	    $this_app->error ("Static boot protocol specified ",
-			      "but no IP given to the interface");
-	    return;
+            $this_app->error ("Static boot protocol specified ",
+                              "but no IP given to the interface");
+            return;
     }
+<<<<<<< HEAD
+=======
+
+    my $mtu = exists($net->{mtu}) ? "--mtu=$net->{mtu} " : "";
+
+>>>>>>> master
     my $gw = '--gateway=';
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
@@ -156,9 +165,9 @@ sub ksnetwork
         # This is a recipe for disaster
         # Best guess is that no gateway is needed.
         $this_app->debug (5, "No gateway defined for dev $dev and ",
-			  " using static network description.",
-			  "Let's hope everything is reachable through a ",
-			  "direct route.");
+                          " using static network description.",
+                          "Let's hope everything is reachable through a ",
+                          "direct route.");
         $gw='';
         print <<EOF;
 ## No gateway defined for dev $dev and using static network description.
@@ -168,7 +177,7 @@ EOF
 
     my $ns = $config->getElement(NAMESERVER)->getValue;
     print <<EOF;
-network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn
+network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn $mtu
 EOF
 
 }
@@ -185,33 +194,33 @@ sub ksuserhooks
     $path =~ m(/system/aii/hooks/([^/]+));
     my $method = $1;
     while ($el->hasNextElement) {
-	my $nel = $el->getNextElement;
-	my $tree = $nel->getTree;
-	my $nelpath = $nel->getPath->toString;
-	# Catch bad guys
-	if ($tree->{module} !~ m/^[_a-zA-Z]\w+$/) {
-	    $this_app->error ("Invalid identifier specified as a hook module. ",
-			      "Skipping");
-	    next;
-	}
-	my $modulename = MODULEBASE . $tree->{module};
-	$this_app->debug (5, "Loading " . $modulename);
-	eval ("use " . $modulename);
-	if ($@) {
-	    # Fallback: try without the AII:: prefix
-	    my $orig_error = $@;
-	    $modulename = $tree->{module};
-	    $this_app->debug (5, "Loading " . $modulename);
-	    eval ("use " . $modulename);
-	    # Report the original error message if the fallback failed
-	    throw_error ("Couldn't load module $tree->{module}: $orig_error")
-		if $@;
-	}
-	my $hook = eval ($modulename . "->new");
-	throw_error ("Couldn't instantiate object of class $tree->{module}")
-	  if $@;
-	$this_app->debug (5, "Running $tree->{module}->$method");
-	$hook->$method ($config, $nelpath);
+        my $nel = $el->getNextElement;
+        my $tree = $nel->getTree;
+        my $nelpath = $nel->getPath->toString;
+        # Catch bad guys
+        if ($tree->{module} !~ m/^[_a-zA-Z]\w+$/) {
+            $this_app->error ("Invalid identifier specified as a hook module. ",
+                              "Skipping");
+            next;
+        }
+        my $modulename = MODULEBASE . $tree->{module};
+        $this_app->debug (5, "Loading " . $modulename);
+        eval ("use " . $modulename);
+        if ($@) {
+            # Fallback: try without the AII:: prefix
+            my $orig_error = $@;
+            $modulename = $tree->{module};
+            $this_app->debug (5, "Loading " . $modulename);
+            eval ("use " . $modulename);
+            # Report the original error message if the fallback failed
+            throw_error ("Couldn't load module $tree->{module}: $orig_error")
+                if $@;
+        }
+        my $hook = eval ($modulename . "->new");
+        throw_error ("Couldn't instantiate object of class $tree->{module}")
+          if $@;
+        $this_app->debug (5, "Running $tree->{module}->$method");
+        $hook->$method ($config, $nelpath);
     }
 }
 
@@ -244,6 +253,23 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
+<<<<<<< HEAD
+=======
+    if (exists $tree->{repo}) {
+        print "repo $_ \n" foreach @{$tree->{repo}};
+    }
+
+    if ($tree->{enable_sshd}) {
+        print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
+    }
+
+    if (exists($tree->{logging})) {
+        print "logging --host=$tree->{logging}->{host} ",
+            "--port=$tree->{logging}->{port}";
+        print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
+        print "\n";
+    }
+>>>>>>> master
     print "bootloader  --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
@@ -252,17 +278,17 @@ EOF
     print "\n";
 
     if (exists $tree->{xwindows}) {
-	print "xconfig ";
-	while (my ($key, $val) = each %{$tree->{xwindows}}) {
-	    if ($key eq "startxonboot") {
-		print "--$key " if $val;
-	    } else {
-		print "--$key=$val ";
-	    }
-	}
-	print "\n";
+        print "xconfig ";
+        while (my ($key, $val) = each %{$tree->{xwindows}}) {
+            if ($key eq "startxonboot") {
+                print "--$key " if $val;
+            } else {
+                print "--$key=$val ";
+            }
+        }
+        print "\n";
     } else {
-	print "skipx\n" unless exists $tree->{xwindows};
+        print "skipx\n" unless exists $tree->{xwindows};
     }
 
     print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
@@ -288,9 +314,9 @@ EOF
     print "zerombr yes\n" if $tree->{clearmbr};
 
     if (exists ($tree->{ignoredisk}) &&
-	scalar (@{$tree->{ignoredisk}})) {
-	print "ignoredisk --drives=",
-	    join (',', @{$tree->{ignoredisk}}), "\n";
+        scalar (@{$tree->{ignoredisk}})) {
+        print "ignoredisk --drives=",
+            join (',', @{$tree->{ignoredisk}}), "\n";
     }
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
@@ -318,10 +344,10 @@ sub ksmountpoints
     my $tree = $config->getElement(KS)->getTree;
     my %ignoredisk;
     if (exists ($tree->{ignoredisk}) &&
-	scalar (@{$tree->{ignoredisk}})) {
-	foreach my $disk (@{$tree->{ignoredisk}}) {
-	    $ignoredisk{$disk} = 1;
-	}
+        scalar (@{$tree->{ignoredisk}})) {
+        foreach my $disk (@{$tree->{ignoredisk}}) {
+            $ignoredisk{$disk} = 1;
+        }
     }
 
     print <<EOF;
@@ -335,13 +361,13 @@ EOF
 
     my $fss = $config->getElement (FS);
     while ($fss->hasNextElement) {
-	my $fs = $fss->getNextElement;
-	my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
-					   $config);
-	next if (exists $fstree->{block_device}->{holding_dev} &&
-		 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
-	$this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
-	$fstree->print_ks;
+        my $fs = $fss->getNextElement;
+        my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
+                                           $config);
+        next if (exists $fstree->{block_device}->{holding_dev} &&
+                 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
+        $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
+        $fstree->print_ks;
     }
 }
 
@@ -353,7 +379,7 @@ sub ksuserscript
     return unless $config->elementExists ($path);
     my $url = $config->getElement ($path)->getValue;
     $this_app->debug (5, "User defined script to be fetched ",
-		      "from $url for path $path");
+                      "from $url for path $path");
 
     print <<EOS;
 pushd /root
@@ -437,9 +463,9 @@ align () {
     START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
     ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
     if [ $START != $ALIGNED ]; then
-	echo "-----------------------------------"
-	echo "Aligning $path: old start sector: $START, new: $ALIGNED"
-	fdisk $disk <<end_of_fdisk
+        echo "-----------------------------------"
+        echo "Aligning $path: old start sector: $START, new: $ALIGNED"
+        fdisk $disk <<end_of_fdisk
 x
 b
 $n
@@ -447,7 +473,7 @@ $ALIGNED
 w
 end_of_fdisk
 
-	rereadpt $disk
+        rereadpt $disk
     fi
 }
 
@@ -501,41 +527,41 @@ sub ksprint_filesystems
     my $clear = [];
 
     if ($config->elementExists ("/system/aii/osinstall/ks/clearpart")) {
-	$clear = $config->getElement ("/system/aii/osinstall/ks/clearpart")->getTree;
+        $clear = $config->getElement ("/system/aii/osinstall/ks/clearpart")->getTree;
     }
 
     foreach (@$clear) {
-	my $disk = build ($config, "physical_devs/".$self->escape($_));
-	$disk->clearpart_ks;
+        my $disk = build ($config, "physical_devs/".$self->escape($_));
+        $disk->clearpart_ks;
     }
     while ($fss->hasNextElement) {
-	my $fs = $fss->getNextElement;
-	my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
-					   $config);
-	$fstree->del_pre_ks;
-	push (@filesystems, $fstree);
+        my $fs = $fss->getNextElement;
+        my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
+                                           $config);
+        $fstree->del_pre_ks;
+        push (@filesystems, $fstree);
     }
 
     # Create what needs to be created.
     $fss = $config->getElement (PART);
     my @part = ();
     while ($fss->hasNextElement) {
-	my $p = $fss->getNextElement;
-	my $pt = NCM::Partition->new ($p->getPath->toString,
-				      $config);
-	push (@part, $pt);
+        my $p = $fss->getNextElement;
+        my $pt = NCM::Partition->new ($p->getPath->toString,
+                                      $config);
+        push (@part, $pt);
     }
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (sort partition_compare @part);
     foreach (sort partition_compare @part) {
-	$_->align_ks if $_->can('align_ks');
+        $_->align_ks if $_->can('align_ks');
     }
     $_->create_ks foreach @filesystems;
 
     # Ensure that all LVMs are active before formatting anything, or
     # they won't appear during the reinstallation process.
     if ($config->elementExists("/system/blockdevices/logical_volumes")) {
-	print <<EOF;
+        print <<EOF;
 lvm vgscan --mknodes
 lvm vgchange -ay
 EOF
@@ -593,6 +619,7 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
+<<<<<<< HEAD
     my @pkglist = kspkglist ($config, @pkgs);
     my $proxy_opts = "";
 
@@ -606,24 +633,35 @@ sub ksinstall_rpm
     print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
       " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
 	foreach @pkglist;
+=======
+    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+         "|| fail 'Unable to install packages'\n";
+>>>>>>> master
 }
 
 sub proxy {
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
     if ($config->elementExists (SPMAPROXY)) {
-	my $spma = $config->getElement (SPMA)->getTree;
-	my $proxy_host = $spma->{proxyhost};
-	my @proxies = split /,/,$proxy_host;
-	if (scalar(@proxies) == 1) {
-	    # there's only one proxy specified
+        my $spma = $config->getElement (SPMA)->getTree;
+        my $proxy_host = $spma->{proxyhost};
+        my @proxies = split /,/,$proxy_host;
+        if (scalar(@proxies) == 1) {
+            # there's only one proxy specified
             $proxyhost = $spma->{proxyhost};
+<<<<<<< HEAD
 	} elsif (scalar(@proxies) > 1) {
 	    # optimize by picking the responding server as the proxy
 	    my ($me) = grep { /\b$localhost\b/ } @proxies;
 	    $me ||= $proxies[0];
+=======
+        } elsif (scalar(@proxies) > 1) {
+            # optimize by picking the responding server as the proxy
+            my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
+            $me ||= $proxies[0];
+>>>>>>> master
             $proxyhost = $me;
-	}
+        }
         if (exists $spma->{proxyport}) {
             $proxyport = $spma->{proxyport};
         }
@@ -763,10 +801,10 @@ sub ksquattor_config
     # match its expectations
     my $clear_netcfg = 0;
     if ($config->elementExists("/system/network/set_hwaddr") &&
-	    $config->getElement("/system/network/set_hwaddr")->getValue &&
-	    $config->elementExists("/system/aii/nbp/pxelinux/ksdevicemode") &&
-	    $config->getElement("/system/aii/nbp/pxelinux/ksdevicemode")->getValue eq 'mac') {
-	$clear_netcfg = 1;
+            $config->getElement("/system/network/set_hwaddr")->getValue &&
+            $config->elementExists("/system/aii/nbp/pxelinux/ksdevicemode") &&
+            $config->getElement("/system/aii/nbp/pxelinux/ksdevicemode")->getValue eq 'mac') {
+        $clear_netcfg = 1;
     }
 
     print <<EOF;
@@ -780,9 +818,9 @@ cat <<End_Of_CCM_Conf > /etc/ccm.conf
 EOF
 
     if ($config->elementExists (AII_PROFILE)) {
-	print "profile ", $config->getElement (AII_PROFILE)->getValue, "\n";
+        print "profile ", $config->getElement (AII_PROFILE)->getValue, "\n";
     } else {
-	print "profile ", $config->getElement (CCM_PROFILE)->getValue, "\n";
+        print "profile ", $config->getElement (CCM_PROFILE)->getValue, "\n";
     }
     print "key_file ", $config->getElement (CCM_KEY)->getValue, "\n"
       if $config->elementExists (CCM_KEY);
@@ -813,7 +851,7 @@ sleep 5 # give nscd time to initialize
 EOF
 
     if ($clear_netcfg) {
-	print <<EOF;
+        print <<EOF;
 rm -f /etc/udev.d/rules.d/70-persistent-net.rules
 rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
 EOF
@@ -860,7 +898,7 @@ sub post_reboot_script
 # RAID. This fixes it.
 sub ksfix_grub
 {
-    	print <<EOF;
+        print <<EOF;
 BOOT_ARRAY=`df /boot | awk '/dev/{print \$1}'`
 if [ -n "\$BOOT_ARRAY" ] ; then
     # Select only active disks (skip spares)
@@ -927,6 +965,114 @@ perl -pi -e 's/hd(\\d+)/"hd".(\$1 > 1 ? 0:\$1)/e' /boot/grub/grub.conf
 EOF
 }
 
+<<<<<<< HEAD
+=======
+
+
+
+sub yum_setup
+{
+    my ($self, $config) = @_;
+
+    my $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
+    my $repos = $config->getElement (REPO)->getTree();
+
+    print <<EOF;
+mkdir -p /tmp/aii/yum/repos
+cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
+[main]
+cachedir=/var/cache/yum/\$basearch/\$releasever
+keepcache=0
+debuglevel=2
+logfile=/var/log/yum.log
+exactarch=1
+gpgcheck=1
+plugins=1
+installonly_limit=3
+clean_dependencies_on_remove=1
+reposdir=/tmp/aii/yum/repos
+obsoletes=$obsoletes
+end_of_yum_conf
+cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
+EOF
+
+    my ($phost, $pport, $ptype) = proxy($config);
+
+    foreach my $repo (@$repos) {
+        if ($ptype && $ptype eq 'reverse') {
+            $repo->{protocols}->[0]->{url} =~ s{://.*?/}{$phost:$pport};
+        }
+        print <<EOF;
+[$repo->{name}]
+enabled=1
+baseurl=$repo->{protocols}->[0]->{url}
+name=$repo->{name}
+gpgcheck=0
+skip_if_unavailable=1
+EOF
+        if ($ptype && $ptype eq 'forward') {
+            print <<EOF;
+proxy=http://$phost:$pport/
+EOF
+        }
+
+        if (exists($repo->{priority})) {
+            print <<EOF;
+priority=$repo->{priority}
+EOF
+        }
+    }
+
+    print "end_of_repos\n";
+}
+
+sub process_pkgs
+{
+    my ($self, $pkg, $ver) = @_;
+
+    my @ret;
+    if (%$ver) {
+        while (my ($version, $arch) = each(%$ver)) {
+            my $p = sprintf("%s-%s", $pkg, unescape($version));
+            if ($arch) {
+                push(@ret, map("$p.$_", keys(%{$arch->{arch}})));
+            } else {
+                push(@ret, $p);
+            }
+        }
+        return @ret;
+    }
+
+    return $pkg;
+}
+
+
+sub yum_install_packages
+{
+    my ($self, $config) = @_;
+
+    my @pkgs;
+    my $t = $config->getElement (PKG)->getTree();
+    my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
+
+    print <<EOF;
+# This one will be reinstalled by Yum in the correct version for our
+# kernels.
+rpm -e --nodeps kernel-firmware
+# This one may interfere with the versions of Yum required on SL5.  If
+# it's needed at all, it will be reinstalled by the SPMA component.
+rpm -e --nodeps yum-conf
+EOF
+    while (my ($pkg, $st) = each(%$t)) {
+        my $pkgst = unescape($pkg);
+        if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
+            push (@pkgs, $self->process_pkgs($pkgst, $st));
+        }
+    }
+    ksinstall_rpm(@pkgs);
+}
+
+>>>>>>> master
 # Prints the %post script. The post_reboot script is created inside
 # this method.
 sub post_install_script
@@ -956,14 +1102,14 @@ EOF
     ksinstall_drivers ($config);
     ksuserscript ($config, POSTSCRIPT);
     if ($tree->{bootloader_location} eq "mbr") {
-	ksfix_grub;
+        ksfix_grub;
     }
 
     ## disable services, if any
     if (exists($tree->{disable_service})) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
-	if ($services) {
+        if ($services) {
         print <<EOF;
 #
 # disable services (if they exist)
@@ -989,9 +1135,9 @@ EOF
 
     my @acklist;
     if ($config->elementExists (ACKLIST) ) {
-	@acklist = @{$config->getElement (ACKLIST)->getTree()};
+        @acklist = @{$config->getElement (ACKLIST)->getTree()};
     } else {
-	@acklist = ($config->getElement (ACKURL)->getValue);
+        @acklist = ($config->getElement (ACKURL)->getValue);
     }
 
     foreach my $url (@acklist) {
@@ -1022,8 +1168,8 @@ sub Configure
 
     my $hostname = $config->getElement (HOSTNAME)->getValue;
     if ($NoAction) {
-	$self->info ("Would run " . ref ($self) . " on $hostname");
-	return 1;
+        $self->info ("Would run " . ref ($self) . " on $hostname");
+        return 1;
     }
 
     $self->ksopen ($config);
@@ -1041,8 +1187,8 @@ sub Unconfigure
 
     my $host = $cfg->getElement (HOSTNAME)->getValue;
     if ($NoAction) {
-	$self->info ("Would run " . ref ($self) . " on $host");
-	return 1;
+        $self->info ("Would run " . ref ($self) . " on $host");
+        return 1;
     }
 
     my $domain = $cfg->getElement (DOMAINNAME)->getValue;

@@ -31,6 +31,13 @@ type structure_ks_ksfirewall = {
 	"ports"		: long[] = list (7777)
 };
 
+# Information needed for logging into syslog
+type structure_ks_logging = {
+    "host" : type_host
+    "port" : type_port = 514
+    "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
+};
+
 # Information needed for creating the Kickstart file
 type structure_ks_ks_info = {
 	"ackurl"	: type_absoluteURI
@@ -40,6 +47,7 @@ type structure_ks_ks_info = {
 	"bootloader_append" ? string
 	"bootdisk_order" ? string[] # From DESYs template
 	"clearmbr"	: boolean = true
+	"enable_service" ? string[]
 	"enable_sshd"   : boolean = false
 	"clearpart"	? string []
 	"driverdisk"	? type_absoluteURI[]
@@ -50,6 +58,7 @@ type structure_ks_ks_info = {
 	"lang"		: string = "en_US.UTF-8"
 	# If you use more than one languages, mark the default one with "--default=your_lang"
 	"langsupport"	? string [] = list ("en_US.UTF-8")
+	"logging"	? structure_ks_logging
 	"mouse"		? string
 	"bootproto"	: string with match (SELF, "static|dhcp")
 	"keyboard"	: string = "us"
@@ -60,6 +69,7 @@ type structure_ks_ks_info = {
 	"pre_install_script" ? type_absoluteURI
 	"post_install_script" ? type_absoluteURI
 	"post_reboot_script" ? type_absoluteURI
+	"repo"          ? string[]
 	"timezone"	: string
 	"selinux"	? string with match (SELF, "disabled|enforcing|permissive")
 	"xwindows"	? structure_ks_ksxinfo

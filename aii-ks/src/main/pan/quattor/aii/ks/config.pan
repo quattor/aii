@@ -323,8 +323,12 @@ variable AII_OSINSTALL_PACKAGES ?= list (
     "perl-Crypt-SSLeay",
     "lsof",
     "perl-IO-String",
-    "curl",
-);
+    "perl-Proc-ProcessTable",
+    "perl-common-sense",
+    "perl-JSON-XS",
+    "perl-GSSAPI",
+    "perl-Template-Toolkit",
+    "curl");
 
 
 "/system/aii/osinstall/ks/packages" ?= AII_OSINSTALL_PACKAGES;
@@ -395,11 +399,8 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 #
 
 variable AII_OSINSTALL_BASE_PACKAGES ?= list (
-    "perl-Compress-Zlib",
     "perl-LC",
     "perl-AppConfig-caf",
-    "perl-Proc-ProcessTable",
-    "perl-IO-String",
     "perl-CAF",
     "perl-parent",
     "perl-common-sense",
