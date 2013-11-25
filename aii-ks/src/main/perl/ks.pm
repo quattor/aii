@@ -148,12 +148,9 @@ sub ksnetwork
                               "but no IP given to the interface");
             return;
     }
-<<<<<<< HEAD
-=======
 
     my $mtu = exists($net->{mtu}) ? "--mtu=$net->{mtu} " : "";
 
->>>>>>> master
     my $gw = '--gateway=';
     if (exists($net->{gateway})) {
         $gw .= $net->{gateway};
@@ -633,7 +630,6 @@ sub proxy {
         if (scalar(@proxies) == 1) {
             # there's only one proxy specified
             $proxyhost = $spma->{proxyhost};
-<<<<<<< HEAD
 	} elsif (scalar(@proxies) > 1) {
 	    # optimize by picking the responding server as the proxy
 	    my ($me) = grep { /\b$localhost\b/ } @proxies;
