@@ -25,7 +25,6 @@
   <version>13.9.1-SNAPSHOT</version>
 
   <name>AII</name>
-
   <scm>
     <connection>scm:git:git://github.com/quattor/aii.git</connection>
     <developerConnection>scm:git:git@github.com:quattor/aii.git</developerConnection>
