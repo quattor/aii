@@ -26,7 +26,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (kspkglist kspkgurl ksuserhooks ksinstall_rpm);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
@@ -218,7 +218,6 @@ sub ksuserhooks
         $hook->$method ($config, $nelpath);
     }
 }
-
 
 # Prints to the Kickstart all the non-partitioning directives.
 sub kscommands
@@ -426,7 +425,7 @@ sub pre_install_script
 # Make sure messages show up on the serial console
 exec >/tmp/pre-log.log 2>&1
 tail -f /tmp/pre-log.log > /dev/console &
-set +x
+set -x
 
 # Hack for RHEL 6: force re-reading the partition table
 #
@@ -563,49 +562,6 @@ EOF
 
 }
 
-# Returns the list of packages specified on the profile with the given
-# names.
-sub kspkglist
-{
-    my ($config, @pkgnames) = @_;
-
-    my @pkgs = ();
-    foreach my $pn (@pkgnames) {
-	my $path = PKG . __PACKAGE__->escape ($pn);
-	next unless $config->elementExists ($path);
-	my $vers = $config->getElement ($path)->getTree;
-	while (my ($version, $vals) = each (%$vers)) {
-	    my $v = unescape ($version);
-	    my $archs = $vals->{arch};
-            if ( exists ($vals->{repository}) ) {
-                # Previous ncm-spma <2.0 schema
-	        my $rep = $vals->{repository};
-	        push (@pkgs, { pkg=>"$pn-$v.$_.rpm",
-			       rep=>$rep
-			     }) foreach @$archs;
-            } else {
-                # New ncm-spma v2.0 schema
-                while (my ($arch, $rep) = each (%$archs)) {
-                   push(@pkgs, { pkg=>"$pn-$v.$arch.rpm", rep=>$rep});
-                }
-            }
-	}
-    }
-    return @pkgs;
-}
-
-# Returns the URL to the package given as argument.
-sub kspkgurl
-{
-    my ($config, $pkg) = @_;
-    my $repos = $config->getElement (REPO)->getTree;
-    $this_app->debug (5, "Generating package list for $pkg->{pkg}");
-    foreach (@$repos) {
-	return "$_->{protocols}->[0]->{url}/$pkg->{pkg}"
-	  if $_->{name} eq $pkg->{rep};
-    }
-}
-
 # Prints the statements needed to install a given set of RPMs
 sub ksinstall_rpm
 {
@@ -620,7 +576,8 @@ sub ksinstall_rpm
          "|| fail 'Unable to install packages'\n";
 }
 
-sub proxy {
+sub proxy 
+{
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
     if ($config->elementExists (SPMAPROXY)) {
@@ -630,10 +587,6 @@ sub proxy {
         if (scalar(@proxies) == 1) {
             # there's only one proxy specified
             $proxyhost = $spma->{proxyhost};
-	} elsif (scalar(@proxies) > 1) {
-	    # optimize by picking the responding server as the proxy
-	    my ($me) = grep { /\b$localhost\b/ } @proxies;
-	    $me ||= $proxies[0];
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
             my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
@@ -648,59 +601,6 @@ sub proxy {
         }
     }
     return ($proxyhost, $proxyport, $proxytype);
-}
-
-# Prints the Bash code to install all the kernels specified in the
-# profile and sets the default (the one on /system/kernel/version) as
-# grub's default.
-sub ksinstall_kernels
-{
-    my $config = shift;
-
-    print <<EOF;
-
-# The kernel must be upgraded now. See bugs #5007 and #28380.
-EOF
-
-    ksinstall_rpm ($config, KERNELLIST);
-
-    # Set the default kernel
-    my $kv = $config->getElement (KERNELVERSION)->getValue;
-    print <<EOF;
-
-# This will make us boot using the kernel specified in the profile,
-# see bug #28380
-default=\$(grep vmlinuz /boot/grub/grub.conf| \\
-    nl -v-1|grep "$kv\[[:blank:]]"|head -n1| \\
-    awk '{print \$1}')
-if [ ! -z "\$default" ]
-then
-    sed -i "s/^\\(default\\)=.*/\\1=\$default/" /boot/grub/grub.conf
-fi
-EOF
-}
-
-# Prints the code for installing the drivers for the network
-# interfaces.
-sub ksinstall_drivers
-{
-    my $config = shift;
-
-    my $cards = $config->getElement (CARDS)->getTree;
-
-    my @pkgs = ();
-    foreach my $card (values (%$cards)) {
-	push (@pkgs, $card->{driverrpms})
-	  if (exists $card->{driverrpms});
-    }
-
-    if (scalar @pkgs) {
-	print <<EOF;
-
-# Install the drivers for the network devices
-EOF
-	ksinstall_rpm ($config, @pkgs);
-    }
 }
 
 # Prints the header functions and definitions of the post_reboot
@@ -755,7 +655,7 @@ hostname $hostname.$domain
 
 exec &> /root/ks-post-install.log
 tail -f /root/ks-post-install.log &>/dev/console &
-set +x
+set -x
 
 # Wait up to 2 minutes until the network comes up
 i=0
