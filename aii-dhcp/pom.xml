@@ -6,7 +6,7 @@
   <artifactId>dhcp</artifactId>
 
   <packaging>pom</packaging>
-  <version>13.5.1-SNAPSHOT</version>
+  <version>13.9.1-SNAPSHOT</version>
   <name>AII DHCP config generator</name>
   <url>http://quattor.org/cfg-modules/</url>
 
@@ -77,13 +77,6 @@
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
-
-  <repositories>
-    <repository>
-      <id>quattor-releases</id>
-      <url>http://lapp-repo01.in2p3.fr:8081/nexus/content/repositories/releases/</url>
-    </repository>
-  </repositories>
 
   <build>
     <pluginManagement>

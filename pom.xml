@@ -22,7 +22,7 @@
       <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
-  <version>13.5.1-SNAPSHOT</version>
+  <version>13.9.1-SNAPSHOT</version>
 
   <name>AII</name>
 

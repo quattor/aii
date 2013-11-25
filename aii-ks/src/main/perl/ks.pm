@@ -2,11 +2,8 @@
 # ${developer-info
 # ${author-info}
 # ${build-info}
-#
-# Note: all methods in this component are called in a
-# $self->$method ($config) way, unless explicitly stated.
 
-#package NCM::Component::ks;
+
 package NCM::Component::ks;
 
 use strict;
@@ -71,6 +68,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                FORWARDPROXY     => "forward",
                END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
+               DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
                ENABLE_SSHD      => "enable_sshd",
            };
@@ -253,8 +251,6 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-<<<<<<< HEAD
-=======
     if (exists $tree->{repo}) {
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
@@ -269,7 +265,6 @@ EOF
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
     }
->>>>>>> master
     print "bootloader  --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
@@ -619,24 +614,13 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-<<<<<<< HEAD
-    my @pkglist = kspkglist ($config, @pkgs);
-    my $proxy_opts = "";
+    my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
+    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
 
-    my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-    if ($proxyhost) {
-        $proxy_opts = "--httpproxy $proxyhost ";
-        if ($proxyport) {
-            $proxy_opts .= "--httpport $proxyport ";
-        }
-    }
-    print "/bin/rpm -i --force $proxy_opts \"", kspkgurl ($config, $_), "\" || \\\n",
-      " "x4, "fail \"Failed to install $_->{pkg}: \\\$?\"\n"
-	foreach @pkglist;
-=======
-    print "yum -c /tmp/aii/yum/yum.conf -y install ", join("\\\n    ", @pkgs),
+    $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
+
+    print $cmd, join("\\\n    ", @pkgs),
          "|| fail 'Unable to install packages'\n";
->>>>>>> master
 }
 
 sub proxy {
@@ -654,12 +638,10 @@ sub proxy {
 	    # optimize by picking the responding server as the proxy
 	    my ($me) = grep { /\b$localhost\b/ } @proxies;
 	    $me ||= $proxies[0];
-=======
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
             my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
             $me ||= $proxies[0];
->>>>>>> master
             $proxyhost = $me;
         }
         if (exists $spma->{proxyport}) {
@@ -778,6 +760,18 @@ hostname $hostname.$domain
 exec &> /root/ks-post-install.log
 tail -f /root/ks-post-install.log &>/dev/console &
 set +x
+
+# Wait up to 2 minutes until the network comes up
+i=0
+while ! nslookup \\`hostname\\` > /dev/null
+do
+    sleep 1
+    let i = \\\$i+1
+    if [ \\\$i -gt 120 ]
+    then
+       fail "Network does not come up"
+    fi
+done
 
 EOF
 }
@@ -965,8 +959,6 @@ perl -pi -e 's/hd(\\d+)/"hd".(\$1 > 1 ? 0:\$1)/e' /boot/grub/grub.conf
 EOF
 }
 
-<<<<<<< HEAD
-=======
 
 
 
@@ -1069,10 +1061,9 @@ EOF
             push (@pkgs, $self->process_pkgs($pkgst, $st));
         }
     }
-    ksinstall_rpm(@pkgs);
+    ksinstall_rpm($config, @pkgs);
 }
 
->>>>>>> master
 # Prints the %post script. The post_reboot script is created inside
 # this method.
 sub post_install_script
