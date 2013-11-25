@@ -576,7 +576,7 @@ sub ksinstall_rpm
          "|| fail 'Unable to install packages'\n";
 }
 
-sub proxy 
+sub proxy
 {
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
@@ -602,6 +602,7 @@ sub proxy
     }
     return ($proxyhost, $proxyport, $proxytype);
 }
+
 
 # Prints the header functions and definitions of the post_reboot
 # script.
@@ -672,17 +673,6 @@ done
 EOF
 }
 
-# Prints the packages needed for configuring a Quattor system that
-# uses SPMA.
-sub ksbasepackages
-{
-    my $config = shift;
-
-    my $pkgl = $config->getElement("/system/aii/osinstall/ks/base_packages")->getTree();
-
-    ksinstall_rpm ($config, @$pkgl);
-}
-
 sub ksquattor_config
 {
     my $config = shift;
@@ -748,9 +738,8 @@ EOF
     }
 
     print <<EOF;
-/usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
-/usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
-/usr/sbin/ncm-ncd --configure --all
+/usr/sbin/ncm-ncd --verbose --configure spma || fail "ncm-ncd --configure spma failed"
+/usr/sbin/ncm-ncd --verbose --configure --all
 
 EOF
 }
@@ -777,7 +766,6 @@ sub post_reboot_script
     my ($self, $config) = @_;
 
     kspostreboot_header ($config);
-    ksbasepackages ($config);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
     ksuserhooks ($config, POSTREBOOTENDHOOK);
@@ -969,7 +957,7 @@ sub post_install_script
 
 %post
 
-set +x
+set -x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
 
@@ -983,10 +971,8 @@ EOF
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
     my $tree = $config->getElement (KS)->getTree;
-    ksinstall_rpm ($config, @{$tree->{extra_packages}})
-      if exists $tree->{extra_packages};
-    ksinstall_kernels ($config);
-    ksinstall_drivers ($config);
+    $self->yum_setup ($config);
+    $self->yum_install_packages ($config);
     ksuserscript ($config, POSTSCRIPT);
     if ($tree->{bootloader_location} eq "mbr") {
         ksfix_grub;
