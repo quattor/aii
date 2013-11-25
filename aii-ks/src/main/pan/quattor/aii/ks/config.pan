@@ -312,8 +312,7 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 # default list of packages required for the initial installation
 #
 
-variable AII_OSINSTALL_PACKAGES ?= list (
-    "openssh",
+variable AII_OSINSTALL_PACKAGES ?= list ("openssh",
     "openssh-server",
     "wget",
     "perl-URI",
@@ -402,19 +401,10 @@ variable AII_OSINSTALL_BASE_PACKAGES ?= list (
     "perl-LC",
     "perl-AppConfig-caf",
     "perl-CAF",
-    "perl-parent",
-    "perl-common-sense",
-    "perl-JSON-XS",
-    "perl-GSSAPI",
-    "perl-libwww-perl",
-    "perl-CDB_File",
-    "perl-TeX-Hyphen",
-    "perl-Text-Reform",
-    "perl-Text-Autoformat",
-    "perl-Pod-POM",
-    "perl-Template-Toolkit",
     "ccm",
+    "ncm-template",
     "ncm-ncd",
+    "ncm-query",
     "rpmt-py",
     "spma",
     "ncm-spma",
