@@ -313,7 +313,7 @@ EOF
         join ("\n", @{$tree->{packages}}), "\n";
 
         ## enable services, if any
-    if (exists($tree->{enable_service})) && @{$tree->{enable_service}}) {
+    if (exists($tree->{enable_service}) && @{$tree->{enable_service}}) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{enable_service}});
         if ($services) {
