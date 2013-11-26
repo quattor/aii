@@ -312,6 +312,16 @@ EOF
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
 
+        ## enable services, if any
+    if (exists($tree->{enable_service}) && @{$tree->{enable_service}}) {
+        ## should be a list of strings
+        my $services = join(" ",@{$tree->{enable_service}});
+        if ($services) {
+        print "services --enabled=",
+            join (',', @{$tree->{enable_service}}), "\n";;
+        }
+    };
+    
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
