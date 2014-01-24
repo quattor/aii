@@ -473,10 +473,10 @@ wipe_metadata () {
     path="$1"
     clear="$2"
 
-    SIZE=`parted "$path" unit B print |grep /dev|awk -F ' ' '{print $3}'|awk -F 'B' '{print $1}'`
+    SIZE=`parted -s "$path" mklabel gpt ; parted "$path" unit B print |grep /dev|awk -F ' ' '{print $3}'|awk -F 'B' '{print $1}'`
     let START=$SIZE/1024-$clear
     dd if=/dev/zero of="$path" bs=1M count=$clear 2>/dev/null
-    dd if=/dev/zero of="$path" bs=1M seek=$START 2>/dev/null
+    #dd if=/dev/zero of="$path" bs=1M seek=$START 2>/dev/null
 }
 
 EOF
