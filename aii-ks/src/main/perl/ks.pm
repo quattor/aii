@@ -56,6 +56,7 @@ use constant { KS		=> "/system/aii/osinstall/ks",
 	       CARDS		=> "/hardware/cards/nic",
 	       SPMAPROXY	=> "/software/components/spma/proxy",
 	       SPMA		=> "/software/components/spma",
+	       SPMA_PKG		=> "/software/packages/spma",
 	       ROOTMAIL		=> "/system/rootmail",
 	       AII_PROFILE	=> "/system/aii/osinstall/ks/node_profile",
 	       CCM_PROFILE	=> "/software/components/ccm/profile",
@@ -824,12 +825,10 @@ rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
 EOF
     }
 
-    print <<EOF;
-/usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"
-/usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"
-/usr/sbin/ncm-ncd --configure --all
-
-EOF
+print '/usr/sbin/ncm-ncd --configure spma || fail "ncm-ncd --configure spma failed"'."\n";
+print '/usr/bin/spma --userpkgs=no --userprio=no || fail "/usr/bin/spma failed"'."\n"
+      if $config->elementExists (SPMA_PKG);
+print '/usr/sbin/ncm-ncd --configure --all'."\n";
 }
 
 sub kspostreboot_tail
