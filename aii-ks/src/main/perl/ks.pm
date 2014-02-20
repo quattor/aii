@@ -740,7 +740,7 @@ i=0
 while ! nslookup \\`hostname\\` > /dev/null
 do
     sleep 1
-    let i = \\\$i+1
+    let i=\\\$i+1
     if [ \\\$i -gt 120 ]
     then
        fail "Network does not come up"
