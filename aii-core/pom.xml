@@ -6,7 +6,7 @@
   <artifactId>server</artifactId>
 
   <packaging>pom</packaging>
-  <version>14.2.0-rc2-SNAPSHOT</version>
+  <version>14.2.0</version>
   <name>AII server part</name>
   <url>http://quattor.org/cfg-modules/</url>
 
