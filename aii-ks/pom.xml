@@ -6,7 +6,7 @@
   <artifactId>ks</artifactId>
 
   <packaging>pom</packaging>
-  <version>14.2.0-rc2</version>
+  <version>14.2.0-rc3-SNAPSHOT</version>
   <name>AII Kickstart generator</name>
   <url>http://quattor.org/cfg-modules/</url>
 
