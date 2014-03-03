@@ -23,7 +23,7 @@
     </snapshotRepository>
   </distributionManagement>
 
-  <version>14.2.1</version>
+  <version>14.2.2-SNAPSHOT</version>
 
   <name>AII</name>
 
