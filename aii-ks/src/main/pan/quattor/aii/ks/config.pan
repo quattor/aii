@@ -312,22 +312,29 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 # default list of packages required for the initial installation
 #
 
-variable AII_OSINSTALL_PACKAGES ?= list ("openssh",
-    "openssh-server",
-    "wget",
-    "perl-URI",
-    "perl-libwww-perl",
-    "perl-XML-Parser",
-    "perl-DBI",
-    "perl-Crypt-SSLeay",
+variable AII_OSINSTALL_PACKAGES ?= list (
+    "curl",
     "lsof",
-    "perl-IO-String",
-    "perl-Proc-ProcessTable",
+    "openssh",
+    "openssh-server",
+    "perl-AppConfig",
     "perl-common-sense",
-    "perl-JSON-XS",
+    "perl-CDB_File",
+    "perl-Crypt-SSLeay",
+    "perl-DBI",
     "perl-GSSAPI",
+    "perl-IO-String",
+    "perl-JSON-XS",
+    "perl-libwww-perl",
+    "perl-Pod-POM",
+    "perl-Proc-ProcessTable",
     "perl-Template-Toolkit",
-    "curl");
+    "perl-URI",
+    "perl-XML-Parser",
+    "yum-plugin-priorities",
+    "yum-plugin-versionlock",
+    "wget",
+);
 
 
 "/system/aii/osinstall/ks/packages" ?= AII_OSINSTALL_PACKAGES;
@@ -395,18 +402,16 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 #
 # For more details on Kickstart options see RedHat documentation:
 # http://www.redhat.com/docs/manuals/enterprise/RHEL-3-Manual/sysadmin-guide/ch-kickstart2.html
+# This package list must be properly ordered to satisfy package requirements.
 #
 
 variable AII_OSINSTALL_BASE_PACKAGES ?= list (
     "perl-LC",
-    "perl-AppConfig-caf",
     "perl-CAF",
     "ccm",
     "ncm-template",
     "ncm-ncd",
     "ncm-query",
-    "rpmt-py",
-    "spma",
     "ncm-spma",
     "cdp-listend",
     "ncm-cdispd",
