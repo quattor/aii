@@ -16,9 +16,9 @@ template quattor/aii/ks/variants/sl6;
 "/system/aii/osinstall/ks/volgroup_required" = false;
 
 "/system/aii/osinstall/ks/packages" = {
-  SELF[length(SELF)] = 'perl-parent';
-  SELF[length(SELF)] = 'perl-GSSAPI';
-  SELF[length(SELF)] = 'perl-Template-Toolkit';
+  append('perl-parent');
+  append('perl-GSSAPI');
+  append('perl-Template-Toolkit');
   SELF;
 };
 
