@@ -118,6 +118,7 @@ sub update_dhcp_config_file {
     #
     my ($net, $mac, $newnodes, $netfound);
     my $subnet_defined = 1;
+    my $indent = "  "; # from aii-dhcp line 421-424
     if ( @subnets == 0 ) {
       push (@subnets,{});
       $subnet_defined = 0;
