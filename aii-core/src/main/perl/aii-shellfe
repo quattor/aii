@@ -27,8 +27,6 @@ specified in the profile.
                         --include <directories...>    |
                         --install <hostname|regexp>   |
                         --installlist <filename>      |
-                        --notify                      |
-                        --filter <regex>              |
                         --remove <hostname|regexp>    |
                         --removelist <filename> >     |
                         --removeall                   |
@@ -53,8 +51,7 @@ installer. It instantiates
 and configures NCM components for configuring these systems.
 
 aii-shellfe can be used locally, or remotely called with
-aii-installfe.  aii-shellfe can be called by the CDB notification
-handler for the automatic synchronisation with CDB as well.
+aii-installfe.  
 
 Input data can be specified via the command line (for just one host)
 or via a text file (for more than one host). Perl regular expressions
@@ -109,17 +106,6 @@ host name. Lines starting with a # are comment lines.
 
 A colon-separated list of directories to add to the search path
 for perl plugins.
-
-=item --notify
-
-aii-shellfe should be executed with this parameter by CDB
-notification client, i.e. whenever the content of CDB changes.
-
-=item --filter
-
-aii-shellfe should only notify against hosts that match this filter. A
-filter for only hosts within a specific domain would look like
-"\.foo\.com$".
 
 =item --remove <hostname|regexp>
 
@@ -329,7 +315,6 @@ use CAF::Application;
 use CAF::Reporter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
-use EDG::WP4::CDBSYNC::NCL;
 use LC::Exception qw (SUCCESS throw_error);
 use CAF::Process;
 use LWP::UserAgent;
@@ -359,7 +344,6 @@ use constant TIMEOUT    => 60;
 use constant PARTERR_ST => 16;
 use constant COMMANDS   => qw (configure install boot remove status rescue firmware livecd);
 use constant INCLUDE    => 'include';
-use constant NOTIFY     => 'notify';
 use constant NBPDIR     => 'nbpdir';
 use constant CONFIGURE  => 'Configure';
 use constant INSTALLMETHOD      => 'Install';
@@ -373,9 +357,7 @@ use constant CAFILE     => 'ca_file';
 use constant CADIR      => 'ca_dir';
 use constant KEY        => 'key_file';
 use constant CERT       => 'cert_file';
-# Option for notification client
-use constant LOCALCACHE => 'localnclcache';
-use constant MACADDR   => '/hardware/cards/nic/eth0/hwaddr';
+
 use constant HWCARDS   => '/hardware/cards/nic';
 use constant DHCPCFG   => "/usr/sbin/aii-dhcp";
 use constant DHCPOPTION => '/system/aii/dhcp/options';
@@ -439,14 +421,6 @@ sub app_options
        { NAME    => 'include=s',
          HELP    => 'Directories to add to include path',
          DEFAULT => '' },
-
-       { NAME    => 'notify',
-         HELP    => 'Executed by CDB client whenever nodes config changed',
-         DEFAULT => undef },
-
-       { NAME    => 'filter=s',
-         HELP    => 'only notify hosts that match this filter',
-         DEFAULT => undef },
 
        { NAME    => 'status=s',
          HELP    => 'Report current boot/install status for the node ' .
@@ -615,7 +589,7 @@ sub _initialize
 }
 
 # Lock a node being configured, needs to be called in every method that contains
-# node operations (ie configure, notify etc)
+# node operations (ie configure etc)
 sub lock_node
 {
     my ($self, $node) = @_;
@@ -783,48 +757,6 @@ sub iter_plugins {
         }
     }
 
-}
-
-sub configure_notified
-{
-    my ($self, $notification) = @_;
-
-    my %h = $notification->getAllProfilesHash;
-
-    my $filter = $self->option('filter');
-
-    while (my ($node, $time) = each (%h)) {
-        $node =~ s{\.(?:xml|json)$}{}; # the profiles-info is a filename, we want node
-        if ($filter && $node !~ m{$filter}) {
-            $self->debug(6, "ignoring $node due to filter");
-            next;
-        }
-        if ($self->get_cache_time($node) < $time) {
-            my $when = time(); # we use a host local time, taken before we fetch
-            my @nl = $self->nodelist ($node, $self->option('use_fqdn'));
-            my %hn = eval { $self->fetch_profiles (@nl) };
-            if ($@) {
-                $self->error("failed to fetch $node: " . $main::ec->error);
-                next;
-            }
-            $self->configure (%hn);
-        }
-    }
-}
-
-# In case of CDB notification, re-configures or removes the
-# appropriate nodes.
-sub notify
-{
-    my $self = shift;
-
-    my $nt = EDG::WP4::CDBSYNC::NCL->new;
-    unless ($nt) {
-        $self->error ($main::ec->error);
-        return;
-    }
-
-    $self->configure_notified ($nt);
 }
 
 
@@ -1202,11 +1134,6 @@ sub cmds
         }
     }
 
-    # Notify doesn't behave like other options, as it needs to
-    # discover by itself what nodes it must operate on.
-    if ($self->option (NOTIFY)) {
-        $self->notify;
-    }
 }
 
 sub finish {
