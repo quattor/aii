@@ -47,7 +47,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                ANACONDAHOOK     => "/system/aii/hooks/anaconda",
                PREREBOOTHOOK    => "/system/aii/hooks/pre_reboot",
                PKG              => "/software/packages/",
-               KERNELVERSION    => "/system/kernel/version",
                ACKURL           => "/system/aii/osinstall/ks/ackurl",
                ACKLIST          => "/system/aii/osinstall/ks/acklist",
                CARDS            => "/hardware/cards/nic",
@@ -79,14 +78,6 @@ use constant   USEMODULE        => "use " . MODULEBASE;
 
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
-
-# Packages to be installed when setting up Quattor.
-
-
-# Packages containing kernels. kernel-xen is not listed here, as it
-# depends on different versions of mkinitrd and e2fsprogs, and
-# installing them may cause a dependency hell.
-use constant KERNELLIST         => qw (kernel-firmware kernel kernel-smp);
 
 
 # Opens the kickstart file and sets its handle as the default.
