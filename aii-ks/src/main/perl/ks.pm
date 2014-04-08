@@ -415,8 +415,9 @@ sub pre_install_script
 # /dev/foo5.
 
 # Make sure messages show up on the serial console
-exec >/tmp/pre-log.log 2>&1
-tail -f /tmp/pre-log.log > /dev/console &
+logfile=/tmp/pre-log.log
+exec >\\\$logfile 2>&1
+tail -f \\\$logfile > /dev/console &
 set -x
 
 # Hack for RHEL 6: force re-reading the partition table
@@ -611,16 +612,22 @@ sub kspostreboot_header
 # and runs the components needed to get the system correctly
 # configured.
 
+fqdn=$hostname.$domain
+# force it
+hostname $fqdn
+
+logfile=/root/ks-post-install.log
+
 # Function to be called if there is an error in this phase.
 # It sends an e-mail to $rootmail alerting about the failure.
 fail() {
-    echo "Quattor installation on  failed: \\\$1"
+    echo "Quattor installation on \\\$fqdn failed: \\\$1"
     sendmail -t <<End_of_sendmail
-From: root\@$hostname
+From: root\@\\\$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname failed: \\\$1
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on \\\$fqdn failed: \\\$1
 
-\\`cat /root/ks-post-install.log\\`
+\\`cat \\\$logfile\\`
 ------------------------------------------------------------
 \\`ls -tr /var/log/ncm 2>/dev/null|xargs tail /var/log/spma.log\\`
 
@@ -632,22 +639,23 @@ End_of_sendmail
 # Function to be called if the installation succeeds.  It sends an
 # e-mail to $rootmail alerting about the installation success.
 success() {
+    echo "Quattor installation on \\\$fqdn succeeded"
     sendmail -t <<End_of_sendmail
-From: root\@$hostname
+From: root\@\\\$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname succeeded
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on \\\$fqdn succeeded
 
-Node $hostname successfully installed.
+Node \\\$fqdn successfully installed.
 .
 End_of_sendmail
 }
-hostname $hostname.$domain
-# Ensure that the log file doesn't exist.
-[ -e /root/ks-post-install.log ] && \\
-    fail "Last installation went wrong. Aborting. See logfile"
 
-exec &> /root/ks-post-install.log
-tail -f /root/ks-post-install.log &>/dev/console &
+# Ensure that the log file doesn't exist.
+[ -e \\\$logfile ] && \\
+    fail "Last installation went wrong. Aborting. See logfile \\\$logfile."
+
+exec &> \\\$logfile
+tail -f \\\$logfile &>/dev/console &
 set -x
 
 # Wait up to 2 minutes until the network comes up
@@ -1000,9 +1008,9 @@ sub post_install_script
 set -x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
-
-exec &>/tmp/post-log.log
-tail -f /tmp/post-log.log > /dev/console &
+logfile=/tmp/post-log.log
+exec &>\\\$logfile
+tail -f \\\$logfile > /dev/console &
 
 EOF
 
