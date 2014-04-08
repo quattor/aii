@@ -400,11 +400,32 @@ EOF
 # Create the action to be taken on the log files
 # logfile is the path to the log file
 sub log_action {
-    my ($self, $config, $logfile) = @_;
+    my ($config, $logfile) = @_;
 
-    my $consoleaction= "tail -f $logfile > /dev/console &";
-    push(@logactions, $consoleaction);
+    my $tree = $config->getElement(KS)->getTree;
+    my @logactions;
+    push(@logactions, "exec >$logfile 2>&1"); 
+    
+    my $consolelogging = 1; # default behaviour
+    if (exists($tree->{logging})) {
+        $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
+    
+        if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
+            # use netcat to log to UDP syslog port
+            my $netcatcmd = "nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
+            my $netcataction = "(tail -f $logfile | $netcatcmd) &";
+            push(@logactions,'# Send messages to UDP syslog server');
+            push(@logactions, $netcataction);
+        }
 
+    }
+
+    if ($consolelogging) {
+        my $consoleaction= "tail -f $logfile > /dev/console &";
+        push(@logactions,'# Make sure messages show up on the serial console');
+        push(@logactions, $consoleaction);
+    }
+    
     push(@logactions,''); # add trailing newline 
     return join("\n", @logactions)
 }
@@ -415,9 +436,9 @@ sub pre_install_script
     my ($self, $config) = @_;
 
     my $logfile = '/tmp/pre-log.log';
-    my $logaction = $self->log_action($config, $logfile);
+    my $logaction = log_action($config, $logfile);
     
-    print <<'EOF';
+    print <<EOF;
 %pre
 
 # Pre-installation script.
@@ -429,11 +450,13 @@ sub pre_install_script
 # primary, one extended and your /dev/foo4 will be silently renamed to
 # /dev/foo5.
 
-# Make sure messages show up on the serial console
-exec >$logfile 2>&1
 $logaction
 echo 'Begin of pre section'
 set -x
+
+EOF
+
+    print <<'EOF';
 
 # Hack for RHEL 6: force re-reading the partition table
 #
@@ -623,7 +646,7 @@ sub kspostreboot_header
 
 	# TODO is it ok to rename this logfile?
     my $logfile = '/root/ks-post-reboot.log';
-    my $logaction = $self->log_action($config, $logfile);
+    my $logaction = log_action($config, $logfile);
     
     my $hostname = $config->getElement (HOSTNAME)->getValue;
     my $domain = $config->getElement (DOMAINNAME)->getValue;
@@ -675,7 +698,6 @@ End_of_sendmail
 [ -e $logfile ] && \\
     fail "Last installation went wrong. Aborting. See logfile $logfile."
 
-exec &> $logfile
 $logaction
 echo 'Begin of ks-post-reboot'
 set -x
@@ -1026,7 +1048,7 @@ sub post_install_script
     my ($self, $config) = @_;
 
     my $logfile='/tmp/post-log.log';
-    my $logaction = $self->log_action($config, $logfile);
+    my $logaction = log_action($config, $logfile);
 
     print <<EOF;
 
@@ -1034,7 +1056,6 @@ sub post_install_script
 
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
-exec &>$logfile
 $logaction
 echo 'Begin of post section'
 set -x
