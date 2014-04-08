@@ -397,11 +397,26 @@ EOF
     kscommands ($config);
 }
 
+# Create the action to be taken on the log files
+# logfile is the path to the log file
+sub log_action {
+    my ($self, $config, $logfile) = @_;
+
+    my $consoleaction= "tail -f $logfile > /dev/console &";
+    push(@logactions, $consoleaction);
+
+    push(@logactions,''); # add trailing newline 
+    return join("\n", @logactions)
+}
+
 # Takes care of the pre-install script, in which the
 sub pre_install_script
 {
     my ($self, $config) = @_;
 
+    my $logfile = '/tmp/pre-log.log';
+    my $logaction = $self->log_action($config, $logfile);
+    
     print <<'EOF';
 %pre
 
@@ -415,9 +430,8 @@ sub pre_install_script
 # /dev/foo5.
 
 # Make sure messages show up on the serial console
-logfile=/tmp/pre-log.log
-exec >\\\$logfile 2>&1
-tail -f \\\$logfile > /dev/console &
+exec >$logfile 2>&1
+$logaction
 set -x
 
 # Hack for RHEL 6: force re-reading the partition table
@@ -603,31 +617,33 @@ sub kspostreboot_header
 {
     my $config = shift;
 
+    my $logfile = '/root/ks-post-install.log';
+    my $logaction = $self->log_action($config, $logfile);
+    
     my $hostname = $config->getElement (HOSTNAME)->getValue;
     my $domain = $config->getElement (DOMAINNAME)->getValue;
+    my $fqdn = "$hostname.$domain";
+
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
+
     print <<EOF;
 #!/bin/bash
 # Script to run at the first reboot. It installs the base Quattor RPMs
 # and runs the components needed to get the system correctly
 # configured.
 
-fqdn=$hostname.$domain
-# force it
 hostname $fqdn
-
-logfile=/root/ks-post-install.log
 
 # Function to be called if there is an error in this phase.
 # It sends an e-mail to $rootmail alerting about the failure.
 fail() {
-    echo "Quattor installation on \\\$fqdn failed: \\\$1"
+    echo "Quattor installation on $fqdn failed: \\\$1"
     sendmail -t <<End_of_sendmail
-From: root\@\\\$fqdn
+From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on \\\$fqdn failed: \\\$1
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
-\\`cat \\\$logfile\\`
+\\`cat $logfile\\`
 ------------------------------------------------------------
 \\`ls -tr /var/log/ncm 2>/dev/null|xargs tail /var/log/spma.log\\`
 
@@ -639,28 +655,28 @@ End_of_sendmail
 # Function to be called if the installation succeeds.  It sends an
 # e-mail to $rootmail alerting about the installation success.
 success() {
-    echo "Quattor installation on \\\$fqdn succeeded"
+    echo "Quattor installation on $fqdn succeeded"
     sendmail -t <<End_of_sendmail
-From: root\@\\\$fqdn
+From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on \\\$fqdn succeeded
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 
-Node \\\$fqdn successfully installed.
+Node $fqdn successfully installed.
 .
 End_of_sendmail
 }
 
 # Ensure that the log file doesn't exist.
-[ -e \\\$logfile ] && \\
-    fail "Last installation went wrong. Aborting. See logfile \\\$logfile."
+[ -e $logfile ] && \\
+    fail "Last installation went wrong. Aborting. See logfile $logfile."
 
-exec &> \\\$logfile
-tail -f \\\$logfile &>/dev/console &
+exec &> $logfile
+$logaction
 set -x
 
 # Wait up to 2 minutes until the network comes up
 i=0
-while ! nslookup \\`hostname\\` > /dev/null
+while ! nslookup $fqdn > /dev/null
 do
     sleep 1
     let i = \\\$i+1
@@ -1001,16 +1017,20 @@ EOF
 sub post_install_script
 {
     my ($self, $config) = @_;
+
+    my $logfile='/tmp/post-log.log';
+    my $logaction = $self->log_action($config, $logfile);
+
     print <<EOF;
 
 %post
 
-set -x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
-logfile=/tmp/post-log.log
-exec &>\\\$logfile
-tail -f \\\$logfile > /dev/console &
+exec &>$logfile
+$logaction
+set -x
+
 
 EOF
 
