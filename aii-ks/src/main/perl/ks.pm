@@ -20,6 +20,7 @@ use Data::Dumper;
 use Exporter;
 use CAF::FileWriter;
 use Sys::Hostname;
+use Text::Glob qw(match_glob);
 
 our @ISA = qw (NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -913,6 +914,53 @@ sub process_pkgs
     return @ret;
 }
 
+# C<simple_version_glob> will select all version-locked packages, if any.
+# Then, all non-locked packages that match the locked non-versioned 
+# packages glob are removed. Finally, all remaining non-locked 
+# packages are added.
+#
+# E.g. "yum install kernel*-X.Y.Z kernel-firmware" will try to install
+# the latest kernel-firmware with a set of fixed kernel rpms,
+# probably not matching with latest kernel-firmware version
+# Ideally, kernel*-X.Y.Z is defined in the profile, and no other 
+# kernel packages are version locked.
+sub simple_version_glob {
+    my ($self, @pkglist) = @_;
+    my @res;
+    my @locked;
+    my %pkgs;
+    foreach my $ref (@pkglist) {
+        my ($pkgst, $st) = @$ref;
+        my @processed = $self->process_pkgs($pkgst, $st);
+        $pkgs{$pkgst} = \@processed;
+
+        # test if certain pkg is version locked
+        # (specifying arch is also considered locking)
+        # it's sufficient to the test first element 
+        # (you can't mix locked and unlocked)
+        push(@locked, $pkgst) if ($processed[0] !~ m/^$pkgst$/);
+    };
+
+    foreach my $locked_pkg (@locked) {
+        # add it to res
+        push(@res, @{delete $pkgs{$locked_pkg}});
+    }
+
+    # get rid of packages matching the non-versioned glob of
+    # locked packages
+    foreach my $locked_pkg (@locked) {
+        foreach my $globmatch (match_glob($locked_pkg, keys %pkgs)) {
+            delete $pkgs{$globmatch} ;
+        };
+    };
+
+    # add remainder unlocked non-matching packages
+    foreach my $ref (values %pkgs) {
+        push (@res, @$ref) ;
+    };
+    return @res;    
+}
+
 
 sub yum_install_packages
 {
@@ -930,13 +978,14 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
+    my @kernel_pkgs;
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
         if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-            push (@pkgs, $self->process_pkgs($pkgst, $st));
+            push (@pkgs, [$pkgst, $st]);
         }
     }
-    ksinstall_rpm($config, @pkgs);
+    ksinstall_rpm($config, $self->simple_version_glob(@pkgs));
 }
 
 # Prints the %post script. The post_reboot script is created inside
