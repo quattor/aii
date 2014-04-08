@@ -432,6 +432,7 @@ sub pre_install_script
 # Make sure messages show up on the serial console
 exec >$logfile 2>&1
 $logaction
+echo 'Begin of pre section'
 set -x
 
 # Hack for RHEL 6: force re-reading the partition table
@@ -505,8 +506,11 @@ EOF
 # De-activate logical volumes. Needed on RHEL6, see:
 # https://bugzilla.redhat.com/show_bug.cgi?id=652417
 lvm vgchange -an
+echo 'End of pre section'
 $end
+
 EOF
+
 }
 
 # Prints the code needed for removing and creating partitions, block
@@ -617,7 +621,8 @@ sub kspostreboot_header
 {
     my $config = shift;
 
-    my $logfile = '/root/ks-post-install.log';
+	# TODO is it ok to rename this logfile?
+    my $logfile = '/root/ks-post-reboot.log';
     my $logaction = $self->log_action($config, $logfile);
     
     my $hostname = $config->getElement (HOSTNAME)->getValue;
@@ -672,6 +677,7 @@ End_of_sendmail
 
 exec &> $logfile
 $logaction
+echo 'Begin of ks-post-reboot'
 set -x
 
 # Wait up to 2 minutes until the network comes up
@@ -770,6 +776,7 @@ sub kspostreboot_tail
 
     print <<EOF;
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
+echo 'End of ks-post-reboot'
 shutdown -r now
 
 EOF
@@ -1029,6 +1036,7 @@ sub post_install_script
 # some minor changes and prepare it for being configured.
 exec &>$logfile
 $logaction
+echo 'Begin of post section'
 set -x
 
 
@@ -1089,7 +1097,11 @@ EOF
 
     ksuserhooks ($config, PREREBOOTHOOK);
     my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
-    print "$end\n";
+    print <<EOF;
+echo 'End of post section'
+$end
+
+EOF
 
 }
 
