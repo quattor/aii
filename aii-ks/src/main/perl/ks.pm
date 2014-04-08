@@ -907,10 +907,10 @@ sub process_pkgs
                 push(@ret, $p);
             }
         }
-        return @ret;
+    } else {
+        push(@ret, $pkg);
     }
-
-    return $pkg;
+    return @ret;
 }
 
 
