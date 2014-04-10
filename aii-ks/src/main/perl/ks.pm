@@ -411,18 +411,20 @@ sub log_action {
         $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
     
         if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
+            push(@logactions,'# Send messages to UDP syslog server');
             # use netcat to log to UDP syslog port
             my $netcatcmd = "nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
-            my $netcataction = "(tail -f $logfile | $netcatcmd) &";
-            push(@logactions,'# Send messages to UDP syslog server');
+            # 190 = local7.info
+            my $syslogheader = '<190>AII: '; 
+            my $netcataction = "(tail -f $logfile | sed -u 's/^/$syslogheader/' | $netcatcmd) &";
             push(@logactions, $netcataction);
         }
 
     }
 
     if ($consolelogging) {
-        my $consoleaction= "tail -f $logfile > /dev/console &";
         push(@logactions,'# Make sure messages show up on the serial console');
+        my $consoleaction= "tail -f $logfile > /dev/console &";
         push(@logactions, $consoleaction);
     }
     
