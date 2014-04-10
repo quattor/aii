@@ -217,7 +217,8 @@ sub kscommands
     my  $config = shift;
 
     my $tree = $config->getElement(KS)->getTree;
-
+    my @packages = @{$tree->{packages}};
+    
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
@@ -252,6 +253,9 @@ EOF
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
+        # requirements for netcat and usleep
+        push(@packages, 'nc', 'initscripts') 
+            if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat});
     }
     print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
