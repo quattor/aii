@@ -404,7 +404,7 @@ EOF
 # Create the action to be taken on the log files
 # logfile is the path to the log file
 sub log_action {
-    my ($config, $logfile) = @_;
+    my ($config, $logfile, $wait_for_network) = @_;
 
     my $tree = $config->getElement(KS)->getTree;
     my @logactions;
@@ -415,6 +415,11 @@ sub log_action {
         $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
     
         if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
+            # network must be functional 
+            # (not needed in %pre and %post; we can rely on anaconda for that)
+            push(@logactions, "wait_for_network $tree->{logging}->{host}") 
+                if ($wait_for_network);
+
             push(@logactions,'# Send messages to UDP syslog server');
             # use netcat to log to UDP syslog port
             my $netcatcmd = "nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
@@ -655,7 +660,7 @@ sub kspostreboot_header
 
 	# TODO is it ok to rename this logfile?
     my $logfile = '/root/ks-post-reboot.log';
-    my $logaction = log_action($config, $logfile);
+    my $logaction = log_action($config, $logfile, 1); 
     $logaction =~ s/\$/\\\$/g;
     
     my $hostname = $config->getElement (HOSTNAME)->getValue;
@@ -704,6 +709,21 @@ Node $fqdn successfully installed.
 End_of_sendmail
 }
 
+# Wait for functional network up by testing DNS lookup via nslookup.
+wait_for_network () {
+    # Wait up to 2 minutes until the network comes up
+    i=0
+    while ! nslookup \\\$1 > /dev/null
+    do
+        sleep 1
+        let i=\\\$i+1
+        if [ \\\$i -gt 120 ]
+        then
+            fail "Network does not come up (nslookup \\\$1)"
+        fi
+    done
+}
+
 # Ensure that the log file doesn't exist.
 [ -e $logfile ] && \\
     fail "Last installation went wrong. Aborting. See logfile $logfile."
@@ -712,19 +732,10 @@ $logaction
 echo 'Begin of ks-post-reboot'
 set -x
 
-# Wait up to 2 minutes until the network comes up
-i=0
-while ! nslookup $fqdn > /dev/null
-do
-    sleep 1
-    let i=\\\$i+1
-    if [ \\\$i -gt 120 ]
-    then
-       fail "Network does not come up"
-    fi
-done
+wait_for_network $fqdn
 
 EOF
+
 }
 
 sub ksquattor_config
