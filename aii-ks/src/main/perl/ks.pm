@@ -809,6 +809,7 @@ sub kspostreboot_tail
     print <<EOF;
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
 echo 'End of ks-post-reboot'
+sleep 1
 shutdown -r now
 
 EOF
@@ -1130,6 +1131,7 @@ EOF
     my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     print <<EOF;
 echo 'End of post section'
+sleep 1
 $end
 
 EOF
