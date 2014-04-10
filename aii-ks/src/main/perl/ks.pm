@@ -420,10 +420,13 @@ sub log_action {
             my $netcatcmd = "nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
             # 190 = local7.info
             my $syslogheader = '<190>AII: '; 
-            my $netcataction = "(tail -f $logfile | sed -u 's/^/$syslogheader/' | $netcatcmd) &";
+            # try to sleep (usleep by initscripts), throtlles to 20 lines per sec
+            my $awk = "awk '{print \"$syslogheader\"\$0; fflush(); system(\"usleep 50000 >& /dev/null\");}'";
+            my $netcataction = "(tail -f $logfile | $awk  | $netcatcmd) &";
             push(@logactions, $netcataction);
+            # insert extra sleep to get all started before any output is send
+            push(@logactions, 'sleep 1');
         }
-
     }
 
     if ($consolelogging) {
@@ -653,6 +656,7 @@ sub kspostreboot_header
 	# TODO is it ok to rename this logfile?
     my $logfile = '/root/ks-post-reboot.log';
     my $logaction = log_action($config, $logfile);
+    $logaction =~ s/\$/\\\$/g;
     
     my $hostname = $config->getElement (HOSTNAME)->getValue;
     my $domain = $config->getElement (DOMAINNAME)->getValue;
