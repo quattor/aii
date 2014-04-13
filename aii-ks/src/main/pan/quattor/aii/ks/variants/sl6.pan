@@ -16,5 +16,3 @@ template quattor/aii/ks/variants/sl6;
 "/system/aii/osinstall/ks/part_label" = true;
 "/system/aii/osinstall/ks/volgroup_required" = false;
 
-#add needed packages for @INC at post-install step :
-"/system/aii/osinstall/ks/extra_packages" ?= push("perl-CAF", "perl-LC", "perl-AppConfig",);
