@@ -318,16 +318,13 @@ variable AII_OSINSTALL_PACKAGES ?= list (
     "openssh",
     "openssh-server",
     "perl-AppConfig",
-    "perl-common-sense",
     "perl-CDB_File",
     "perl-Crypt-SSLeay",
     "perl-DBI",
     "perl-GSSAPI",
     "perl-IO-String",
-    "perl-JSON-XS",
     "perl-libwww-perl",
     "perl-Pod-POM",
-    "perl-Proc-ProcessTable",
     "perl-Template-Toolkit",
     "perl-URI",
     "perl-XML-Parser",
@@ -374,11 +371,6 @@ variable AII_OSINSTALL_NODEPROFILE ?= {
 };
 "/system/aii/osinstall/ks/node_profile" ?= AII_OSINSTALL_NODEPROFILE;
 
-# Additional packages to be installed before rebooting and thus before
-# SPMA runs. Insert here Xen kernels and such stuff.
-variable AII_OSINSTALL_EXTRAPKGS ?= null;
-"/system/aii/osinstall/ks/extra_packages" ?= AII_OSINSTALL_EXTRAPKGS;
-
 # Include OS specific kickstart configuration, if needed
 #  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
 #  - allow 2 types of variants : major and minor OS variants. Variants for major OS version are located in the standard configuration
@@ -406,6 +398,10 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 #
 
 variable AII_OSINSTALL_BASE_PACKAGES ?= list (
+    'perl-Proc-ProcessTable',
+    'perl-Set-Scalar',
+    'perl-common-sense',
+    'perl-JSON-XS',
     "perl-LC",
     "perl-CAF",
     "ccm",

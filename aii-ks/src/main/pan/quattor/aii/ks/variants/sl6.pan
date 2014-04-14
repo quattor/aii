@@ -22,5 +22,3 @@ template quattor/aii/ks/variants/sl6;
   SELF;
 };
 
-#add needed packages for @INC at post-install step :
-"/system/aii/osinstall/ks/extra_packages" ?= push("perl-CAF", "perl-LC");

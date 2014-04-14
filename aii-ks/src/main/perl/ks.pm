@@ -876,7 +876,7 @@ EOF
 
     foreach my $repo (@$repos) {
         if ($ptype && $ptype eq 'reverse') {
-            $repo->{protocols}->[0]->{url} =~ s{://.*?/}{$phost:$pport};
+            $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
         }
         print <<EOF;
 [$repo->{name}]
