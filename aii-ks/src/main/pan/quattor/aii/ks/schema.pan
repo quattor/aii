@@ -79,9 +79,6 @@ type structure_ks_ks_info = {
     "base_packages" : string[]
     # Repositories to disable while SPMA is not available
     "disabled_repos" : string[] = list()
-    # Additional packages to be installed before the reboot, and
-    # thus, before SPMA runs
-    "extra_packages" ? string[]
     # Hooks for user customization are under: /system/ks/hooks/{pre_install,
     # post_install, post_reboot and install}. They
     # are optional.
