@@ -39,6 +39,7 @@ type structure_ks_logging = {
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
     "console" ? boolean # redirect AII ks logfile to console (true if not defined) 
     "netcat" ? boolean # send AII ks logfile to host/port via netcat UDP
+    "bash" ? boolean # send AII ks logfile to host/port via bash /dev/tcp
 };
 
 # Information needed for creating the Kickstart file
