@@ -1,10 +1,8 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.quattor</groupId>
   <artifactId>aii</artifactId>
   <packaging>pom</packaging>
-
   <parent>
     <groupId>org.sonatype.oss</groupId>
     <artifactId>oss-parent</artifactId>
@@ -22,40 +20,33 @@
       <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
-
   <version>14.2.2-SNAPSHOT</version>
-
   <name>AII</name>
-
   <scm>
     <connection>scm:git:git://github.com/quattor/aii.git</connection>
     <developerConnection>scm:git:git@github.com:quattor/aii.git</developerConnection>
     <url>https://github.com/quattor/aii</url>
   </scm>
-
   <modules>
     <module>aii-core</module>
     <module>aii-dhcp</module>
     <module>aii-ks</module>
     <module>aii-pxelinux</module>
   </modules>
-
   <build>
     <pluginManagement>
       <plugins>
-	<plugin>
-	  <groupId>org.apache.maven.plugins</groupId>
-	  <artifactId>maven-release-plugin</artifactId>
-	  <version>2.1</version>
-	  <configuration>
-	    <mavenExecutorId>forked-path</mavenExecutorId>
-	    <useReleaseProfile>false</useReleaseProfile>
-	    <arguments>-Psonatype-oss-release -Dgpg.useagent=true</arguments>
-	  </configuration>
-	</plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-release-plugin</artifactId>
+          <version>2.1</version>
+          <configuration>
+            <mavenExecutorId>forked-path</mavenExecutorId>
+            <useReleaseProfile>false</useReleaseProfile>
+            <arguments>-Psonatype-oss-release -Dgpg.useagent=true</arguments>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
-
-
 </project>
