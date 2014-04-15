@@ -36,6 +36,8 @@ use constant REMOVE_HOOK_PATH => '/system/aii/hooks/remove';
 use constant BOOT_HOOK_PATH => '/system/aii/hooks/boot';
 use constant FIRMWARE_HOOK_PATH => '/system/aii/hooks/firmware';
 use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
+# Kickstart constants (trying to use same name as in ks.pm from aii-ks)
+use constant KS => "/system/aii/osinstall/ks";
 
 our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -86,18 +88,27 @@ sub pxe_append
     my $cfg = shift;
 
     my $t = $cfg->getElement (PXEROOT)->getTree;
+    
+    my $kst = {}; # empty hashref in case no kickstart is defined
+    $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
+
     my $ksloc = $t->{kslocation};
     my $server = hostname();
     $ksloc =~ s{LOCALHOST}{$server};
 
     my @append;
     push(@append,
-         "ramdisk=32768", 
+         "ramdisk=32768",
          "initrd=$t->{initrd}",
          "ks=$ksloc",
          "ksdevice=$t->{ksdevice}"
          );         
-    
+
+    if (exists($kst->{logging})) {
+        push(@append, "syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
+        push(@append, "loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
+    }
+        
     push(@append, $t->{append}) if exists $t->{append};
 
     return @append;    
