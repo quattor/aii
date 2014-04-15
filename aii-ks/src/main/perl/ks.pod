@@ -148,15 +148,11 @@ of Yum.
 
 =item * base_packages ? string[]
 
-Base packages needed for a Quattor client to run (CCM, NCM etc.). These
-packages will be installed during the post reboot phase.
-
-=item * extra_packages ? string[]
-
-List of additional packages needed to have the node running, before
-the SPMA actually runs. For instance, Xen kernels or special mkinitrd
-packages should be placed here. These packages are installed by
-the post-install script, before rebooting.
+Base packages needed for a Quattor client to run (CCM, NCM etc.) 
+in post-reboot phase. Only the packages that are (also) listed in 
+C</software/packages> will be installed. The installation is part of
+the post phase using all configured yum repositories with the 
+C<skip_if_unavailable> flag enabled.
 
 =item * disabled_repos ? string[]
 
