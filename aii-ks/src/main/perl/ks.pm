@@ -253,9 +253,13 @@ EOF
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
-        # requirements for netcat and usleep
-        push(@packages, 'nc', 'initscripts') 
-            if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat});
+        if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
+            # requirements for netcat and usleep
+            push(@packages, 'nc', 'initscripts')
+        } elsif (exists($tree->{logging}->{bash}) && $tree->{logging}->{bash}) {
+            # requirement for usleep (assuming recent enough bash)
+            push(@packages, 'initscripts')
+        }
     }
     print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
@@ -413,22 +417,32 @@ sub log_action {
     my $consolelogging = 1; # default behaviour
     if (exists($tree->{logging})) {
         $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
-    
-        if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
+        
+        my $nc = exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat};
+        my $bash = exists($tree->{logging}->{bash}) && $tree->{logging}->{bash};
+        if($nc || $bash) {
             # network must be functional 
             # (not needed in %pre and %post; we can rely on anaconda for that)
             push(@logactions, "wait_for_network $tree->{logging}->{host}") 
                 if ($wait_for_network);
-
-            push(@logactions,'# Send messages to UDP syslog server');
-            # use netcat to log to UDP syslog port
-            my $netcatcmd = "nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
+            my $actioncmd;
+            if ($nc) {
+                push(@logactions,'# Send messages to UDP syslog server via netcat');
+                # use netcat to log to UDP syslog port
+                $actioncmd = "| nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
+            } elsif ($bash) { # there can be only one
+                push(@logactions,'# Send messages to TCP syslog server via bash /dev/tcp');
+                # use netcat to log to UDP syslog port
+                $actioncmd = "> /dev/tcp/$tree->{logging}->{host}/$tree->{logging}->{port}";
+            }
+            
             # 190 = local7.info
             my $syslogheader = '<190>AII: '; 
-            # try to sleep (usleep by initscripts), throtlles to 20 lines per sec
-            my $awk = "awk '{print \"$syslogheader\"\$0; fflush(); system(\"usleep 50000 >& /dev/null\");}'";
-            my $netcataction = "(tail -f $logfile | $awk  | $netcatcmd) &";
-            push(@logactions, $netcataction);
+            # try to sleep (usleep by initscripts), throtlles to 40 lines per sec
+            my $awk = "awk '{print \"$syslogheader\"\$0; fflush(); system(\"usleep 25000 >& /dev/null\");}'";
+            my $action = "(tail -f $logfile | $awk $actioncmd) &";
+            push(@logactions, $action);
+
             # insert extra sleep to get all started before any output is send
             push(@logactions, 'sleep 1');
         }
