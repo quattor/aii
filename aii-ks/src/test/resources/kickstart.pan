@@ -1,5 +1,5 @@
 @{ 
-Base kickstart datae
+Base kickstart data
 @}
 template kickstart;
 
