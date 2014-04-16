@@ -33,7 +33,7 @@ prefix "/system/aii/osinstall/ks";
 "email_success" = false;
 "installtype" = "url --url http://baseos";
 "timezone" = "Europe/SomeCity";
-"packages" = list("pacakge", "package2");
+"packages" = list("package", "package2");
 "packages_args" = list("--ignoremissing","--resolvedeps");
 "end_script" = "EENNDD";
 "part_label" = false;

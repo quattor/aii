@@ -24,9 +24,23 @@ my $ks = NCM::Component::ks->new('ks');
 my $cfg = get_config_for_profile('kickstart_commands');
 
 NCM::Component::ks::kscommands($cfg);
-# test enable and disable
-# check chkconfig --del and services list
-like($fh, qr{^\s*services\s*--disabled=disable1,DISABLE2\s*--enabled=enable1,ENABLE2}m, "--dis/enable services present");
+
+like($fh, qr{^text}m, 'text mode install present');
+like($fh, qr{^reboot}m, 'reboot after install present');
+like($fh, qr{^skipx}m, 'skip x configuration present');
+like($fh, qr{^auth\s--enableshadow\s--enablemd5}m, 'authentication parameters present');
+like($fh, qr{^install\n^url\s--url http://baseos}m, 'installtype present');
+like($fh, qr{^timezone\s--utc Europe/SomeCity}m, 'timezone present');
+like($fh, qr{^rootpw\s--iscrypted veryverysecret}m, 'crypted root password present');
+like($fh, qr{^bootloader\s--location=mbr}m, 'bootloader present');
+like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');
+like($fh, qr{^keyboard\sus}m, 'keyboard present');
+like($fh, qr{^firewall\s--disabled }m, ' present');
+like($fh, qr{^network\s--bootproto=dhcp}m, ' present');
+like($fh, qr{^zerombr yes}m, 'zerombr present');
+like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
+
+like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\n^EENNDD\n}m, 'installtype present');
 
 
 done_testing();
