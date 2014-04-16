@@ -253,7 +253,7 @@ EOF
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
     }
-    print "bootloader  --location=$tree->{bootloader_location}";
+    print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
@@ -312,8 +312,8 @@ EOF
     print "services ", join (' ', @services), "\n" if (@services);
 
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @{$tree->{packages}}), "\n";
-    
+        join ("\n", @{$tree->{packages}}), "\n",
+        $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
