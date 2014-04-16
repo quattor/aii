@@ -20,6 +20,7 @@ use Data::Dumper;
 use Exporter;
 use CAF::FileWriter;
 use Sys::Hostname;
+use Text::Glob qw(match_glob);
 
 our @ISA = qw (NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -47,7 +48,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                ANACONDAHOOK     => "/system/aii/hooks/anaconda",
                PREREBOOTHOOK    => "/system/aii/hooks/pre_reboot",
                PKG              => "/software/packages/",
-               KERNELVERSION    => "/system/kernel/version",
                ACKURL           => "/system/aii/osinstall/ks/ackurl",
                ACKLIST          => "/system/aii/osinstall/ks/acklist",
                CARDS            => "/hardware/cards/nic",
@@ -79,14 +79,6 @@ use constant   USEMODULE        => "use " . MODULEBASE;
 
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
-
-# Packages to be installed when setting up Quattor.
-
-
-# Packages containing kernels. kernel-xen is not listed here, as it
-# depends on different versions of mkinitrd and e2fsprogs, and
-# installing them may cause a dependency hell.
-use constant KERNELLIST         => qw (kernel-firmware kernel kernel-smp);
 
 
 # Opens the kickstart file and sets its handle as the default.
@@ -916,10 +908,57 @@ sub process_pkgs
                 push(@ret, $p);
             }
         }
-        return @ret;
+    } else {
+        push(@ret, $pkg);
+    }
+    return @ret;
+}
+
+# C<simple_version_glob> will select all version-locked packages, if any.
+# Then, all non-locked packages that match the locked non-versioned 
+# packages glob are removed. Finally, all remaining non-locked 
+# packages are added.
+#
+# E.g. "yum install kernel*-X.Y.Z kernel-firmware" will try to install
+# the latest kernel-firmware with a set of fixed kernel rpms,
+# probably not matching with latest kernel-firmware version
+# Ideally, kernel*-X.Y.Z is defined in the profile, and no other 
+# kernel packages are version locked.
+sub simple_version_glob {
+    my ($self, @pkglist) = @_;
+    my @res;
+    my @locked;
+    my %pkgs;
+    foreach my $ref (@pkglist) {
+        my ($pkgst, $st) = @$ref;
+        my @processed = $self->process_pkgs($pkgst, $st);
+        $pkgs{$pkgst} = \@processed;
+
+        # test if certain pkg is version locked
+        # (specifying arch is also considered locking)
+        # it's sufficient to the test first element 
+        # (you can't mix locked and unlocked)
+        push(@locked, $pkgst) if ($processed[0] !~ m/^$pkgst$/);
+    };
+
+    foreach my $locked_pkg (@locked) {
+        # add it to res
+        push(@res, @{delete $pkgs{$locked_pkg}});
     }
 
-    return $pkg;
+    # get rid of packages matching the non-versioned glob of
+    # locked packages
+    foreach my $locked_pkg (@locked) {
+        foreach my $globmatch (match_glob($locked_pkg, keys %pkgs)) {
+            delete $pkgs{$globmatch} ;
+        };
+    };
+
+    # add remainder unlocked non-matching packages
+    foreach my $ref (values %pkgs) {
+        push (@res, @$ref) ;
+    };
+    return @res;    
 }
 
 
@@ -939,13 +978,14 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
+    my @kernel_pkgs;
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
         if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-            push (@pkgs, $self->process_pkgs($pkgst, $st));
+            push (@pkgs, [$pkgst, $st]);
         }
     }
-    ksinstall_rpm($config, @pkgs);
+    ksinstall_rpm($config, $self->simple_version_glob(@pkgs));
 }
 
 # Prints the %post script. The post_reboot script is created inside

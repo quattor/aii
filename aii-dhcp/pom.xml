@@ -1,57 +1,46 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-
   <modelVersion>4.0.0</modelVersion>
-
   <groupId>org.quattor.maven</groupId>
   <artifactId>dhcp</artifactId>
-
   <packaging>pom</packaging>
   <version>14.2.2-SNAPSHOT</version>
   <name>AII DHCP config generator</name>
   <url>http://quattor.org/cfg-modules/</url>
-
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.29</version>
+    <version>1.34</version>
   </parent>
-
   <developers>
     <developer>
       <name>Luis Fernando Muñoz Mejías</name>
       <email>Luis.Munoz@UGent.be</email>
     </developer>
   </developers>
-
   <contributors>
     <contributor>
       <name>Michel Jouvin</name>
       <email>jouvin@lal.in2pr.fr</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
     <contributor>
       <name>Gabor Gombas</name>
       <email>gabor.gombas@morganstanley.com</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
     <contributor>
       <name>Ben Jones</name>
       <email>ben.jones@morganstanley.com</email>
       <roles>
-	<role>author</role>
+        <role>author</role>
       </roles>
     </contributor>
   </contributors>
-
-
-
-
   <properties>
-
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <maven.build.timestamp.format>yyyyMMdd.HHmm.ss</maven.build.timestamp.format>
     <build-info>
@@ -60,7 +49,6 @@
 #
 </build-info>
   </properties>
-
   <dependencies>
     <dependency>
       <groupId>org.quattor.maven</groupId>
@@ -77,24 +65,21 @@
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
-
   <build>
     <pluginManagement>
       <plugins>
-	<plugin>
-	  <groupId>org.codehaus.mojo</groupId>
-	  <artifactId>rpm-maven-plugin</artifactId>
-	  <configuration>
-	    <summary>aii-${project.artifactId}</summary>
-	    <name>aii-${project.artifactId}</name>
-	    <provides>
-	      <provide>aii-${project.artifactId}</provide>
-	    </provides>
-	  </configuration>
-	</plugin>
-
+        <plugin>
+          <groupId>org.codehaus.mojo</groupId>
+          <artifactId>rpm-maven-plugin</artifactId>
+          <configuration>
+            <summary>aii-${project.artifactId}</summary>
+            <name>aii-${project.artifactId}</name>
+            <provides>
+              <provide>aii-${project.artifactId}</provide>
+            </provides>
+          </configuration>
+        </plugin>
       </plugins>
     </pluginManagement>
   </build>
-
 </project>
