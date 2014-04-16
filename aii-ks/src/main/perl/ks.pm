@@ -232,9 +232,9 @@ sub kscommands
     }
     print <<EOF;
 install
+$installtype
 text
 reboot
-$installtype
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
