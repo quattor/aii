@@ -301,18 +301,18 @@ EOF
         print "ignoredisk --drives=",
             join (',', @{$tree->{ignoredisk}}), "\n";
     }
+    
+    ## disable and enable services, if any
+    my @services;
+    push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if 
+        (exists($tree->{disable_service}) && @{$tree->{disable_service}});
+    push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if 
+        (exists($tree->{enable_service}) && @{$tree->{enable_service}});
+
+    print "services ", join (' ', @services), "\n" if (@services);
+
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
-
-        ## enable services, if any
-    if (exists($tree->{enable_service}) && @{$tree->{enable_service}}) {
-        ## should be a list of strings
-        my $services = join(" ",@{$tree->{enable_service}});
-        if ($services) {
-        print "services --enabled=",
-            join (',', @{$tree->{enable_service}}), "\n";;
-        }
-    };
     
 }
 
@@ -1018,7 +1018,7 @@ EOF
         ksfix_grub;
     }
 
-    ## disable services, if any
+    # delete services, if any
     if (exists($tree->{disable_service})) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
