@@ -89,7 +89,7 @@ sub link_filepath
 }
 
 
-# Prints the PXE configuration file.
+# Writes the PXE configuration file.
 sub pxeprint
 {
     my $cfg = shift;

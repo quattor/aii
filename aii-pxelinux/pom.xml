@@ -54,14 +54,14 @@
       <groupId>org.quattor.maven</groupId>
       <artifactId>assemblies</artifactId>
       <type>tar.gz</type>
-      <version>1.22</version>
+      <version>1.34</version>
       <classifier>assemblies</classifier>
     </dependency>
     <dependency>
       <groupId>org.quattor.maven</groupId>
       <artifactId>build-scripts</artifactId>
       <type>tar.gz</type>
-      <version>1.22</version>
+      <version>1.34</version>
       <classifier>scripts</classifier>
     </dependency>
   </dependencies>
