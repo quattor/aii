@@ -25,6 +25,6 @@ my $cfg = get_config_for_profile('kernel-firmware');
 
 $ks->yum_install_packages($cfg);
 like($fh, qr{\bkernel-firmware\b}, "Kernel firmware preserved");
-like($fh, qr{kernel-module-foo\s*\\}, "Kernel module locked down");
+unlike($fh, qr{\bkernel-module-foo\b}, "Kernel module subsumed by glob");
 
 done_testing();
