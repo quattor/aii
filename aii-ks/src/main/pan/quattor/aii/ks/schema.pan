@@ -37,9 +37,17 @@ type structure_ks_logging = {
     "host" : type_hostname
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
+
     "console" ? boolean # redirect AII ks logfile to console (true if not defined) 
-    "netcat" ? boolean # send AII ks logfile to host/port via netcat UDP
-    "bash" ? boolean # send AII ks logfile to host/port via bash /dev/tcp
+    
+    # send AII ks logfile to host/port 
+    "send_aiilogs" : boolean = false
+
+    # use legacy defaults 
+    # via bash or netcat
+    "method" : string = 'netcat' with match(SELF, '^(bash|netcat)$') 
+    # via tcp or udp
+    "protocol" : string = 'udp' with match(SELF, '^(tcp|udp)$')
 };
 
 # Information needed for creating the Kickstart file
