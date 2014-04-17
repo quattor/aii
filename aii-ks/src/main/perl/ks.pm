@@ -453,9 +453,8 @@ sub log_action {
     }
 
     if ($consolelogging) {
-        push(@logactions,'# Make sure messages show up on the serial console');
-        my $consoleaction= "tail -f $logfile > /dev/console &";
-        push(@logactions, $consoleaction);
+        push(@logactions, '# Make sure messages show up on the serial console',
+                          "tail -f $logfile > /dev/console &");
     }
     
     push(@logactions,''); # add trailing newline 

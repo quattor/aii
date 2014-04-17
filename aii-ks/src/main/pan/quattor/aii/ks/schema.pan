@@ -38,7 +38,7 @@ type structure_ks_logging = {
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
 
-    "console" ? boolean # redirect AII ks logfile to console (true if not defined) 
+    "console" : boolean = true # redirect AII ks logfile to console 
     
     # send AII ks logfile to host/port 
     "send_aiilogs" : boolean = false
