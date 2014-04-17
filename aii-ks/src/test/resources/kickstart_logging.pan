@@ -10,5 +10,7 @@ prefix "/system/aii/osinstall/ks/logging";
 "port" = 514;
 "level" = "debug";
 "console" = true; 
-"netcat" = true;
-"bash" = true; # doesn't do anything, netcat takes preference in module
+
+"send_aiilogs" = true;
+"method" = 'netcat'; 
+"protocol" = 'udp';
