@@ -253,12 +253,10 @@ EOF
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
-        if(exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat}) {
-            # requirements for netcat and usleep
-            push(@packages, 'nc', 'initscripts')
-        } elsif (exists($tree->{logging}->{bash}) && $tree->{logging}->{bash}) {
-            # requirement for usleep (assuming recent enough bash)
-            push(@packages, 'initscripts')
+        if($tree->{logging}->{send_aiilogs}) {
+            # requirement for usleep
+            push(@packages, 'initscripts');
+            push(@packages, 'nc') if ($tree->{logging}->{method} eq 'netcat');
         }
     }
     print "bootloader --location=$tree->{bootloader_location}";
@@ -418,22 +416,28 @@ sub log_action {
     if (exists($tree->{logging})) {
         $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
         
-        my $nc = exists($tree->{logging}->{netcat}) && $tree->{logging}->{netcat};
-        my $bash = exists($tree->{logging}->{bash}) && $tree->{logging}->{bash};
-        if($nc || $bash) {
+        if (exists($tree->{logging}->{send_aiilogs})) {
             # network must be functional 
             # (not needed in %pre and %post; we can rely on anaconda for that)
             push(@logactions, "wait_for_network $tree->{logging}->{host}") 
                 if ($wait_for_network);
+
+            my $method = $tree->{logging}->{method}; 
+            my $protocol = $tree->{logging}->{protocol};
+
             my $actioncmd;
-            if ($nc) {
-                push(@logactions,'# Send messages to UDP syslog server via netcat');
+            if ($method eq 'netcat') {
+                push(@logactions,'# Send messages to $protocol syslog server via netcat');
+                # use netcat to log to syslog port
+                my $nccmd = 'nc';
+                $nccmd .= ' -u' if ($protocol eq 'udp');
+
+                $actioncmd = "| $nccmd $tree->{logging}->{host} $tree->{logging}->{port}";
+            } elsif ($method eq 'bash') {
+                push(@logactions,"# Send messages to $protocol syslog server via bash /dev/$protocol");
                 # use netcat to log to UDP syslog port
-                $actioncmd = "| nc -u $tree->{logging}->{host} $tree->{logging}->{port}";
-            } elsif ($bash) { # there can be only one
-                push(@logactions,'# Send messages to TCP syslog server via bash /dev/tcp');
-                # use netcat to log to UDP syslog port
-                $actioncmd = "> /dev/tcp/$tree->{logging}->{host}/$tree->{logging}->{port}";
+                # this assumes that the %pre, %post and post-reboot are bash
+                $actioncmd = "> /dev/$protocol/$tree->{logging}->{host}/$tree->{logging}->{port}";
             }
             
             # 190 = local7.info
