@@ -320,7 +320,7 @@ EOF
     print "services ", join (' ', @services), "\n" if (@services);
 
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @{$tree->{packages}}), "\n",
+        join ("\n", @packages), "\n",
         $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
 }
 
