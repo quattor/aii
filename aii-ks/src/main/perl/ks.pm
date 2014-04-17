@@ -253,7 +253,7 @@ EOF
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
-        if($tree->{logging}->{send_aiilogs}) {
+        if(exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
             # requirement for usleep
             push(@packages, 'initscripts');
             push(@packages, 'nc') if ($tree->{logging}->{method} eq 'netcat');
@@ -416,7 +416,7 @@ sub log_action {
     if (exists($tree->{logging})) {
         $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
         
-        if (exists($tree->{logging}->{send_aiilogs})) {
+        if (exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
             # network must be functional 
             # (not needed in %pre and %post; we can rely on anaconda for that)
             push(@logactions, "wait_for_network $tree->{logging}->{host}") 
