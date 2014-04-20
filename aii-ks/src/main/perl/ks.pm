@@ -77,6 +77,15 @@ use constant { KS               => "/system/aii/osinstall/ks",
 use constant   MODULEBASE       => "AII::";
 use constant   USEMODULE        => "use " . MODULEBASE;
 
+# use this syslogheader for remote AII scripts logging:
+#   190 = local7.info
+use constant LOG_ACTION_SYSLOGHEADER => '<190>AII: '; 
+# awk command to prefix LOG_ACTION_SYSLOGHEADER and 
+# to insert sleep (usleep by initscripts), throtlles to 40 lines per sec
+use constant LOG_ACTION_AWK => 
+    "awk '{print \"".LOG_ACTION_SYSLOGHEADER."\"\$0; fflush(); system(\"usleep 25000 >& /dev/null\");}'";
+
+
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
 
@@ -440,11 +449,7 @@ sub log_action {
                 $actioncmd = "> /dev/$protocol/$tree->{logging}->{host}/$tree->{logging}->{port}";
             }
             
-            # 190 = local7.info
-            my $syslogheader = '<190>AII: '; 
-            # try to sleep (usleep by initscripts), throtlles to 40 lines per sec
-            my $awk = "awk '{print \"$syslogheader\"\$0; fflush(); system(\"usleep 25000 >& /dev/null\");}'";
-            my $action = "(tail -f $logfile | $awk $actioncmd) &";
+            my $action = "(tail -f $logfile | ".LOG_ACTION_AWK." $actioncmd) &";
             push(@logactions, $action);
 
             # insert extra sleep to get all started before any output is send
