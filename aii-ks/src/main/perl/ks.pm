@@ -232,9 +232,9 @@ sub kscommands
     }
     print <<EOF;
 install
+$installtype
 text
 reboot
-$installtype
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
@@ -253,7 +253,7 @@ EOF
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
     }
-    print "bootloader  --location=$tree->{bootloader_location}";
+    print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
         if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
@@ -301,19 +301,19 @@ EOF
         print "ignoredisk --drives=",
             join (',', @{$tree->{ignoredisk}}), "\n";
     }
-    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @{$tree->{packages}}), "\n";
-
-        ## enable services, if any
-    if (exists($tree->{enable_service}) && @{$tree->{enable_service}}) {
-        ## should be a list of strings
-        my $services = join(" ",@{$tree->{enable_service}});
-        if ($services) {
-        print "services --enabled=",
-            join (',', @{$tree->{enable_service}}), "\n";;
-        }
-    };
     
+    ## disable and enable services, if any
+    my @services;
+    push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if 
+        (exists($tree->{disable_service}) && @{$tree->{disable_service}});
+    push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if 
+        (exists($tree->{enable_service}) && @{$tree->{enable_service}});
+
+    print "services ", join (' ', @services), "\n" if (@services);
+
+    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
+        join ("\n", @{$tree->{packages}}), "\n",
+        $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -1018,7 +1018,7 @@ EOF
         ksfix_grub;
     }
 
-    ## disable services, if any
+    # delete services, if any
     if (exists($tree->{disable_service})) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});

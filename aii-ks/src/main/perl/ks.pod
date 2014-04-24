@@ -142,9 +142,7 @@ or "permissive".
 
 =item * disable_service ? string[]
 
-List of services to be disabled before the reboot, in order to avoid
-nasty behaviour such as, f.i, grabbing lots of RPMs from CERN because
-of Yum.
+List of services to be disabled and removed before the reboot.
 
 =item * base_packages ? string[]
 
@@ -206,10 +204,9 @@ Whether or not the firewall must be enabled.
 List of trusted devices. Traffic from and to these devices will not be
 filtered.
 
-=item * services : string[]
+=item * enable_service : string[]
 
-List of service names to be allowed by the firewall. Each element must
-be one of ssh, telnet, smtp, http, ftp. Defaults to "ssh".
+List of service names to be allowed by the firewall.
 
 =item * ports : long[]
 
