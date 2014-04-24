@@ -77,6 +77,15 @@ use constant { KS               => "/system/aii/osinstall/ks",
 use constant   MODULEBASE       => "AII::";
 use constant   USEMODULE        => "use " . MODULEBASE;
 
+# use this syslogheader for remote AII scripts logging:
+#   190 = local7.info
+use constant LOG_ACTION_SYSLOGHEADER => '<190>AII: '; 
+# awk command to prefix LOG_ACTION_SYSLOGHEADER and 
+# to insert sleep (usleep by initscripts), throtlles to 40 lines per sec
+use constant LOG_ACTION_AWK => 
+    "awk '{print \"".LOG_ACTION_SYSLOGHEADER."\"\$0; fflush(); system(\"usleep 25000 >& /dev/null\");}'";
+
+
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
 
@@ -217,7 +226,8 @@ sub kscommands
     my  $config = shift;
 
     my $tree = $config->getElement(KS)->getTree;
-
+    my @packages = @{$tree->{packages}};
+    
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
@@ -252,6 +262,11 @@ EOF
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
+        if(exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+            # requirement for usleep
+            push(@packages, 'initscripts');
+            push(@packages, 'nc') if ($tree->{logging}->{method} eq 'netcat');
+        }
     }
     print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
@@ -312,7 +327,7 @@ EOF
     print "services ", join (' ', @services), "\n" if (@services);
 
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @{$tree->{packages}}), "\n",
+        join ("\n", @packages), "\n",
         $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
 }
 
@@ -397,12 +412,69 @@ EOF
     kscommands ($config);
 }
 
+# Create the action to be taken on the log files
+# logfile is the path to the log file
+sub log_action {
+    my ($config, $logfile, $wait_for_network) = @_;
+
+    my $tree = $config->getElement(KS)->getTree;
+    my @logactions;
+    push(@logactions, "exec >$logfile 2>&1"); 
+    
+    my $consolelogging = 1; # default behaviour
+    if (exists($tree->{logging})) {
+        $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
+        
+        if (exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+            # network must be functional 
+            # (not needed in %pre and %post; we can rely on anaconda for that)
+            push(@logactions, "wait_for_network $tree->{logging}->{host}") 
+                if ($wait_for_network);
+
+            my $method = $tree->{logging}->{method}; 
+            my $protocol = $tree->{logging}->{protocol};
+
+            my $actioncmd;
+            if ($method eq 'netcat') {
+                push(@logactions,'# Send messages to $protocol syslog server via netcat');
+                # use netcat to log to syslog port
+                my $nccmd = 'nc';
+                $nccmd .= ' -u' if ($protocol eq 'udp');
+
+                $actioncmd = "| $nccmd $tree->{logging}->{host} $tree->{logging}->{port}";
+            } elsif ($method eq 'bash') {
+                push(@logactions,"# Send messages to $protocol syslog server via bash /dev/$protocol");
+                # use netcat to log to UDP syslog port
+                # this assumes that the %pre, %post and post-reboot are bash
+                $actioncmd = "> /dev/$protocol/$tree->{logging}->{host}/$tree->{logging}->{port}";
+            }
+            
+            my $action = "(tail -f $logfile | ".LOG_ACTION_AWK." $actioncmd) &";
+            push(@logactions, $action);
+
+            # insert extra sleep to get all started before any output is send
+            push(@logactions, 'sleep 1');
+        }
+    }
+
+    if ($consolelogging) {
+        push(@logactions, '# Make sure messages show up on the serial console',
+                          "tail -f $logfile > /dev/console &");
+    }
+    
+    push(@logactions,''); # add trailing newline 
+    return join("\n", @logactions)
+}
+
 # Takes care of the pre-install script, in which the
 sub pre_install_script
 {
     my ($self, $config) = @_;
 
-    print <<'EOF';
+    my $logfile = '/tmp/pre-log.log';
+    my $logaction = log_action($config, $logfile);
+    
+    print <<EOF;
 %pre
 
 # Pre-installation script.
@@ -414,10 +486,13 @@ sub pre_install_script
 # primary, one extended and your /dev/foo4 will be silently renamed to
 # /dev/foo5.
 
-# Make sure messages show up on the serial console
-exec >/tmp/pre-log.log 2>&1
-tail -f /tmp/pre-log.log > /dev/console &
+$logaction
+echo 'Begin of pre section'
 set -x
+
+EOF
+
+    print <<'EOF';
 
 # Hack for RHEL 6: force re-reading the partition table
 #
@@ -490,8 +565,11 @@ EOF
 # De-activate logical volumes. Needed on RHEL6, see:
 # https://bugzilla.redhat.com/show_bug.cgi?id=652417
 lvm vgchange -an
+echo 'End of pre section'
 $end
+
 EOF
+
 }
 
 # Prints the code needed for removing and creating partitions, block
@@ -602,25 +680,35 @@ sub kspostreboot_header
 {
     my $config = shift;
 
+	# TODO is it ok to rename this logfile?
+    my $logfile = '/root/ks-post-reboot.log';
+    my $logaction = log_action($config, $logfile, 1); 
+    $logaction =~ s/\$/\\\$/g;
+    
     my $hostname = $config->getElement (HOSTNAME)->getValue;
     my $domain = $config->getElement (DOMAINNAME)->getValue;
+    my $fqdn = "$hostname.$domain";
+
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
+
     print <<EOF;
 #!/bin/bash
 # Script to run at the first reboot. It installs the base Quattor RPMs
 # and runs the components needed to get the system correctly
 # configured.
 
+hostname $fqdn
+
 # Function to be called if there is an error in this phase.
 # It sends an e-mail to $rootmail alerting about the failure.
 fail() {
-    echo "Quattor installation on  failed: \\\$1"
+    echo "Quattor installation on $fqdn failed: \\\$1"
     sendmail -t <<End_of_sendmail
-From: root\@$hostname
+From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname failed: \\\$1
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
-\\`cat /root/ks-post-install.log\\`
+\\`cat $logfile\\`
 ------------------------------------------------------------
 \\`ls -tr /var/log/ncm 2>/dev/null|xargs tail /var/log/spma.log\\`
 
@@ -632,37 +720,44 @@ End_of_sendmail
 # Function to be called if the installation succeeds.  It sends an
 # e-mail to $rootmail alerting about the installation success.
 success() {
+    echo "Quattor installation on $fqdn succeeded"
     sendmail -t <<End_of_sendmail
-From: root\@$hostname
+From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $hostname succeeded
+Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 
-Node $hostname successfully installed.
+Node $fqdn successfully installed.
 .
 End_of_sendmail
 }
-hostname $hostname.$domain
-# Ensure that the log file doesn't exist.
-[ -e /root/ks-post-install.log ] && \\
-    fail "Last installation went wrong. Aborting. See logfile"
 
-exec &> /root/ks-post-install.log
-tail -f /root/ks-post-install.log &>/dev/console &
+# Wait for functional network up by testing DNS lookup via nslookup.
+wait_for_network () {
+    # Wait up to 2 minutes until the network comes up
+    i=0
+    while ! nslookup \\\$1 > /dev/null
+    do
+        sleep 1
+        let i=\\\$i+1
+        if [ \\\$i -gt 120 ]
+        then
+            fail "Network does not come up (nslookup \\\$1)"
+        fi
+    done
+}
+
+# Ensure that the log file doesn't exist.
+[ -e $logfile ] && \\
+    fail "Last installation went wrong. Aborting. See logfile $logfile."
+
+$logaction
+echo 'Begin of ks-post-reboot'
 set -x
 
-# Wait up to 2 minutes until the network comes up
-i=0
-while ! nslookup \\`hostname\\` > /dev/null
-do
-    sleep 1
-    let i = \\\$i+1
-    if [ \\\$i -gt 120 ]
-    then
-       fail "Network does not come up"
-    fi
-done
+wait_for_network $fqdn
 
 EOF
+
 }
 
 sub ksquattor_config
@@ -746,6 +841,8 @@ sub kspostreboot_tail
 
     print <<EOF;
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
+echo 'End of ks-post-reboot'
+sleep 1
 shutdown -r now
 
 EOF
@@ -993,16 +1090,20 @@ EOF
 sub post_install_script
 {
     my ($self, $config) = @_;
+
+    my $logfile='/tmp/post-log.log';
+    my $logaction = log_action($config, $logfile);
+
     print <<EOF;
 
 %post
 
-set -x
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
+$logaction
+echo 'Begin of post section'
+set -x
 
-exec &>/tmp/post-log.log
-tail -f /tmp/post-log.log > /dev/console &
 
 EOF
 
@@ -1061,7 +1162,12 @@ EOF
 
     ksuserhooks ($config, PREREBOOTHOOK);
     my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
-    print "$end\n";
+    print <<EOF;
+echo 'End of post section'
+sleep 1
+$end
+
+EOF
 
 }
 

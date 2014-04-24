@@ -11,14 +11,8 @@ This document describes AII's Kickstart generator.
 
 =head2 SYNOPSIS
 
-This AII component generates a Kickstart for installing SL 3 and 4. It
+This AII component generates a Kickstart for installing SL 5 and higher. It
 must be called from aii-shellfe 2 or higher.
-
-=head2 IF YOU ARE UPGRADING FROM AII 1.X
-
-Now it is possible to define a correct Pan structure for AII
-plug-ins. This means that old strings, with long or boolean semantics
-have been converted to real long and boolean types.
 
 =head2 RESOURCES
 
@@ -168,9 +162,9 @@ want to keep those in the list.
 
 =item * end_script : string
 
-Closing tag used for Kickstart scripts (usually either empty or "%end"). Early
-Anaconda versions did not have such a closing tag. Later the use of %end became
-optional, and recent Anaconda releases made it mandatory.
+Closing tag used for Kickstart scripts C<%pre> and C<%post> and C<%packages> section 
+(usually either empty or "%end"). Early Anaconda versions (< 6) did not have such a closing 
+tag. Later the use of %end became optional, and recent Anaconda releases made it mandatory.
 
 =item * part_label: boolean
 
@@ -182,6 +176,10 @@ have a "--label" option to set the label of the file system.
 See below
 
 =item * xwindows
+
+See below
+
+=item * logging
 
 See below
 
@@ -262,6 +260,64 @@ Start GDM on boot. Defaults to true.
 =item * depth : long
 
 Default color depth, in bits. Defaults to 24.
+
+=back
+
+All paths are relative to C</system/aii/osinstall/ks/logging>
+
+=head3 Logging configuration
+
+Two logging paths exist: the Anaconda logging via an Anaconda 
+syslog and one specific to the logs produced by the AII scripts
+in C<%pre>, C<%post> and post-reboot.
+
+For the Anaconda syslog, one can set the remote host and port, and 
+optional loglevel, but not the used protocol. For SL versions < 7, UDP
+is implied, for versions >= 7 TCP is used.
+
+The logs produced by AII scripts can be send to the console and to
+the same remote syslog server as used by the Anaconda syslog. 
+For the remote logging of the AII logs,
+the protocol can be chosen (and should probably match the one used
+by the Anaconda syslog).
+
+=over 4
+
+=item * host : string
+
+The remote syslog server name used by Anaconda syslog (and optional
+AII remote scripts logging).
+
+=item * port : integer
+
+The portnumber of the remote syslog server used by Anaconda syslog (and optional
+AII remote scripts logging).
+
+=item * level : string
+
+The Anaconda syslog level that send to the remote server. Level can be one of 
+C<debug>, C<info>, C<warning>, C<error> or C<critical>.
+
+=item * console : boolean 
+
+Redirect the AII script logs to the console. (This is the default if this boolean 
+if not defined). 
+    
+=item * send_aiilogs : boolean
+
+Send or do not send the AII script logs to the remote host
+
+=item * method : string 
+
+Method that is used to send the AII script logs to the remote server. Has to be either
+C<netcat> or C<bash>. For SL 7>= bash should be used, for lower versions, netcat should be used 
+(although bash might work too). 
+
+=item * protocol : string 
+
+Protocol that is used to send the AII script logs to the remote server. Has to be either
+C<udp> or C<tcp>. Ideally this is equal to the the protocol that Anaconda syslog uses: 
+for SL 7>= tcp should be used, for lower versions, udp should be used. 
 
 =back
 

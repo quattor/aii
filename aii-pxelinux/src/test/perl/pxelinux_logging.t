@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_block);
+use Test::Quattor qw(pxelinux_logging);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
 use CAF::Object;
@@ -22,16 +22,13 @@ my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
 $mockpxe->mock('filepath', $fp);
 
 my $ks = NCM::Component::pxelinux->new('pxelinux');
-my $cfg = get_config_for_profile('pxelinux_block');
+my $cfg = get_config_for_profile('pxelinux_logging');
 
 NCM::Component::pxelinux::pxeprint($cfg);
 
 my $fh = get_file($fp);
 
-like($fh, qr{^default\skernel\slabel}m, 'default kernel');
-like($fh, qr{^\s{4}label\skernel\slabel}m, 'label default kernel');
-like($fh, qr{^\s{4}kernel\smykernel}m, 'kernel mykernel');
-like($fh, qr{^\s{4}append\sramdisk=32768\sinitrd=path/to/initrd\sks=http://server/ks\sksdevice=eth0(\s|$)}m, 'append line');
+like($fh, qr{^\s{4}append\s.*?\ssyslog=logserver:514\sloglevel=debug(\s|$)}m, 'append line');
 
 
 done_testing();
