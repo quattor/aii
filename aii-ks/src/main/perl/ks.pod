@@ -171,6 +171,10 @@ tag. Later the use of %end became optional, and recent Anaconda releases made it
 If set to true, then the "part" stanzas in the kickstart configuration will
 have a "--label" option to set the label of the file system.
 
+=item * version : string
+
+The OS version as the installation flavour.
+
 =item * firewall
 
 See below

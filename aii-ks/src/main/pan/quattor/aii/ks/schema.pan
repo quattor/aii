@@ -99,6 +99,8 @@ type structure_ks_ks_info = {
     "part_label" : boolean = false # Does the "part" stanza support the --label option?
     # Set to true if volgroup statement is required in KS config file (must not be present for SL6+)
     'volgroup_required' : boolean = false
+    
+    'version' : string = '5.0' # OS version 
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
