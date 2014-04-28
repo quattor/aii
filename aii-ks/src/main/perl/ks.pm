@@ -89,20 +89,30 @@ use constant LOG_ACTION_AWK =>
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
 
+# Return the fqdn of the node
+sub get_fqdn 
+{
+    my $cfg = shift;
+    my $h = $cfg->getElement (HOSTNAME)->getValue;
+    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    return "$h.$d";    
+}
+
 
 # Opens the kickstart file and sets its handle as the default.
 sub ksopen
 {
     my ($self, $cfg) = @_;
-
-    my $host = $cfg->getElement (HOSTNAME)->getValue;
-    my $domain = $cfg->getElement (DOMAINNAME)->getValue;
+    
+    my $fqdn = get_fqdn($cfg);
 
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
 
-    my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
-                                    mode => 0664, log => $this_app);
+    my $ks = CAF::FileWriter->open ("$ksdir/$fqdn.ks",
+                                    mode => 0664, 
+                                    log => $this_app
+                                    );
     select ($ks);
 }
 
@@ -139,10 +149,11 @@ sub ksnetwork
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
-    my $fqdn = $config->getElement (HOSTNAME)->getValue . "." .
-      $config->getElement (DOMAINNAME)->getValue;
     return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
+
+    my $fqdn = get_fqdn($config);
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless (exists ($net->{ip})) {
             $this_app->error ("Static boot protocol specified ",
@@ -685,9 +696,7 @@ sub kspostreboot_header
     my $logaction = log_action($config, $logfile, 1); 
     $logaction =~ s/\$/\\\$/g;
     
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
-    my $domain = $config->getElement (DOMAINNAME)->getValue;
-    my $fqdn = "$hostname.$domain";
+    my $fqdn = get_fqdn($config);
 
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
 
@@ -1185,9 +1194,9 @@ sub Configure
 {
     my ($self, $config) = @_;
 
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
+    my $fqdn = get_fqdn($config);
     if ($NoAction) {
-        $self->info ("Would run " . ref ($self) . " on $hostname");
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
 
@@ -1204,15 +1213,13 @@ sub Unconfigure
 {
     my ($self, $cfg) = @_;
 
-    my $host = $cfg->getElement (HOSTNAME)->getValue;
+    my $fqdn = get_fqdn($config);
     if ($NoAction) {
-        $self->info ("Would run " . ref ($self) . " on $host");
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
 
-    my $domain = $cfg->getElement (DOMAINNAME)->getValue;
-
     my $ksdir = $main::this_app->option (KSDIROPT);
-    unlink ("$ksdir/$host.$domain.ks");
+    unlink ("$ksdir/$fqdn.ks");
     return 1;
 }
