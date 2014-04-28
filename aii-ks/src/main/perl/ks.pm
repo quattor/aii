@@ -264,7 +264,7 @@ EOF
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
 
-    if ($tree->{enable_sshd}) {
+    if ($tree->{ENABLE_SSHD}) {
         print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
 
