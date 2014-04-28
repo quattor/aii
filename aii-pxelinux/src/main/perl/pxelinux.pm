@@ -43,16 +43,24 @@ our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
 
+# Return the fqdn of the node
+sub get_fqdn 
+{
+    my $cfg = shift;
+    my $h = $cfg->getElement (HOSTNAME)->getValue;
+    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    return "$h.$d";    
+}
+
 # Returns the absolute path where the PXE file must be written.
 sub filepath
 {
     my $cfg = shift;
 
-    my $h = $cfg->getElement (HOSTNAME)->getValue;
-    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    my $fqdn = get_fqdn($cfg);
     my $dir = $this_app->option (NBPDIR);
     $this_app->debug(3, "NBP directory = $dir");
-    return "$dir/$h.$d.cfg";
+    return "$dir/$fqdn.cfg";
 }
 
 # Returns the absolute path of the PXE file to link to
@@ -75,9 +83,8 @@ sub link_filepath
         }
         return "$dir/$1";
     } else {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $this_app->debug(3, "No $cmd defined for $h.$d");
+        my $fqdn = get_fqdn($cfg);
+        $this_app->debug(3, "No $cmd defined for $fqdn");
     }
     return undef;
 }
@@ -168,9 +175,8 @@ sub pxelink
     } elsif ($cmd eq RESCUE || $cmd eq LIVECD || $cmd eq FIRMWARE) {
         $path = link_filepath($cfg, $cmd);
         if (! -f $path) {
-            my $h = $cfg->getElement (HOSTNAME)->getValue;
-            my $d = $cfg->getElement (DOMAINNAME)->getValue;
-            $this_app->error("Missing $cmd config file for $h.$d: $path");
+            my $fqdn = get_fqdn($cfg);
+            $this_app->error("Missing $cmd config file for $fqdn: $path");
             return -1;
         }
         $this_app->debug (5, "Using $cmd from: $path");
@@ -208,9 +214,8 @@ sub Install
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, INSTALL)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to install");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to install");
         return 0;
     }
     ksuserhooks ($cfg, INSTALL_HOOK_PATH) unless $NoAction;
@@ -223,9 +228,8 @@ sub Firmware
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, FIRMWARE)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to firmware");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to firmware");
         return 0;
     }
     ksuserhooks ($cfg, FIRMWARE_HOOK_PATH) unless $NoAction;
@@ -238,9 +242,8 @@ sub Livecd
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, LIVECD)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error("Failed to change the status of $h.$d to livecd");
+        my $fqdn = get_fqdn($cfg);
+        $self->error("Failed to change the status of $fqdn to livecd");
         return 0;
     }
     ksuserhooks ($cfg, LIVECD_HOOK_PATH) unless $NoAction;
@@ -253,9 +256,8 @@ sub Rescue
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, RESCUE)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to rescue");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to rescue");
         return 0;
     }
     ksuserhooks ($cfg, RESCUE_HOOK_PATH) unless $NoAction;
@@ -269,9 +271,7 @@ sub Status
 
     my $t = $cfg->getElement (ETH)->getTree;
     my $dir = $this_app->option (NBPDIR);
-    my $h = $cfg->getElement (HOSTNAME)->getValue;
-    my $d = $cfg->getElement (DOMAINNAME)->getValue;
-    my $fqdn = "$h.$d";
+    my $fqdn = get_fqdn($cfg);
     my $boot = $this_app->option (LOCALBOOT);
     my $rescue = link_filepath($cfg, RESCUE);
     my $firmware = link_filepath($cfg, FIRMWARE);
