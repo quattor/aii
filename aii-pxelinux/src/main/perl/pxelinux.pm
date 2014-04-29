@@ -59,6 +59,22 @@ sub get_fqdn
     return "$h.$d";    
 }
 
+# return the version instance as specified in the kickstart (if at all)
+sub get_version
+{
+    my $kst = shift;
+    my $version = $VERSION_LOWEST;
+    if (exists($kst->{version})) {
+        $version = version->new($kst->{version});
+        if ($version < $VERSION_LOWEST) {
+            # TODO is this ok, or should we stop?
+            $this_app->error("Version $version < lowest supported $VERSION_LOWEST, continuing with lowest");
+            $version = $VERSION_LOWEST;
+        }        
+    };
+    return $version;    
+}
+
 # Returns the absolute path where the PXE file must be written.
 sub filepath
 {
@@ -142,16 +158,7 @@ sub pxe_append
     my $kst = {}; # empty hashref in case no kickstart is defined
     $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
 
-    # defaults to 
-    my $version = $VERSION_LOWEST;
-    if (exists($kst->{version})) {
-        $version = version->new($kst->{version});
-        if ($version < $VERSION_LOWEST) {
-            # TODO is this ok, or should we stop?
-            $this_app->error("Version $version < lowest supported $VERSION_LOWEST, continuing with lowest");
-            $version = $VERSION_LOWEST;
-        }        
-    };
+    my $version = get_version($kst);
 
     my $keyprefix = "";
     my $ksdevicename = "ksdevice";  
