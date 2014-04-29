@@ -70,7 +70,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
-               ENABLE_SSHD      => "enable_sshd",
            };
 
 # Base package path for user hooks.
@@ -149,6 +148,7 @@ sub ksnetwork
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    TODO fix broken regex 
     return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
 
@@ -157,7 +157,7 @@ sub ksnetwork
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless (exists ($net->{ip})) {
             $this_app->error ("Static boot protocol specified ",
-                              "but no IP given to the interface");
+                              "but no IP given to the interface $dev");
             return;
     }
 
@@ -264,7 +264,7 @@ EOF
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
 
-    if ($tree->{ENABLE_SSHD}) {
+    if ($tree->{enable_sshd}) {
         print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
 
