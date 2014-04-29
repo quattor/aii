@@ -16,6 +16,8 @@ use NCM::Component::ks qw (ksuserhooks);
 use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
+use Readonly;
+use version;
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant NBPDIR => 'nbpdir';
@@ -38,6 +40,15 @@ use constant FIRMWARE_HOOK_PATH => '/system/aii/hooks/firmware';
 use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
 # Kickstart constants (trying to use same name as in ks.pm from aii-ks)
 use constant KS => "/system/aii/osinstall/ks";
+use constant ENABLE_SSHD => "enable_sshd";
+
+# Lowest supported version is 5.0
+Readonly my $VERSION_LOWEST => version->new("5.0");
+Readonly my $VERSION_5_0 => version->new("5.0");
+# 6.5 indicates features available in 6.5
+# TODO doublecheck, these might also be available in 6.3 and 6.4
+Readonly my $VERSION_6_5 => version->new("6.5"); 
+Readonly my $VERSION_7_0 => version->new("7.0"); 
 
 our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -99,6 +110,24 @@ sub pxe_append
     my $kst = {}; # empty hashref in case no kickstart is defined
     $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
 
+    # defaults to 
+    my $version = $VERSION_LOWEST;
+    if (exists($kst->{version})) {
+        $version = version->new($kst->{version});
+        if ($version < $VERSION_LOWEST) {
+            # TODO is this ok, or should we stop?
+            $this_app->error("Version $version < lowest supported $VERSION_LOWEST, continuing with lowest");
+            $version = $VERSION_LOWEST;
+        }        
+    };
+
+    my $keyprefix = "";
+    my $ksdevicename = "ksdevice";  
+    if($version >= $VERSION_7_0) {
+        $keyprefix="inst.";
+        $ksdevicename = "bootdev";  
+    }  
+
     my $ksloc = $t->{kslocation};
     my $server = hostname();
     $ksloc =~ s{LOCALHOST}{$server};
@@ -107,14 +136,18 @@ sub pxe_append
     push(@append,
          "ramdisk=32768",
          "initrd=$t->{initrd}",
-         "ks=$ksloc",
-         "ksdevice=$t->{ksdevice}"
+         "${keyprefix}ks=$ksloc",
+         "$ksdevicename=$t->{ksdevice}"
          );         
 
     if (exists($kst->{logging})) {
-        push(@append, "syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
-        push(@append, "loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
+        push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
+        push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
+
+    if ($kst->{ENABLE_SSHD} && $version >= $VERSION_7_0) {
+        push(@append, "${ksprefix}sshd");
+    };
         
     push(@append, $t->{append}) if exists $t->{append};
 
