@@ -16,6 +16,7 @@ type structure_pxelinux_pxe_info = {
 	"livecd"	? string
 	"firmware"	? string
 	"setifnames" ? boolean
+    "updates" ? type_absoluteURI
 };
 
 bind "/system/aii/nbp/pxelinux" = structure_pxelinux_pxe_info;

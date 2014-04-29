@@ -40,7 +40,8 @@ like($fh, qr{^\s{4}append\s.*?\sifname=eth1:00:11:22:33:44:66(\s|$)}m, 'append i
 like($fh, qr{^\s{4}append\s.*?\sip=1.2.3.0::1.2.3.4:255.255.255.0:x.y:eth0:none(\s|$)}m, 'append static ip for bootdev');
 # enable sshd
 like($fh, qr{^\s{4}append\s.*?\sinst.sshd(\s|$)}m, 'append enable sshd');
-
+# updates
+like($fh, qr{^\s{4}append\s.*?\supdates=http://somewhere/somthing/updates.img(\s|$)}m, 'append enable sshd');
 
 
 done_testing();

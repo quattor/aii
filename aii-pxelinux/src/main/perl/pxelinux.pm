@@ -172,6 +172,10 @@ sub pxe_append
          "$ksdevicename=$t->{ksdevice}"
          );         
 
+    if (exists($t->{updates})) {
+        push(@append,"updates=$t->{updates}");
+    };
+
     if (exists($kst->{logging})) {
         push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};

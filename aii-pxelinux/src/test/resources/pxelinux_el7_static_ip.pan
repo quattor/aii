@@ -4,6 +4,7 @@ include 'pxelinux';
 
 prefix "/system/aii/nbp/pxelinux";
 "setifnames" = true;
+"updates" = "http://somewhere/somthing/updates.img";
 
 prefix "/system/aii/osinstall/ks";
 "version" = "7.0";
