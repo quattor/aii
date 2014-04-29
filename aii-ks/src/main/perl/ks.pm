@@ -269,7 +269,7 @@ sub kscommands
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
     
     my $installtype = $tree->{installtype};
-    if ($installtype =~ /http/) {
+    if ($installtype =~ /^http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
         if ($proxyhost) {
             if ($proxyport) {
@@ -293,14 +293,14 @@ EOF
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
 
-    if (exists($tree->{cmdline} && $tree->{cmdline}) {
+    if (exists($tree->{cmdline}) && $tree->{cmdline}) {
         print "cmdline\n";
-    else {
+    } else {
         print "text\n";
     }
 
     if ($tree->{enable_sshd} && $version >= $VERSION_6_0) {
-        print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
+        print "sshpw --username=root $tree->{rootpw} --iscrypted\n";
     }
 
     if (exists($tree->{logging})) {
@@ -341,13 +341,12 @@ EOF
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
         if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
-    print "keyboard ", $version > $VERSION_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
+    print "keyboard ", $version >= $VERSION_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
 
     print "selinux --$tree->{selinux}\n" if exists $tree->{selinux};
 
-    print "firewall --", $tree->{firewall}->{enabled}? "enabled":"disabled",
-      " ";
+    print "firewall --", $tree->{firewall}->{enabled}? "en":"dis", "abled ";
     print "--trusted $_ " foreach @{$tree->{firewall}->{trusted}};
     print "--$_ " foreach @{$tree->{firewall}->{services}};
     print "--port $_ " foreach @{$tree->{firewall}->{ports}};
@@ -356,8 +355,9 @@ EOF
     ksnetwork ($tree, $config);
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
-    print "zerombr", $version < $VERSION_7_0 ? " yes" : "","\n" if $tree->{clearmbr};
-
+    if ($tree->{clearmbr}) {
+        print "zerombr", $version < $VERSION_7_0 ? " yes" : "", "\n";
+    }
     if (exists ($tree->{ignoredisk}) &&
         scalar (@{$tree->{ignoredisk}})) {
         print "ignoredisk --drives=",
@@ -1248,7 +1248,7 @@ sub Configure
 # Removes the KS file. To be called by --remove.
 sub Unconfigure
 {
-    my ($self, $cfg) = @_;
+    my ($self, $config) = @_;
 
     my $fqdn = get_fqdn($config);
     if ($NoAction) {
