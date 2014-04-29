@@ -867,6 +867,7 @@ sleep 5 # give nscd time to initialize
 EOF
 
     if ($clear_netcfg) {
+        # TODO adjust the eth* glob to also delete lost of other devices?
         print <<EOF;
 rm -f /etc/udev.d/rules.d/70-persistent-net.rules
 rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
@@ -1140,6 +1141,8 @@ sub post_install_script
 {
     my ($self, $config) = @_;
 
+    my $version = get_version($config);
+
     my $logfile='/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
 
@@ -1164,12 +1167,17 @@ EOF
     $self->yum_setup ($config);
     $self->yum_install_packages ($config);
     ksuserscript ($config, POSTSCRIPT);
-    if ($tree->{bootloader_location} eq "mbr") {
+
+    # TODO what is this supposed to solve? it needs to be retested on EL70+
+    # in any case, no grub on EL70+
+    if ($tree->{bootloader_location} eq "mbr" && $version < $VERSION_7_0) {
         ksfix_grub;
     }
 
     # delete services, if any
-    if (exists($tree->{disable_service})) {
+    # TODO what is this supposed to solve? it needs to be retested on EL70+
+    # in any case, chlconifg --list of broken, and units need to be masked, not just deleted
+    if (exists($tree->{disable_service}) && $version < $VERSION_7_0) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
         if ($services) {
