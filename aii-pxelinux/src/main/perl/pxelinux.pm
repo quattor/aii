@@ -191,6 +191,10 @@ sub pxe_append
         push(@append, "${keyprefix}sshd");
     };
     
+    if (exists($kst->{cmdline}) && $kst->{cmdline} && $version >= $VERSION_7_0) {
+        push(@append, "${keyprefix}cmdline");
+    };
+    
     if (exists($t->{setifnames}) && $t->{setifnames} && $version >= $VERSION_7_0) {
         # set all interfaces names to the configured macaddress
         my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
