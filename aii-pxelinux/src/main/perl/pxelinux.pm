@@ -157,7 +157,13 @@ sub pxe_append
     my $ksdevicename = "ksdevice";  
     if($version >= $VERSION_7_0) {
         $keyprefix="inst.";
-        $ksdevicename = "bootdev";  
+
+        if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
+            ! $cfg->hasElement("/system/network/interfaces/$t->{ksdevice}")) {
+            $this_app->debug("Using depreacted legacy behaviour. Please look into the configuration.");
+        } else {
+            $ksdevicename = "bootdev";  
+        }
     }  
 
     my $ksloc = $t->{kslocation};
@@ -173,7 +179,7 @@ sub pxe_append
          );         
 
     if (exists($t->{updates})) {
-        push(@append,"updates=$t->{updates}");
+        push(@append,"${keyprefix}updates=$t->{updates}");
     };
 
     if (exists($kst->{logging})) {

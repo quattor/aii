@@ -31,7 +31,10 @@ my $fh = get_file($fp);
 like($fh, qr{^default\skernel\slabel}m, 'default kernel');
 like($fh, qr{^\s{4}label\skernel\slabel}m, 'label default kernel');
 like($fh, qr{^\s{4}kernel\smykernel}m, 'kernel mykernel');
-like($fh, qr{^\s{4}append\sramdisk=32768\sinitrd=path/to/initrd\sks=http://server/ks\sksdevice=eth0(\s|$)}m, 'append line');
+like($fh, qr{^\s{4}append\sramdisk=32768\sinitrd=path/to/initrd(\s|$)}m, 'append ramdisk and initrd');
+like($fh, qr{^\s{4}append.*?\sks=http://server/ks(\s|$)}m, 'append ks url');
+like($fh, qr{^\s{4}append.*?\sksdevice=eth0(\s|$)}m, 'append ksdevice');
+like($fh, qr{^\s{4}append.*?\supdates=http://somewhere/somthing/updates.img(\s|$)}m, 'append ksdevice');
 
 
 done_testing();

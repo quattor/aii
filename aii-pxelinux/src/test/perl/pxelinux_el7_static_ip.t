@@ -41,7 +41,7 @@ like($fh, qr{^\s{4}append\s.*?\sip=1.2.3.0::1.2.3.4:255.255.255.0:x.y:eth0:none(
 # enable sshd
 like($fh, qr{^\s{4}append\s.*?\sinst.sshd(\s|$)}m, 'append enable sshd');
 # updates
-like($fh, qr{^\s{4}append\s.*?\supdates=http://somewhere/somthing/updates.img(\s|$)}m, 'append enable sshd');
+like($fh, qr{^\s{4}append\s.*?\sinst.updates=http://somewhere/somthing/updates.img(\s|$)}m, 'append updates');
 
 
 done_testing();
