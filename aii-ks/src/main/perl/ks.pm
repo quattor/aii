@@ -302,6 +302,9 @@ EOF
     if ($tree->{enable_sshd} && $version >= $VERSION_6_0) {
         print "sshpw --username=root $tree->{rootpw} --iscrypted\n";
     }
+    if (exists($tree->{eula}) && $tree->{eula} && $version >= $VERSION_7_0) {
+        print "eula --agreed\n";
+    }
 
     if (exists($tree->{logging})) {
         print "logging --host=$tree->{logging}->{host} ",

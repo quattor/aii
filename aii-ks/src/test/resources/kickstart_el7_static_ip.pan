@@ -11,4 +11,4 @@ prefix "/system/aii/osinstall/ks";
 "enable_sshd" = true;
 "bootproto" = "static"; 
 "cmdline" = true; 
-
+"eula" = true;

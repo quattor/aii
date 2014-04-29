@@ -42,6 +42,8 @@ like($fh, qr{^zerombr$}m, 'zerombr present (no yes)');
 like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
 like($fh, qr{^sshpw\s--username=root\sveryverysecret\s--iscrypted}m, "sshd enabled");
 
+like($fh, qr{^eula --agreed$}m, 'eula agreed');
+
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^EENNDD\n}m, 'installtype present');
 
 

@@ -177,11 +177,15 @@ The OS version as the installation flavour.
 
 =item * enable_sshd : boolean
 
-Start sshd server during kickstart. Login with user root and the root installation password. (EL60+ only)
+Start sshd server during kickstart. Login with user root and the root installation password. (EL6.0+ only)
 
 =item * cmdline ? boolean
 
 Install with cmdline instead of text mode.
+
+=item * eula ? boolean
+
+Agree with EULA. (EL7.0+)
 
 =item * firewall
 
