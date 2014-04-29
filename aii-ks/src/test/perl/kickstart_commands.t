@@ -32,7 +32,7 @@ like($fh, qr{^auth\s--enableshadow\s--enablemd5}m, 'authentication parameters pr
 like($fh, qr{^install\n^url\s--url http://baseos}m, 'installtype present');
 like($fh, qr{^timezone\s--utc Europe/SomeCity}m, 'timezone present');
 like($fh, qr{^rootpw\s--iscrypted veryverysecret}m, 'crypted root password present');
-like($fh, qr{^bootloader\s--location=mbr}m, 'bootloader present');
+like($fh, qr{^bootloader\s--location=mbr\s--append="append something"}m, 'bootloader present');
 like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');
 like($fh, qr{^keyboard\sus}m, 'keyboard present');
 like($fh, qr{^firewall\s--disabled }m, 'firwewall disabled present');

@@ -34,6 +34,7 @@ prefix "/system/aii/osinstall/ks";
 "ackurl" = "http://ack";
 "auth" = list ("enableshadow", "enablemd5");
 "bootloader_location" = "mbr";
+"bootloader_append" = 'append something';
 "clearmbr" = true;
 "enable_sshd" = false;
 "email_success" = false;
