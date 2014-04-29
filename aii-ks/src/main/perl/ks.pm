@@ -148,8 +148,10 @@ sub ksnetwork
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
-    TODO fix broken regex 
-    return unless $dev =~ m/eth\d+/;
+    # TODO commented the regex. can it be removed?
+    # is this really needed? shouldn't this be checked in the schema 
+    # it is verified if /hardware/cards/nic/$dev exists when determining the ip.
+    # return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
 
     my $fqdn = get_fqdn($config);
@@ -251,10 +253,10 @@ sub kscommands
             }
         }
     }
+    
     print <<EOF;
 install
 $installtype
-text
 reboot
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
@@ -262,6 +264,11 @@ EOF
 
     if (exists $tree->{repo}) {
         print "repo $_ \n" foreach @{$tree->{repo}};
+    }
+    if (exists($tree->{cmdline} && $tree->{cmdline}) {
+        print "cmdline\n";
+    else {
+        print "text\n";
     }
 
     if ($tree->{enable_sshd}) {

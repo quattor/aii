@@ -101,6 +101,7 @@ type structure_ks_ks_info = {
     'volgroup_required' : boolean = false
     
     'version' : string = '5.0' # OS version 
+    'cmdline' ? boolean # use cmdline instead of text mode
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
