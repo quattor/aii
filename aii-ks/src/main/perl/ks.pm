@@ -21,6 +21,7 @@ use Exporter;
 use CAF::FileWriter;
 use Sys::Hostname;
 use Text::Glob qw(match_glob);
+use Readonly;
 
 our @ISA = qw (NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -88,6 +89,13 @@ use constant LOG_ACTION_AWK =>
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
 
+# Lowest supported version is 5.0
+Readonly my $VERSION_LOWEST => version->new("5.0");
+Readonly my $VERSION_5_0 => version->new("5.0");
+Readonly my $VERSION_6_0 => version->new("6.0");
+Readonly my $VERSION_7_0 => version->new("7.0"); 
+
+
 # Return the fqdn of the node
 sub get_fqdn 
 {
@@ -95,6 +103,22 @@ sub get_fqdn
     my $h = $cfg->getElement (HOSTNAME)->getValue;
     my $d = $cfg->getElement (DOMAINNAME)->getValue;
     return "$h.$d";    
+}
+
+# return the version instance as specified in the kickstart (if at all)
+sub get_version
+{
+    my $kst = shift;
+    my $version = $VERSION_LOWEST;
+    if (exists($kst->{version})) {
+        $version = version->new($kst->{version});
+        if ($version < $VERSION_LOWEST) {
+            # TODO is this ok, or should we stop?
+            $this_app->error("Version $version < lowest supported $VERSION_LOWEST, continuing with lowest");
+            $version = $VERSION_LOWEST;
+        }        
+    };
+    return $version;    
 }
 
 
@@ -239,7 +263,10 @@ sub kscommands
     my  $config = shift;
 
     my $tree = $config->getElement(KS)->getTree;
+    my $version = get_version($tree);
+    
     my @packages = @{$tree->{packages}};
+    push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
     
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
@@ -265,13 +292,14 @@ EOF
     if (exists $tree->{repo}) {
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
+
     if (exists($tree->{cmdline} && $tree->{cmdline}) {
         print "cmdline\n";
     else {
         print "text\n";
     }
 
-    if ($tree->{enable_sshd}) {
+    if ($tree->{enable_sshd} && $version >= $VERSION_6_0) {
         print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
 
@@ -313,7 +341,7 @@ EOF
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
         if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
-    print "keyboard $tree->{keyboard}\n";
+    print "keyboard ", $version > $VERSION_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
 
     print "selinux --$tree->{selinux}\n" if exists $tree->{selinux};
@@ -324,10 +352,11 @@ EOF
     print "--$_ " foreach @{$tree->{firewall}->{services}};
     print "--port $_ " foreach @{$tree->{firewall}->{ports}};
     print "\n";
+
     ksnetwork ($tree, $config);
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
-    print "zerombr yes\n" if $tree->{clearmbr};
+    print "zerombr", $version < $VERSION_7_0 ? " yes" : "","\n" if $tree->{clearmbr};
 
     if (exists ($tree->{ignoredisk}) &&
         scalar (@{$tree->{ignoredisk}})) {
@@ -346,7 +375,8 @@ EOF
 
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @packages), "\n",
-        $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
+        $version >= $VERSION_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+        "\n";
 }
 
 # Writes the mountpoint definitions and LVM and MD settings

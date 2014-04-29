@@ -177,7 +177,7 @@ The OS version as the installation flavour.
 
 =item * enable_sshd : boolean
 
-Start sshd server during kickstart. Login with user root and the root installation password.
+Start sshd server during kickstart. Login with user root and the root installation password. (EL60+ only)
 
 =item * cmdline ? boolean
 
