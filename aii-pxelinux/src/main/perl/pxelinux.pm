@@ -40,7 +40,6 @@ use constant FIRMWARE_HOOK_PATH => '/system/aii/hooks/firmware';
 use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
 # Kickstart constants (trying to use same name as in ks.pm from aii-ks)
 use constant KS => "/system/aii/osinstall/ks";
-use constant ENABLE_SSHD => "enable_sshd";
 
 # Lowest supported version is 5.0
 Readonly my $VERSION_LOWEST => version->new("5.0");
@@ -97,6 +96,42 @@ sub link_filepath
     return undef;
 }
 
+
+# Configure the ksdevice with static IP 
+# (EL7+ only)
+sub pxe_static_network
+{
+    my ($config, $t) = @_;
+
+    my $fqdn = get_fqdn($config);
+    my $dev = $t->{ksdevice};
+
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    unless (exists ($net->{ip})) {
+            $this_app->error ("Static boot protocol specified ",
+                              "but no IP given to the interface $dev");
+            return;
+    }
+    
+    # can't set MTU with static ip via PXE
+
+    my $gw;
+    if (exists($net->{gateway})) {
+        $gw = $net->{gateway};
+    } elsif ($config->elementExists ("/system/network/default_gateway")) {
+        $gw = $config->getElement ("/system/network/default_gateway")->getValue;
+    } else {
+        # This is a recipe for disaster
+        # No best guess here
+        $this_app->error ("No gateway defined for dev $dev and ",
+                          " using static network description.");
+        return;                
+    };
+
+    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$dev:none";
+}
+
+
 # create a list with all append options
 sub pxe_append 
 {
@@ -141,8 +176,8 @@ sub pxe_append
         push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
-
-    if (exists($kst->{ENABLE_SSHD}) && $kst->{ENABLE_SSHD} && $version >= $VERSION_7_0) {
+    
+    if (exists($kst->{enable_sshd}) && $kst->{enable_sshd} && $version >= $VERSION_7_0) {
         push(@append, "${keyprefix}sshd");
     };
     
@@ -151,6 +186,20 @@ sub pxe_append
         my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
         foreach my $nic (keys %$nics) {
             push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
+        }
+    }
+
+    if (exists($kst->{bootproto})  && $version >= $VERSION_7_0) {
+        if($kst->{bootproto} eq 'static') {
+            my $static = pxe_static_network($cfg, $t);            
+            push(@append,"ip=$static") if ($static);
+        } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
+            push(@append,"ip=$kst->{bootproto}");
+        }
+        
+        my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
+        foreach my $ns (values $nms) {
+            push(@append,"nameserver=$ns");
         }
     }
         
