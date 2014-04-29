@@ -45,9 +45,6 @@ use constant ENABLE_SSHD => "enable_sshd";
 # Lowest supported version is 5.0
 Readonly my $VERSION_LOWEST => version->new("5.0");
 Readonly my $VERSION_5_0 => version->new("5.0");
-# 6.5 indicates features available in 6.5
-# TODO doublecheck, these might also be available in 6.3 and 6.4
-Readonly my $VERSION_6_5 => version->new("6.5"); 
 Readonly my $VERSION_7_0 => version->new("7.0"); 
 
 our @ISA = qw (NCM::Component);
@@ -145,9 +142,17 @@ sub pxe_append
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
 
-    if ($kst->{ENABLE_SSHD} && $version >= $VERSION_7_0) {
-        push(@append, "${ksprefix}sshd");
+    if (exists($kst->{ENABLE_SSHD}) && $kst->{ENABLE_SSHD} && $version >= $VERSION_7_0) {
+        push(@append, "${keyprefix}sshd");
     };
+    
+    if (exists($t->{setifnames}) && $t->{setifnames} && $version >= $VERSION_7_0) {
+        # set all interfaces names to the configured macaddress
+        my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
+        foreach my $nic (keys %$nics) {
+            push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
+        }
+    }
         
     push(@append, $t->{append}) if exists $t->{append};
 

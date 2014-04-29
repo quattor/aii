@@ -15,6 +15,7 @@ type structure_pxelinux_pxe_info = {
 	"rescue"	? string
 	"livecd"	? string
 	"firmware"	? string
+	"setifnames" ? boolean
 };
 
 bind "/system/aii/nbp/pxelinux" = structure_pxelinux_pxe_info;
