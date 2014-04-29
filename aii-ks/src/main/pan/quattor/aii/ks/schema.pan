@@ -101,7 +101,6 @@ type structure_ks_ks_info = {
     'volgroup_required' : boolean = false
     
     'version' : string = '5.0' # OS version 
-    'enable_sshd' : boolean = false
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
