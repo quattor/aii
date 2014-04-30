@@ -1,5 +1,6 @@
-object template pxelinux_block;
+object template pxelinux_ks_block;
 
-include 'pxelinux';
+include 'pxelinux_ks';
+
 prefix "/system/aii/nbp/pxelinux";
 "updates" = "http://somewhere/somthing/updates.img";

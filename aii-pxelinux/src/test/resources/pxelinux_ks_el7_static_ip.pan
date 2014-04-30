@@ -1,6 +1,6 @@
-object template pxelinux_el7_static_ip;
+object template pxelinux_ks_el7_static_ip;
 
-include 'pxelinux';
+include 'pxelinux_ks';
 
 prefix "/system/aii/nbp/pxelinux";
 "setifnames" = true;

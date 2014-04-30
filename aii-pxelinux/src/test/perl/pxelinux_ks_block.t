@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_block);
+use Test::Quattor qw(pxelinux_ks_block);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
 use CAF::Object;
@@ -21,8 +21,8 @@ my $fp = "target/test/pxelinux";
 my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
 $mockpxe->mock('filepath', $fp);
 
-my $ks = NCM::Component::pxelinux->new('pxelinux');
-my $cfg = get_config_for_profile('pxelinux_block');
+my $ks = NCM::Component::pxelinux->new('pxelinux_ks');
+my $cfg = get_config_for_profile('pxelinux_ks_block');
 
 NCM::Component::pxelinux::pxeprint($cfg);
 

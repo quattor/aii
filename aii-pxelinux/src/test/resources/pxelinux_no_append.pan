@@ -1,7 +1,7 @@
 @{ 
-Base pxelinux data
+Base pxelinux without append data
 @}
-template pxelinux;
+template pxelinux_no_append;
 
 prefix "/system/network"; 
 "hostname" = 'x';
@@ -18,8 +18,6 @@ prefix "/hardware/cards/nic";
 
 
 prefix "/system/aii/nbp/pxelinux";
-"ksdevice" = "eth0";
 "initrd" = "path/to/initrd";
 "kernel" = 'mykernel';
-"kslocation" = "http://server/ks";
 "label" = "kernel label";
