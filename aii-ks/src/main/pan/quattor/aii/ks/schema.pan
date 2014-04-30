@@ -100,7 +100,7 @@ type structure_ks_ks_info = {
     # Set to true if volgroup statement is required in KS config file (must not be present for SL6+)
     'volgroup_required' : boolean = false
     
-    'version' : string = '5.0' # OS version 
+    'version' : string = '11.1' # anaconda version, default is for EL5.0 support 
     'cmdline' ? boolean # use cmdline instead of text mode
     'eula' ? boolean # agree with EULA (EL7+)
 };
