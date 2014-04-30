@@ -7,7 +7,7 @@ prefix "/system/aii/nbp/pxelinux";
 "updates" = "http://somewhere/somthing/updates.img";
 
 prefix "/system/aii/osinstall/ks";
-"version" = "7.0";
+"version" = "19.31";
 "bootproto" = "static";
 "enable_sshd" = true;
 "cmdline" = true;

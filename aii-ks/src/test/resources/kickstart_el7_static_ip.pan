@@ -7,7 +7,7 @@ include 'kickstart';
 
 
 prefix "/system/aii/osinstall/ks";
-"version" = "7.0";
+"version" = "19.31";
 "enable_sshd" = true;
 "bootproto" = "static"; 
 "cmdline" = true; 
