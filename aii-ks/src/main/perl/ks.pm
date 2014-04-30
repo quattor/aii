@@ -106,7 +106,7 @@ sub get_fqdn
 }
 
 # return the version instance as specified in the kickstart (if at all)
-sub get_version
+sub get_anaconda_version
 {
     my $kst = shift;
     my $version = $ANACONDA_VERSION_LOWEST;
@@ -263,7 +263,7 @@ sub kscommands
     my  $config = shift;
 
     my $tree = $config->getElement(KS)->getTree;
-    my $version = get_version($tree);
+    my $version = get_anaconda_version($tree);
     
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
@@ -1141,7 +1141,7 @@ sub post_install_script
 {
     my ($self, $config) = @_;
 
-    my $version = get_version($config);
+    my $version = get_anaconda_version($config);
 
     my $logfile='/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
