@@ -358,7 +358,7 @@ EOF
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     if ($tree->{clearmbr}) {
-        print "zerombr", $version < ANACONDA_VERSION_EL_7_0 ? " yes" : "", "\n";
+        print "zerombr", $version >= ANACONDA_VERSION_EL_7_0 ? "" : " yes", "\n";
     }
     if (exists ($tree->{ignoredisk}) &&
         scalar (@{$tree->{ignoredisk}})) {
