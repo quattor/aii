@@ -21,7 +21,6 @@ use Exporter;
 use CAF::FileWriter;
 use Sys::Hostname;
 use Text::Glob qw(match_glob);
-use Readonly;
 
 our @ISA = qw (NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -90,10 +89,10 @@ use constant LOG_ACTION_AWK =>
 use constant   KSDIROPT         => 'osinstalldir';
 
 # Lowest supported version is 5.0
-Readonly my $ANACONDA_VERSION_EL_5_0 => version->new("11.1");
-Readonly my $ANACONDA_VERSION_EL_6_0 => version->new("13.21");
-Readonly my $ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
-Readonly my $ANACONDA_VERSION_LOWEST => $ANACONDA_VERSION_EL_5_0;
+use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 
 # Return the fqdn of the node
@@ -109,13 +108,13 @@ sub get_fqdn
 sub get_anaconda_version
 {
     my $kst = shift;
-    my $version = $ANACONDA_VERSION_LOWEST;
+    my $version = ANACONDA_VERSION_LOWEST;
     if (exists($kst->{version})) {
         $version = version->new($kst->{version});
-        if ($version < $ANACONDA_VERSION_LOWEST) {
+        if ($version < ANACONDA_VERSION_LOWEST) {
             # TODO is this ok, or should we stop?
-            $this_app->error("Version $version < lowest supported $ANACONDA_VERSION_LOWEST, continuing with lowest");
-            $version = $ANACONDA_VERSION_LOWEST;
+            $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
+            $version = ANACONDA_VERSION_LOWEST;
         }        
     };
     return $version;    
@@ -299,10 +298,10 @@ EOF
         print "text\n";
     }
 
-    if ($tree->{enable_sshd} && $version >= $ANACONDA_VERSION_EL_6_0) {
+    if ($tree->{enable_sshd} && $version >= ANACONDA_VERSION_EL_6_0) {
         print "sshpw --username=root $tree->{rootpw} --iscrypted\n";
     }
-    if (exists($tree->{eula}) && $tree->{eula} && $version >= $ANACONDA_VERSION_EL_7_0) {
+    if (exists($tree->{eula}) && $tree->{eula} && $version >= ANACONDA_VERSION_EL_7_0) {
         print "eula --agreed\n";
     }
 
@@ -344,7 +343,7 @@ EOF
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
         if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
-    print "keyboard ", $version >= $ANACONDA_VERSION_EL_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
+    print "keyboard ", $version >= ANACONDA_VERSION_EL_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
 
     print "selinux --$tree->{selinux}\n" if exists $tree->{selinux};
@@ -359,7 +358,7 @@ EOF
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     if ($tree->{clearmbr}) {
-        print "zerombr", $version < $ANACONDA_VERSION_EL_7_0 ? " yes" : "", "\n";
+        print "zerombr", $version < ANACONDA_VERSION_EL_7_0 ? " yes" : "", "\n";
     }
     if (exists ($tree->{ignoredisk}) &&
         scalar (@{$tree->{ignoredisk}})) {
@@ -378,7 +377,7 @@ EOF
 
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @packages), "\n",
-        $version >= $ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+        $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
         "\n";
 }
 
@@ -1170,14 +1169,14 @@ EOF
 
     # TODO what is this supposed to solve? it needs to be retested on EL70+
     # in any case, no grub on EL70+
-    if ($tree->{bootloader_location} eq "mbr" && $version < $ANACONDA_VERSION_EL_7_0) {
+    if ($tree->{bootloader_location} eq "mbr" && $version < ANACONDA_VERSION_EL_7_0) {
         ksfix_grub;
     }
 
     # delete services, if any
     # TODO what is this supposed to solve? it needs to be retested on EL70+
     # in any case, chlconifg --list of broken, and units need to be masked, not just deleted
-    if (exists($tree->{disable_service}) && $version < $ANACONDA_VERSION_EL_7_0) {
+    if (exists($tree->{disable_service}) && $version < ANACONDA_VERSION_EL_7_0) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
         if ($services) {

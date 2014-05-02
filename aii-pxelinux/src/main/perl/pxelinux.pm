@@ -42,9 +42,9 @@ use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
 use constant KS => "/system/aii/osinstall/ks";
 
 # Lowest supported version is EL 5.0
-Readonly my $ANACONDA_VERSION_EL_5_0 => version->new("11.1");
-Readonly my $ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
-Readonly my $ANACONDA_VERSION_LOWEST => $ANACONDA_VERSION_EL_5_0;
+use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
@@ -63,13 +63,13 @@ sub get_fqdn
 sub get_anaconda_version
 {
     my $kst = shift;
-    my $version = $ANACONDA_VERSION_LOWEST;
+    my $version = ANACONDA_VERSION_LOWEST;
     if (exists($kst->{version})) {
         $version = version->new($kst->{version});
-        if ($version < $ANACONDA_VERSION_LOWEST) {
+        if ($version < ANACONDA_VERSION_LOWEST) {
             # TODO is this ok, or should we stop?
-            $this_app->error("Version $version < lowest supported $ANACONDA_VERSION_LOWEST, continuing with lowest");
-            $version = $ANACONDA_VERSION_LOWEST;
+            $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
+            $version = ANACONDA_VERSION_LOWEST;
         }        
     };
     return $version;    
@@ -162,7 +162,7 @@ sub pxe_ks_append
 
     my $keyprefix = "";
     my $ksdevicename = "ksdevice";  
-    if($version >= $ANACONDA_VERSION_EL_7_0) {
+    if($version >= ANACONDA_VERSION_EL_7_0) {
         $keyprefix="inst.";
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
@@ -194,15 +194,15 @@ sub pxe_ks_append
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
     
-    if (exists($kst->{enable_sshd}) && $kst->{enable_sshd} && $version >= $ANACONDA_VERSION_EL_7_0) {
+    if (exists($kst->{enable_sshd}) && $kst->{enable_sshd} && $version >= ANACONDA_VERSION_EL_7_0) {
         push(@append, "${keyprefix}sshd");
     };
     
-    if (exists($kst->{cmdline}) && $kst->{cmdline} && $version >= $ANACONDA_VERSION_EL_7_0) {
+    if (exists($kst->{cmdline}) && $kst->{cmdline} && $version >= ANACONDA_VERSION_EL_7_0) {
         push(@append, "${keyprefix}cmdline");
     };
     
-    if (exists($t->{setifnames}) && $t->{setifnames} && $version >= $ANACONDA_VERSION_EL_7_0) {
+    if (exists($t->{setifnames}) && $t->{setifnames} && $version >= ANACONDA_VERSION_EL_7_0) {
         # set all interfaces names to the configured macaddress
         my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
         foreach my $nic (keys %$nics) {
@@ -210,7 +210,7 @@ sub pxe_ks_append
         }
     }
 
-    if (exists($kst->{bootproto})  && $version >= $ANACONDA_VERSION_EL_7_0) {
+    if (exists($kst->{bootproto})  && $version >= ANACONDA_VERSION_EL_7_0) {
         if($kst->{bootproto} eq 'static') {
             my $static = pxe_ks_static_network($cfg, $t);            
             push(@append,"ip=$static") if ($static);
