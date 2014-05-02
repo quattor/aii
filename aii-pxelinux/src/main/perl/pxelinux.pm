@@ -219,7 +219,7 @@ sub pxe_ks_append
         }
         
         my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
-        foreach my $ns (values $nms) {
+        foreach my $ns (@$nms) {
             push(@append,"nameserver=$ns");
         }
     }
