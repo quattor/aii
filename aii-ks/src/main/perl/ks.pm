@@ -1140,7 +1140,8 @@ sub post_install_script
 {
     my ($self, $config) = @_;
 
-    my $version = get_anaconda_version($config);
+    my $tree = $config->getElement (KS)->getTree;
+    my $version = get_anaconda_version($tree);
 
     my $logfile='/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
@@ -1162,7 +1163,7 @@ EOF
     $self->post_reboot_script ($config);
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
-    my $tree = $config->getElement (KS)->getTree;
+
     $self->yum_setup ($config);
     $self->yum_install_packages ($config);
     ksuserscript ($config, POSTSCRIPT);
