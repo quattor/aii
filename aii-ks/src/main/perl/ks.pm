@@ -1024,10 +1024,12 @@ name=$repo->{name}
 gpgcheck=0
 skip_if_unavailable=1
 EOF
-        if (exists($repo->{proxy}) && $repo->{proxy}) {
+        if (exists($repo->{proxy})) {
+            if ($repo->{proxy}) {
             print <<EOF;
 proxy=$repo->{proxy}
 EOF
+            }
         } elsif ($ptype && $ptype eq 'forward') {
             print <<EOF;
 proxy=http://$phost:$pport/
