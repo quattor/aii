@@ -377,17 +377,22 @@ EOF
     print "services ", join (' ', @services), "\n" if (@services);
 
     # packages are dealt last. This returns the reference to the list of unprocessed packages 
+    # by default, all packages are processed
+    my $unprocessed_packages = [];
+
+    print "%packages";
     if (exists($tree->{packagesinpost}) && $tree->{packagesinpost}) {
         # to be installed later in %post using all repos
-        return \@packages;
+        print "\n";
+        $unprocessed_packages = \@packages;
     } else {
-        print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-            join ("\n", @packages), "\n",
-            $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
-            "\n";
-        # all packages are processed
-        return []; 
+        print " ", join(" ",@{$tree->{packages_args}}), "\n",
+            join ("\n", @packages), "\n";
     }
+    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+          "\n";
+    return $unprocessed_packages;    
+
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
