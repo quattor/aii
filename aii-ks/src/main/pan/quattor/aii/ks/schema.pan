@@ -103,6 +103,7 @@ type structure_ks_ks_info = {
     'version' : string = '11.1' # anaconda version, default is for EL5.0 support 
     'cmdline' ? boolean # use cmdline instead of text mode
     'eula' ? boolean # agree with EULA (EL7+)
+    'packagesinpost' ? boolean
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;

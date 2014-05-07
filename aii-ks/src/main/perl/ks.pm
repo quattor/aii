@@ -257,6 +257,7 @@ sub ksuserhooks
 }
 
 # Prints to the Kickstart all the non-partitioning directives.
+# Returns the reference to the list of unprocessed packages.
 sub kscommands
 {
     my  $config = shift;
@@ -375,10 +376,18 @@ EOF
 
     print "services ", join (' ', @services), "\n" if (@services);
 
-    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @packages), "\n",
-        $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
-        "\n";
+    # packages are dealt last. This returns the reference to the list of unprocessed packages 
+    if (exists($tree->{packagesinpost}) && $tree->{packagesinpost}) {
+        # to be installed later in %post using all repos
+        return \@packages;
+    } else {
+        print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
+            join ("\n", @packages), "\n",
+            $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+            "\n";
+        # all packages are processed
+        return []; 
+    }
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -440,7 +449,7 @@ EOS
 }
 
 # Takes care of the install phase, where all the fixed directives are
-# placed.
+# placed. Retuns reference to list of unprocessed packages.
 sub install
 {
     my ($self, $config) = @_;
@@ -459,7 +468,9 @@ EOF
     # ends with the %postconfig section
     ksuserhooks ($config, ANACONDAHOOK);
 
-    kscommands ($config);
+    my $packages = kscommands ($config);
+    
+    return $packages;
 }
 
 # Create the action to be taken on the log files
@@ -1116,10 +1127,11 @@ sub simple_version_glob {
 
 sub yum_install_packages
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $packages) = @_;
 
     my @pkgs;
     my $t = $config->getElement (PKG)->getTree();
+    
     my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
 
     print <<EOF;
@@ -1130,21 +1142,28 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
-    my @kernel_pkgs;
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
         if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
             push (@pkgs, [$pkgst, $st]);
         }
     }
-    ksinstall_rpm($config, $self->simple_version_glob(@pkgs));
+
+    my @yumpkgs;
+    if ($packages) {
+        # packages are installed unconditionally, 
+        # not checked like basepackages
+        push(@yumpkgs, @$packages);    
+    }
+    push(@yumpkgs, $self->simple_version_glob(@pkgs));
+    ksinstall_rpm($config, @yumpkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
 # this method.
 sub post_install_script
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $packages) = @_;
 
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
@@ -1171,7 +1190,7 @@ EOF
     ksuserhooks ($config, POSTHOOK);
 
     $self->yum_setup ($config);
-    $self->yum_install_packages ($config);
+    $self->yum_install_packages ($config, $packages);
     ksuserscript ($config, POSTSCRIPT);
 
     # TODO what is this supposed to solve? it needs to be retested on EL70+
@@ -1255,9 +1274,9 @@ sub Configure
     }
 
     $self->ksopen ($config);
-    $self->install ($config);
+    my $packages = $self->install ($config);
     $self->pre_install_script ($config);
-    $self->post_install_script ($config);
+    $self->post_install_script ($config, $packages);
     $self->ksclose;
     return 1;
 }
