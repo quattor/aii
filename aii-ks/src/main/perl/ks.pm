@@ -432,11 +432,25 @@ EOF
                  exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 
+        # EL7+ anaconda does not allow a preformatted / filesystem
         if ($version >= ANACONDA_VERSION_EL_7_0 && 
                 $fstree->{mountpoint} eq '/' && 
                 ! exists($fstree->{ksfsformat})) {
             $fstree->{ksfsformat}=1;
         }
+        
+        # EL7+ parted doesn't seem to understand/like logical partitions
+        # without clear offset         
+        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+                ! exists $fstree->{offset} &&
+                exists $fstree->{block_device}->{holding_dev}->{label} &&
+                $fstree->{block_device}->{holding_dev}->{label} eq 'msdos' &&
+                exists $fstree->{block_device}->{type} &&
+                $fstree->{block_device}->{type} eq 'logical') {
+             $fstree->{offset}=1;
+        }
+                
+                
         $fstree->print_ks;
     }
 }
