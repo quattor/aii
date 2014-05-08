@@ -404,6 +404,8 @@ sub ksmountpoints
     return unless ( $config->elementExists (FS) );
 
     my $tree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($tree);
+
     my %ignoredisk;
     if (exists ($tree->{ignoredisk}) &&
         scalar (@{$tree->{ignoredisk}})) {
@@ -429,6 +431,12 @@ EOF
         next if (exists $fstree->{block_device}->{holding_dev} &&
                  exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
+
+        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+                $fstree->{mountpoint} eq '/' && 
+                ! exists($fstree->{ksfsformat})) {
+            $fstree->{ksfsformat}=1;
+        }
         $fstree->print_ks;
     }
 }
