@@ -7,18 +7,24 @@
 
 template quattor/aii/ks/variants/sl6;
 
+prefix "/system/aii/osinstall/ks";
+
 # Remove deprecated options 
-"/system/aii/osinstall/ks/mouse" = null;
-"/system/aii/osinstall/ks/langsupport" = null;
+"mouse" = null;
+"langsupport" = null;
 
-"/system/aii/osinstall/ks/end_script" = "%end";
-"/system/aii/osinstall/ks/part_label" = true;
-"/system/aii/osinstall/ks/volgroup_required" = false;
+"end_script" = "%end";
+"part_label" = true;
+"volgroup_required" = false;
 
-"/system/aii/osinstall/ks/packages" = {
+"packages" = {
   append('perl-parent');
   append('perl-GSSAPI');
   append('perl-Template-Toolkit');
   SELF;
 };
 
+"version" = "13.21";
+
+"logging/method" = 'netcat'; 
+"logging/protocol" = 'udp';
