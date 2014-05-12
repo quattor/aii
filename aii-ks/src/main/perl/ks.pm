@@ -439,18 +439,6 @@ EOF
             $fstree->{ksfsformat}=1;
         }
         
-        # EL7+ parted doesn't seem to understand/like logical partitions
-        # without clear offset         
-        if ($version >= ANACONDA_VERSION_EL_7_0 && 
-                ! exists $fstree->{offset} &&
-                exists $fstree->{block_device}->{holding_dev}->{label} &&
-                $fstree->{block_device}->{holding_dev}->{label} eq 'msdos' &&
-                exists $fstree->{block_device}->{type} &&
-                $fstree->{block_device}->{type} eq 'logical') {
-             $fstree->{offset}=1;
-        }
-                
-                
         $fstree->print_ks;
     }
 }
@@ -669,6 +657,9 @@ sub ksprint_filesystems
     # Skip the remainder if "/system/filesystems" is not defined
     return unless ( $config->elementExists (FS) );
 
+    my $kstree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($kstree);
+
     my $fss = $config->getElement (FS);
     my @filesystems = ();
 
@@ -698,6 +689,18 @@ sub ksprint_filesystems
         my $p = $fss->getNextElement;
         my $pt = NCM::Partition->new ($p->getPath->toString,
                                       $config);
+
+        # EL7+ parted doesn't seem to understand/like logical partitions
+        # without clear offset         
+        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+                ! exists $pt->{offset} &&
+                exists $pt->{holding_dev}->{label} &&
+                $pt->{holding_dev}->{label} eq 'msdos' &&
+                exists $pt->{type} &&
+                $pt->{type} eq 'logical') {
+             $pt->{offset}=1;
+        }
+
         push (@part, $pt);
     }
     # Partitions go first, as of bug #26137
