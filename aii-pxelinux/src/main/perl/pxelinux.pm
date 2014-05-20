@@ -64,7 +64,7 @@ sub get_anaconda_version
 {
     my $kst = shift;
     my $version = ANACONDA_VERSION_LOWEST;
-    if (exists($kst->{version})) {
+    if ($kst->{version}) {
         $version = version->new($kst->{version});
         if ($version < ANACONDA_VERSION_LOWEST) {
             # TODO is this ok, or should we stop?
@@ -123,7 +123,7 @@ sub pxe_ks_static_network
     my $dev = $t->{ksdevice};
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
-    unless (exists ($net->{ip})) {
+    unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
             return;
@@ -132,7 +132,7 @@ sub pxe_ks_static_network
     # can't set MTU with static ip via PXE
 
     my $gw;
-    if (exists($net->{gateway})) {
+    if ($net->{gateway}) {
         $gw = $net->{gateway};
     } elsif ($config->elementExists ("/system/network/default_gateway")) {
         $gw = $config->getElement ("/system/network/default_gateway")->getValue;
@@ -185,24 +185,24 @@ sub pxe_ks_append
          "$ksdevicename=$t->{ksdevice}"
          );         
 
-    if (exists($t->{updates})) {
+    if ($t->{updates}) {
         push(@append,"${keyprefix}updates=$t->{updates}");
     };
 
-    if (exists($kst->{logging})) {
+    if ($kst->{logging}) {
         push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
     
-    if (exists($kst->{enable_sshd}) && $kst->{enable_sshd} && $version >= ANACONDA_VERSION_EL_7_0) {
+    if ($kst->{enable_sshd} && $version >= ANACONDA_VERSION_EL_7_0) {
         push(@append, "${keyprefix}sshd");
     };
     
-    if (exists($kst->{cmdline}) && $kst->{cmdline} && $version >= ANACONDA_VERSION_EL_7_0) {
+    if ($kst->{cmdline} && $version >= ANACONDA_VERSION_EL_7_0) {
         push(@append, "${keyprefix}cmdline");
     };
     
-    if (exists($t->{setifnames}) && $t->{setifnames} && $version >= ANACONDA_VERSION_EL_7_0) {
+    if ($t->{setifnames} && $version >= ANACONDA_VERSION_EL_7_0) {
         # set all interfaces names to the configured macaddress
         my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
         foreach my $nic (keys %$nics) {
@@ -210,7 +210,7 @@ sub pxe_ks_append
         }
     }
 
-    if (exists($kst->{bootproto})  && $version >= ANACONDA_VERSION_EL_7_0) {
+    if ($version >= ANACONDA_VERSION_EL_7_0) {
         if($kst->{bootproto} eq 'static') {
             my $static = pxe_ks_static_network($cfg, $t);            
             push(@append,"ip=$static") if ($static);
@@ -224,7 +224,7 @@ sub pxe_ks_append
         }
     }
         
-    push(@append, $t->{append}) if exists $t->{append};
+    push(@append, $t->{append}) if $t->{append};
 
     return @append;    
 }
@@ -265,7 +265,7 @@ EOF
            );
     # TODO is ksdevice still mandatory? if not, fix schema (code is already ok)
     # ksdecvice=bootif is an anaconda-ism, but can serve general purpose
-    $fh->print ("    ipappend 2\n") if (exists($t->{ksdevice}) && $t->{ksdevice} eq 'bootif');
+    $fh->print ("    ipappend 2\n") if ($t->{ksdevice} && $t->{ksdevice} eq 'bootif');
     $fh->close();
 }
 
@@ -314,7 +314,7 @@ sub pxelink
     # Set the same settings for every network interface that has a
     # defined IP address.
     foreach my $st (values (%$t)) {
-        next unless exists ($st->{ip});
+        next unless $st->{ip};
         my $dir = $this_app->option (NBPDIR);
         my $lnname = "$dir/".hexip ($st->{ip});
         if ($cmd || ! -l $lnname) {
@@ -401,7 +401,7 @@ sub Status
     my $firmware = link_filepath($cfg, FIRMWARE);
     my $livecd = link_filepath($cfg, LIVECD);
     foreach my $s (values (%$t)) {
-        next unless exists ($s->{ip});
+        next unless $s->{ip};
         my $ln = hexip ($s->{ip});
         my $since = "unknown";
         my $st;
