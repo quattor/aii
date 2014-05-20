@@ -171,10 +171,6 @@ sub ksnetwork
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
-    # TODO commented the regex. can it be removed?
-    # is this really needed? shouldn't this be checked in the schema 
-    # it is verified if /hardware/cards/nic/$dev exists when determining the ip.
-    # return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
 
     my $fqdn = get_fqdn($config);
