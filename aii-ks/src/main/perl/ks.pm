@@ -903,7 +903,7 @@ sleep 5 # give nscd time to initialize
 EOF
 
     if ($clear_netcfg) {
-        # TODO adjust the eth* glob to also delete lost of other devices?
+        # TODO adjust the eth* glob to also delete lots of other devices?
         print <<EOF;
 rm -f /etc/udev.d/rules.d/70-persistent-net.rules
 rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
@@ -1224,8 +1224,7 @@ EOF
     }
 
     # delete services, if any
-    # TODO what is this supposed to solve? it needs to be retested on EL70+
-    # in any case, chlconifg --list of broken, and units need to be masked, not just deleted
+    # on EL7 the services disabled via the kickstart commands only
     if ($tree->{disable_service} && $version < ANACONDA_VERSION_EL_7_0) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
