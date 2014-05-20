@@ -109,7 +109,7 @@ sub get_anaconda_version
 {
     my $kst = shift;
     my $version = ANACONDA_VERSION_LOWEST;
-    if (exists($kst->{version})) {
+    if ($kst->{version}) {
         $version = version->new($kst->{version});
         if ($version < ANACONDA_VERSION_LOWEST) {
             # TODO is this ok, or should we stop?
@@ -176,16 +176,16 @@ sub ksnetwork
     my $fqdn = get_fqdn($config);
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
-    unless (exists ($net->{ip})) {
+    unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
             return;
     }
 
-    my $mtu = exists($net->{mtu}) ? "--mtu=$net->{mtu} " : "";
+    my $mtu = $net->{mtu} ? "--mtu=$net->{mtu} " : "";
 
     my $gw = '--gateway=';
-    if (exists($net->{gateway})) {
+    if ($net->{gateway}) {
         $gw .= $net->{gateway};
     } elsif ($config->elementExists ("/system/network/default_gateway")) {
         $gw .= $config->getElement ("/system/network/default_gateway")->getValue;
@@ -285,11 +285,11 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    if (exists $tree->{repo}) {
+    if ($tree->{repo}) {
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
 
-    if (exists($tree->{cmdline}) && $tree->{cmdline}) {
+    if ($tree->{cmdline}) {
         print "cmdline\n";
     } else {
         print "text\n";
@@ -298,16 +298,16 @@ EOF
     if ($tree->{enable_sshd} && $version >= ANACONDA_VERSION_EL_6_0) {
         print "sshpw --username=root $tree->{rootpw} --iscrypted\n";
     }
-    if (exists($tree->{eula}) && $tree->{eula} && $version >= ANACONDA_VERSION_EL_7_0) {
+    if ($tree->{eula} && $version >= ANACONDA_VERSION_EL_7_0) {
         print "eula --agreed\n";
     }
 
-    if (exists($tree->{logging})) {
+    if ($tree->{logging}) {
         print "logging --host=$tree->{logging}->{host} ",
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
-        if(exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+        if($tree->{logging}->{send_aiilogs}) {
             # requirement for usleep
             push(@packages, 'initscripts');
             push(@packages, 'nc') if ($tree->{logging}->{method} eq 'netcat');
@@ -315,12 +315,12 @@ EOF
     }
     print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
-        if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
+        if $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
-        if exists $tree->{bootloader_append};
+        if $tree->{bootloader_append};
     print "\n";
 
-    if (exists $tree->{xwindows}) {
+    if ($tree->{xwindows}) {
         print "xconfig ";
         while (my ($key, $val) = each %{$tree->{xwindows}}) {
             if ($key eq "startxonboot") {
@@ -331,14 +331,14 @@ EOF
         }
         print "\n";
     } else {
-        print "skipx\n" unless exists $tree->{xwindows};
+        print "skipx\n";
     }
 
     print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
     print "auth ", join(" ", map("--$_",  @{$tree->{auth}})), "\n";
     print "lang $tree->{lang}\n";
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
-        if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
+        if $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
     print "keyboard ", $version >= ANACONDA_VERSION_EL_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
@@ -357,7 +357,7 @@ EOF
     if ($tree->{clearmbr}) {
         print "zerombr", $version >= ANACONDA_VERSION_EL_7_0 ? "" : " yes", "\n";
     }
-    if (exists ($tree->{ignoredisk}) &&
+    if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         print "ignoredisk --drives=",
             join (',', @{$tree->{ignoredisk}}), "\n";
@@ -366,9 +366,9 @@ EOF
     ## disable and enable services, if any
     my @services;
     push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if 
-        (exists($tree->{disable_service}) && @{$tree->{disable_service}});
+        ($tree->{disable_service} && @{$tree->{disable_service}});
     push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if 
-        (exists($tree->{enable_service}) && @{$tree->{enable_service}});
+        ($tree->{enable_service} && @{$tree->{enable_service}});
 
     print "services ", join (' ', @services), "\n" if (@services);
 
@@ -377,7 +377,7 @@ EOF
     my $unprocessed_packages = [];
 
     print "%packages";
-    if (exists($tree->{packagesinpost}) && $tree->{packagesinpost}) {
+    if ($tree->{packagesinpost}) {
         # to be installed later in %post using all repos
         print "\n";
         $unprocessed_packages = \@packages;
@@ -403,7 +403,7 @@ sub ksmountpoints
     my $version = get_anaconda_version($tree);
 
     my %ignoredisk;
-    if (exists ($tree->{ignoredisk}) &&
+    if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         foreach my $disk (@{$tree->{ignoredisk}}) {
             $ignoredisk{$disk} = 1;
@@ -424,14 +424,14 @@ EOF
         my $fs = $fss->getNextElement;
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
-        next if (exists $fstree->{block_device}->{holding_dev} &&
-                 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
+        next if ($fstree->{block_device}->{holding_dev} &&
+                 $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 
         # EL7+ anaconda does not allow a preformatted / filesystem
         if ($version >= ANACONDA_VERSION_EL_7_0 && 
                 $fstree->{mountpoint} eq '/' && 
-                ! exists($fstree->{ksfsformat})) {
+                ! $fstree->{ksfsformat}) {
             $fstree->{ksfsformat}=1;
         }
         
@@ -494,10 +494,10 @@ sub log_action {
     push(@logactions, "exec >$logfile 2>&1"); 
     
     my $consolelogging = 1; # default behaviour
-    if (exists($tree->{logging})) {
-        $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
+    if ($tree->{logging}) {
+        $consolelogging = $tree->{logging}->{console} if($tree->{logging}->{console});
         
-        if (exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+        if ($tree->{logging}->{send_aiilogs}) {
             # network must be functional 
             # (not needed in %pre and %post; we can rely on anaconda for that)
             push(@logactions, "wait_for_network $tree->{logging}->{host}") 
@@ -690,9 +690,9 @@ sub ksprint_filesystems
         # without clear offset         
         if ($version >= ANACONDA_VERSION_EL_7_0 && 
                 ! exists $pt->{offset} &&
-                exists $pt->{holding_dev}->{label} &&
+                $pt->{holding_dev}->{label} &&
                 $pt->{holding_dev}->{label} eq 'msdos' &&
-                exists $pt->{type} &&
+                $pt->{type} &&
                 $pt->{type} eq 'logical') {
              $pt->{offset}=1;
         }
@@ -750,10 +750,10 @@ sub proxy
             $me ||= $proxies[0];
             $proxyhost = $me;
         }
-        if (exists $spma->{proxyport}) {
+        if ($spma->{proxyport}) {
             $proxyport = $spma->{proxyport};
         }
-        if (exists $spma->{proxytype}) {
+        if ($spma->{proxytype}) {
             $proxytype = $spma->{proxytype};
         }
     }
@@ -1061,19 +1061,17 @@ name=$repo->{name}
 gpgcheck=0
 skip_if_unavailable=1
 EOF
-        if (exists($repo->{proxy})) {
-            if ($repo->{proxy}) {
+        if ($repo->{proxy}) {
             print <<EOF;
 proxy=$repo->{proxy}
 EOF
-            }
         } elsif ($ptype && $ptype eq 'forward') {
             print <<EOF;
 proxy=http://$phost:$pport/
 EOF
         }
 
-        if (exists($repo->{priority})) {
+        if ($repo->{priority}) {
             print <<EOF;
 priority=$repo->{priority}
 EOF
@@ -1228,11 +1226,11 @@ EOF
     # delete services, if any
     # TODO what is this supposed to solve? it needs to be retested on EL70+
     # in any case, chlconifg --list of broken, and units need to be masked, not just deleted
-    if (exists($tree->{disable_service}) && $version < ANACONDA_VERSION_EL_7_0) {
+    if ($tree->{disable_service} && $version < ANACONDA_VERSION_EL_7_0) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
         if ($services) {
-        print <<EOF;
+            print <<EOF;
 #
 # disable services (if they exist)
 #
