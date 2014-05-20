@@ -194,23 +194,23 @@ sub pxe_ks_append
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
     
-    if ($kst->{enable_sshd} && $version >= ANACONDA_VERSION_EL_7_0) {
-        push(@append, "${keyprefix}sshd");
-    };
-    
-    if ($kst->{cmdline} && $version >= ANACONDA_VERSION_EL_7_0) {
-        push(@append, "${keyprefix}cmdline");
-    };
-    
-    if ($t->{setifnames} && $version >= ANACONDA_VERSION_EL_7_0) {
-        # set all interfaces names to the configured macaddress
-        my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
-        foreach my $nic (keys %$nics) {
-            push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
-        }
-    }
-
     if ($version >= ANACONDA_VERSION_EL_7_0) {
+        if ($kst->{enable_sshd}) {
+            push(@append, "${keyprefix}sshd");
+        };
+        
+        if ($kst->{cmdline}) {
+            push(@append, "${keyprefix}cmdline");
+        };
+        
+        if ($t->{setifnames}) {
+            # set all interfaces names to the configured macaddress
+            my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
+            foreach my $nic (keys %$nics) {
+                push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
+            }
+        }
+
         if($kst->{bootproto} eq 'static') {
             my $static = pxe_ks_static_network($cfg, $t);            
             push(@append,"ip=$static") if ($static);
