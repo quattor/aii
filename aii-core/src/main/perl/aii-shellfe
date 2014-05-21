@@ -572,7 +572,13 @@ sub app_options
          HELP   => 'Private key for the certificate' },
 
        { NAME   => CERT.'=s',
-         HELP   => 'Certificate file to be used' }
+         HELP   => 'Certificate file to be used' },
+
+       { NAME => "template-path=s",
+         HELP => 'store for Template Toolkit files',
+         DEFAULT => '/usr/share/templates/quattor'
+        },
+
          # options inherited from CAF
          #   --help
          #   --version
