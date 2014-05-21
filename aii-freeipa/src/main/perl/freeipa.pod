@@ -1,0 +1,3 @@
+=head1 SYNOPSIS
+
+FreeIPA module for AII
