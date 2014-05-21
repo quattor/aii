@@ -6,7 +6,7 @@
   <version>1.0.0-SNAPSHOT</version>
   <name>FreeIPA hook for AII</name>
   <properties>
-    <pyversion.short>2.7</pyversion.short>
+    <pyversion.short>2.6</pyversion.short>
   </properties>
   <parent>
     <groupId>org.quattor.maven</groupId>
