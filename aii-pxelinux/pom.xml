@@ -3,7 +3,7 @@
   <groupId>org.quattor.maven</groupId>
   <artifactId>pxelinux</artifactId>
   <packaging>pom</packaging>
-  <version>14.5.0-rc7</version>
+  <version>14.5.0-rc8-SNAPSHOT</version>
   <name>AII PXE-linux generator</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
