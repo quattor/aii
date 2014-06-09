@@ -175,13 +175,56 @@ sub ksnetwork
     push(@network, "--bootproto=static");
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bonding 
+    # if bonding not defined, assume it's allowed
+    if ((! $tree->{bonding}) &&
+        $net->{master}) {
+        my $bonddev = $net->{master};
+
+        # this is the dhcp code logic; adding extra error here. 
+        if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
+            $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
+                             "But bootproto=none is missing, so ncm-network will not treat it as one.");
+        }
+        $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
+
+        # network settings are part of the bond master
+        $net = $config->getElement("/system/network/interfaces/$bonddev")->getTree;
+        
+        # gather the slaves, the ksdevice is put first 
+        my @slaves;
+        push(@slaves, $dev);
+        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
+        for my $intf (sort keys %$intfs) {
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+                                      $intfs->{$intf}->{master} eq $bonddev &&
+                                      !(grep { $_ eq $intf } @slaves));
+        };
+
+        push(@network, "--bondslaves=".join(',', @slaves));
+
+        # gather the options
+        if ($net->{bonding_opts}) {
+            my @opts;
+            while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
+                push(@opts, "$k=$v");
+            }
+            push(@network, "--bondopts=".join(',', @opts));
+        }
+        
+        # continue with the bond device as network device
+        $dev = $bonddev;
+        
+    }
+    
     $this_app->debug (5, "Node will boot from $dev");
     push(@network, "--device=$dev");
-
+    
     my $fqdn = get_fqdn($config);
     push(@network, "--hostname=$fqdn");
     
-    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
