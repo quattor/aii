@@ -799,6 +799,7 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
+    sleep 2
     exit 1
 }
 
@@ -814,6 +815,7 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 Node $fqdn successfully installed.
 .
 End_of_sendmail
+    sleep 2
 }
 
 # Wait for functional network up by testing DNS lookup via nslookup.
