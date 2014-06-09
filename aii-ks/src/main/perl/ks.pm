@@ -164,25 +164,32 @@ sub ksnetwork
 {
     my ($tree, $config) = @_;
 
+    my @network = qw(network);
+
     if ($tree->{bootproto} eq 'dhcp') {
         $this_app->debug (5, "Node configures its network via DHCP");
-        print "network --bootproto=dhcp\n";
-        return;
+        push(@network, "--bootproto=dhcp");
+        return @network;
     }
+
+    push(@network, "--bootproto=static");
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
     $this_app->debug (5, "Node will boot from $dev");
+    push(@network, "--device=$dev");
 
     my $fqdn = get_fqdn($config);
-
+    push(@network, "--hostname=$fqdn");
+    
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
-            return;
+            return ();
     }
+    push(@network, "--ip=$net->{ip}", "--netmask=$net->{netmask}");
 
-    my $mtu = $net->{mtu} ? "--mtu=$net->{mtu} " : "";
+    push(@network, "--mtu=$net->{mtu}") if $net->{mtu};
 
     my $gw = '--gateway=';
     if ($net->{gateway}) {
@@ -202,12 +209,12 @@ sub ksnetwork
 ## Lets hope all is reachable through direct route.
 EOF
     };
+    push(@network, $gw);
 
     my $ns = $config->getElement(NAMESERVER)->getValue;
-    print <<EOF;
-network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn $mtu
-EOF
+    push(@network, "--nameserver=$ns");
 
+    return @network;
 }
 
 # Instantiates and executes the user hooks for a given path.
@@ -351,7 +358,7 @@ EOF
     print "--port $_ " foreach @{$tree->{firewall}->{ports}};
     print "\n";
 
-    ksnetwork ($tree, $config);
+    print join(" ",ksnetwork ($tree, $config)), "\n";
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     if ($tree->{clearmbr}) {
