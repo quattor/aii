@@ -25,6 +25,6 @@ my $cfg = get_config_for_profile('kickstart_bonding');
 
 NCM::Component::ks::kscommands($cfg);
 
-like($fh, qr{^network\s--bootproto=static\s--bondslaves=eth0,eth1\s--bondopts=opt1=val1,opt2=val2\s--device=bond0\s--hostname=x.y\s--ip=1.2.3.0\s--netmask=255.255.255.0\s--gateway=1.2.3.4\s--nameserver=nm1}m, ' present');
+like($fh, qr{^network\s--bootproto=static\s--bondslaves=eth0,eth1\s--bondopts=(opt1=val1,opt2=val2|opt2=val2,opt1=val1)\s--device=bond0\s--hostname=x.y\s--ip=1.2.3.0\s--netmask=255.255.255.0\s--gateway=1.2.3.4\s--nameserver=nm1}m, ' present');
 
 done_testing();
