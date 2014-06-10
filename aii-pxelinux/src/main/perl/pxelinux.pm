@@ -43,6 +43,7 @@ use constant KS => "/system/aii/osinstall/ks";
 
 # Lowest supported version is EL 5.0
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
@@ -148,6 +149,55 @@ sub pxe_ks_static_network
 }
 
 
+# create the network bonding parameters (if any)
+sub pxe_network_bonding {
+    my ($config, $tree) = @_;
+    
+    my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bonding 
+    # if bonding not defined, assume it's allowed
+    if ($net->{master}) {
+        my $bonddev = $net->{master};
+
+        # this is the dhcp code logic; adding extra error here. 
+        if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
+            $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
+                             "But bootproto=none is missing, so ncm-network will not treat it as one.");
+        }
+        $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
+
+        # bond network config
+        $net = $config->getElement("/system/network/interfaces/$bonddev")->getTree;
+
+        # gather the slaves, the ksdevice is put first 
+        my @slaves;
+        push(@slaves, $dev);
+        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
+        for my $intf (sort keys %$intfs) {
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+                                      $intfs->{$intf}->{master} eq $bonddev &&
+                                      !(grep { $_ eq $intf } @slaves));
+        };
+
+        my $bondtxt = "bond=$bonddev:". join(',', @slaves);
+        # gather the options
+        if ($net->{bonding_opts}) {
+            my @opts;
+            while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
+                push(@opts, "$k=$v");
+            }
+            $bondtxt .= ":". join(',', @opts);
+        }
+        
+        return $bondtxt;
+        
+    }
+    
+}
+
+
 # create a list with all append options for kickstart installations
 sub pxe_ks_append 
 {
@@ -194,6 +244,13 @@ sub pxe_ks_append
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
     
+    if ($version >= ANACONDA_VERSION_EL_6_0) {
+        if (! $kst->{bonding}) {
+            my $bondingtxt = pxe_network_bonding($cfg, $kst);
+            push (@append, $bondingtxt) if $bondingtxt;
+        }
+    }
+
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         if ($kst->{enable_sshd}) {
             push(@append, "${keyprefix}sshd");
