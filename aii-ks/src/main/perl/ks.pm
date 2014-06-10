@@ -164,6 +164,7 @@ sub ksnetwork
 {
     my ($tree, $config) = @_;
 
+    my $version = get_anaconda_version($tree);
     my @network = qw(network);
 
     if ($tree->{bootproto} eq 'dhcp') {
@@ -179,7 +180,8 @@ sub ksnetwork
 
     # check for bonding 
     # if bonding not defined, assume it's allowed
-    if ((! $tree->{bonding}) &&
+    if ($version >= ANACONDA_VERSION_EL_6_0 &&
+        (! $tree->{bonding}) &&
         $net->{master}) {
         my $bonddev = $net->{master};
 
