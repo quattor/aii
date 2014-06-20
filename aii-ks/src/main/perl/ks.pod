@@ -116,10 +116,6 @@ FTP.
 List of devices that Anaconda will have to skip during the
 installation.
 
-=item * packages : string[]
-
-List of packages to be installed before the reboot.
-
 =item * pre_install_script, post_install_script, post_reboot_script ? absoluteURI
 
 URLs where the user-specific scripts can be fetched from. Please note
@@ -138,6 +134,10 @@ or "permissive".
 
 List of services to be disabled and removed before the reboot.
 
+=item * packages : string[]
+
+List of packages to be installed before the reboot.
+
 =item * base_packages ? string[]
 
 Base packages needed for a Quattor client to run (CCM, NCM etc.) 
@@ -145,6 +145,13 @@ in post-reboot phase. Only the packages that are (also) listed in
 C</software/packages> will be installed. The installation is part of
 the post phase using all configured yum repositories with the 
 C<skip_if_unavailable> flag enabled.
+
+=item * packagesinpost ? boolean
+
+When true, the C<%packages> section in the kickstart commands is empty, and all 
+packages are installed in the C<%post> section (but the packages are not filtered 
+like the base_packages. (Use this option if the base repo does not contain the 
+packages, e.g. if they come from the Server_Optional repo).
 
 =item * disabled_repos ? string[]
 
@@ -170,6 +177,22 @@ tag. Later the use of %end became optional, and recent Anaconda releases made it
 
 If set to true, then the "part" stanzas in the kickstart configuration will
 have a "--label" option to set the label of the file system.
+
+=item * version : string
+
+The OS version as the installation flavour.
+
+=item * enable_sshd : boolean
+
+Start sshd server during kickstart. Login with user root and the root installation password. (EL6.0+ only)
+
+=item * cmdline ? boolean
+
+Install with cmdline instead of text mode.
+
+=item * eula ? boolean
+
+Agree with EULA. (EL7.0+)
 
 =item * firewall
 

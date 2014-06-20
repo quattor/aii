@@ -16,6 +16,8 @@ use NCM::Component::ks qw (ksuserhooks);
 use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
+use Readonly;
+use version;
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant NBPDIR => 'nbpdir';
@@ -39,20 +41,49 @@ use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
 # Kickstart constants (trying to use same name as in ks.pm from aii-ks)
 use constant KS => "/system/aii/osinstall/ks";
 
+# Lowest supported version is EL 5.0
+use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
+
 our @ISA = qw (NCM::Component);
 our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
+
+# Return the fqdn of the node
+sub get_fqdn 
+{
+    my $cfg = shift;
+    my $h = $cfg->getElement (HOSTNAME)->getValue;
+    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    return "$h.$d";    
+}
+
+# return the anaconda version instance as specified in the kickstart (if at all)
+sub get_anaconda_version
+{
+    my $kst = shift;
+    my $version = ANACONDA_VERSION_LOWEST;
+    if ($kst->{version}) {
+        $version = version->new($kst->{version});
+        if ($version < ANACONDA_VERSION_LOWEST) {
+            # TODO is this ok, or should we stop?
+            $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
+            $version = ANACONDA_VERSION_LOWEST;
+        }        
+    };
+    return $version;    
+}
 
 # Returns the absolute path where the PXE file must be written.
 sub filepath
 {
     my $cfg = shift;
 
-    my $h = $cfg->getElement (HOSTNAME)->getValue;
-    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    my $fqdn = get_fqdn($cfg);
     my $dir = $this_app->option (NBPDIR);
     $this_app->debug(3, "NBP directory = $dir");
-    return "$dir/$h.$d.cfg";
+    return "$dir/$fqdn.cfg";
 }
 
 # Returns the absolute path of the PXE file to link to
@@ -75,15 +106,50 @@ sub link_filepath
         }
         return "$dir/$1";
     } else {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $this_app->debug(3, "No $cmd defined for $h.$d");
+        my $fqdn = get_fqdn($cfg);
+        $this_app->debug(3, "No $cmd defined for $fqdn");
     }
     return undef;
 }
 
-# create a list with all append options
-sub pxe_append 
+
+# Configure the ksdevice with static IP 
+# (EL7+ only)
+sub pxe_ks_static_network
+{
+    my ($config, $t) = @_;
+
+    my $fqdn = get_fqdn($config);
+    my $dev = $t->{ksdevice};
+
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    unless ($net->{ip}) {
+            $this_app->error ("Static boot protocol specified ",
+                              "but no IP given to the interface $dev");
+            return;
+    }
+    
+    # can't set MTU with static ip via PXE
+
+    my $gw;
+    if ($net->{gateway}) {
+        $gw = $net->{gateway};
+    } elsif ($config->elementExists ("/system/network/default_gateway")) {
+        $gw = $config->getElement ("/system/network/default_gateway")->getValue;
+    } else {
+        # This is a recipe for disaster
+        # No best guess here
+        $this_app->error ("No gateway defined for dev $dev and ",
+                          " using static network description.");
+        return;                
+    };
+
+    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$dev:none";
+}
+
+
+# create a list with all append options for kickstart installations
+sub pxe_ks_append 
 {
     my $cfg = shift;
 
@@ -91,6 +157,21 @@ sub pxe_append
     
     my $kst = {}; # empty hashref in case no kickstart is defined
     $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
+
+    my $version = get_anaconda_version($kst);
+
+    my $keyprefix = "";
+    my $ksdevicename = "ksdevice";  
+    if($version >= ANACONDA_VERSION_EL_7_0) {
+        $keyprefix="inst.";
+
+        if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
+            ! $cfg->hasElement("/system/network/interfaces/$t->{ksdevice}")) {
+            $this_app->debug("Using depreacted legacy behaviour. Please look into the configuration.");
+        } else {
+            $ksdevicename = "bootdev";  
+        }
+    }  
 
     my $ksloc = $t->{kslocation};
     my $server = hostname();
@@ -100,18 +181,65 @@ sub pxe_append
     push(@append,
          "ramdisk=32768",
          "initrd=$t->{initrd}",
-         "ks=$ksloc",
-         "ksdevice=$t->{ksdevice}"
+         "${keyprefix}ks=$ksloc",
+         "$ksdevicename=$t->{ksdevice}"
          );         
 
-    if (exists($kst->{logging})) {
-        push(@append, "syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
-        push(@append, "loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
+    if ($t->{updates}) {
+        push(@append,"${keyprefix}updates=$t->{updates}");
+    };
+
+    if ($kst->{logging}) {
+        push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
+        push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
+    }
+    
+    if ($version >= ANACONDA_VERSION_EL_7_0) {
+        if ($kst->{enable_sshd}) {
+            push(@append, "${keyprefix}sshd");
+        };
+        
+        if ($kst->{cmdline}) {
+            push(@append, "${keyprefix}cmdline");
+        };
+        
+        if ($t->{setifnames}) {
+            # set all interfaces names to the configured macaddress
+            my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
+            foreach my $nic (keys %$nics) {
+                push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
+            }
+        }
+
+        if($kst->{bootproto} eq 'static') {
+            my $static = pxe_ks_static_network($cfg, $t);            
+            push(@append,"ip=$static") if ($static);
+        } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
+            push(@append,"ip=$kst->{bootproto}");
+        }
+        
+        my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
+        foreach my $ns (@$nms) {
+            push(@append,"nameserver=$ns");
+        }
     }
         
-    push(@append, $t->{append}) if exists $t->{append};
+    push(@append, $t->{append}) if $t->{append};
 
     return @append;    
+}
+
+# create a list with all append options
+sub pxe_append 
+{
+    my $cfg = shift;
+
+    if ($cfg->elementExists(KS)) {
+        return pxe_ks_append($cfg);
+    } else {
+        $this_app->error("Unclear how to create the append options. Not using any options.");
+        return;
+    }
 }
 
 # Prints the PXE configuration file.
@@ -122,7 +250,9 @@ sub pxeprint
     my $fh = CAF::FileWriter->open (filepath ($cfg),
 				    log => $this_app, mode => 0644);
 
-    my $appendtxt = join(" ", pxe_append($cfg));
+    my $appendtxt = '';
+    my @appendoptions = pxe_append($cfg);
+    $appendtxt = join(" ", "append", @appendoptions) if @appendoptions;
 
     $fh->print (<<EOF
 # File generated by pxelinux AII plug-in.
@@ -130,11 +260,12 @@ sub pxeprint
 default $t->{label}
     label $t->{label}
     kernel $t->{kernel}
-    append $appendtxt
+    $appendtxt
 EOF
            );
-
-    $fh->print ("    ipappend 2\n") if $t->{ksdevice} eq 'bootif';
+    # TODO is ksdevice still mandatory? if not, fix schema (code is already ok)
+    # ksdecvice=bootif is an anaconda-ism, but can serve general purpose
+    $fh->print ("    ipappend 2\n") if ($t->{ksdevice} && $t->{ksdevice} eq 'bootif');
     $fh->close();
 }
 
@@ -168,9 +299,8 @@ sub pxelink
     } elsif ($cmd eq RESCUE || $cmd eq LIVECD || $cmd eq FIRMWARE) {
         $path = link_filepath($cfg, $cmd);
         if (! -f $path) {
-            my $h = $cfg->getElement (HOSTNAME)->getValue;
-            my $d = $cfg->getElement (DOMAINNAME)->getValue;
-            $this_app->error("Missing $cmd config file for $h.$d: $path");
+            my $fqdn = get_fqdn($cfg);
+            $this_app->error("Missing $cmd config file for $fqdn: $path");
             return -1;
         }
         $this_app->debug (5, "Using $cmd from: $path");
@@ -184,7 +314,7 @@ sub pxelink
     # Set the same settings for every network interface that has a
     # defined IP address.
     foreach my $st (values (%$t)) {
-        next unless exists ($st->{ip});
+        next unless $st->{ip};
         my $dir = $this_app->option (NBPDIR);
         my $lnname = "$dir/".hexip ($st->{ip});
         if ($cmd || ! -l $lnname) {
@@ -208,9 +338,8 @@ sub Install
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, INSTALL)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to install");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to install");
         return 0;
     }
     ksuserhooks ($cfg, INSTALL_HOOK_PATH) unless $NoAction;
@@ -223,9 +352,8 @@ sub Firmware
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, FIRMWARE)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to firmware");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to firmware");
         return 0;
     }
     ksuserhooks ($cfg, FIRMWARE_HOOK_PATH) unless $NoAction;
@@ -238,9 +366,8 @@ sub Livecd
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, LIVECD)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error("Failed to change the status of $h.$d to livecd");
+        my $fqdn = get_fqdn($cfg);
+        $self->error("Failed to change the status of $fqdn to livecd");
         return 0;
     }
     ksuserhooks ($cfg, LIVECD_HOOK_PATH) unless $NoAction;
@@ -253,9 +380,8 @@ sub Rescue
     my ($self, $cfg) = @_;
 
     unless (pxelink ($cfg, RESCUE)==0) {
-        my $h = $cfg->getElement (HOSTNAME)->getValue;
-        my $d = $cfg->getElement (DOMAINNAME)->getValue;
-        $self->error ("Failed to change the status of $h.$d to rescue");
+        my $fqdn = get_fqdn($cfg);
+        $self->error ("Failed to change the status of $fqdn to rescue");
         return 0;
     }
     ksuserhooks ($cfg, RESCUE_HOOK_PATH) unless $NoAction;
@@ -269,15 +395,13 @@ sub Status
 
     my $t = $cfg->getElement (ETH)->getTree;
     my $dir = $this_app->option (NBPDIR);
-    my $h = $cfg->getElement (HOSTNAME)->getValue;
-    my $d = $cfg->getElement (DOMAINNAME)->getValue;
-    my $fqdn = "$h.$d";
+    my $fqdn = get_fqdn($cfg);
     my $boot = $this_app->option (LOCALBOOT);
     my $rescue = link_filepath($cfg, RESCUE);
     my $firmware = link_filepath($cfg, FIRMWARE);
     my $livecd = link_filepath($cfg, LIVECD);
     foreach my $s (values (%$t)) {
-        next unless exists ($s->{ip});
+        next unless $s->{ip};
         my $ln = hexip ($s->{ip});
         my $since = "unknown";
         my $st;

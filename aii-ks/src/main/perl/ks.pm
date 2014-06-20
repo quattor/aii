@@ -70,7 +70,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
-               ENABLE_SSHD      => "enable_sshd",
            };
 
 # Base package path for user hooks.
@@ -89,20 +88,53 @@ use constant LOG_ACTION_AWK =>
 # Configuration variable for the osinstall directory.
 use constant   KSDIROPT         => 'osinstalldir';
 
+# Lowest supported version is 5.0
+use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
+
+
+# Return the fqdn of the node
+sub get_fqdn 
+{
+    my $cfg = shift;
+    my $h = $cfg->getElement (HOSTNAME)->getValue;
+    my $d = $cfg->getElement (DOMAINNAME)->getValue;
+    return "$h.$d";    
+}
+
+# return the version instance as specified in the kickstart (if at all)
+sub get_anaconda_version
+{
+    my $kst = shift;
+    my $version = ANACONDA_VERSION_LOWEST;
+    if ($kst->{version}) {
+        $version = version->new($kst->{version});
+        if ($version < ANACONDA_VERSION_LOWEST) {
+            # TODO is this ok, or should we stop?
+            $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
+            $version = ANACONDA_VERSION_LOWEST;
+        }        
+    };
+    return $version;    
+}
+
 
 # Opens the kickstart file and sets its handle as the default.
 sub ksopen
 {
     my ($self, $cfg) = @_;
-
-    my $host = $cfg->getElement (HOSTNAME)->getValue;
-    my $domain = $cfg->getElement (DOMAINNAME)->getValue;
+    
+    my $fqdn = get_fqdn($cfg);
 
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
 
-    my $ks = CAF::FileWriter->open ("$ksdir/$host.$domain.ks",
-                                    mode => 0664, log => $this_app);
+    my $ks = CAF::FileWriter->open ("$ksdir/$fqdn.ks",
+                                    mode => 0664, 
+                                    log => $this_app
+                                    );
     select ($ks);
 }
 
@@ -139,21 +171,21 @@ sub ksnetwork
     }
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
-    my $fqdn = $config->getElement (HOSTNAME)->getValue . "." .
-      $config->getElement (DOMAINNAME)->getValue;
-    return unless $dev =~ m/eth\d+/;
     $this_app->debug (5, "Node will boot from $dev");
+
+    my $fqdn = get_fqdn($config);
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
-    unless (exists ($net->{ip})) {
+    unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
-                              "but no IP given to the interface");
+                              "but no IP given to the interface $dev");
             return;
     }
 
-    my $mtu = exists($net->{mtu}) ? "--mtu=$net->{mtu} " : "";
+    my $mtu = $net->{mtu} ? "--mtu=$net->{mtu} " : "";
 
     my $gw = '--gateway=';
-    if (exists($net->{gateway})) {
+    if ($net->{gateway}) {
         $gw .= $net->{gateway};
     } elsif ($config->elementExists ("/system/network/default_gateway")) {
         $gw .= $config->getElement ("/system/network/default_gateway")->getValue;
@@ -221,15 +253,19 @@ sub ksuserhooks
 }
 
 # Prints to the Kickstart all the non-partitioning directives.
+# Returns the reference to the list of unprocessed packages.
 sub kscommands
 {
     my  $config = shift;
 
     my $tree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($tree);
+    
     my @packages = @{$tree->{packages}};
+    push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
     
     my $installtype = $tree->{installtype};
-    if ($installtype =~ /http/) {
+    if ($installtype =~ /^http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
         if ($proxyhost) {
             if ($proxyport) {
@@ -240,29 +276,38 @@ sub kscommands
             }
         }
     }
+    
     print <<EOF;
 install
 $installtype
-text
 reboot
 timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    if (exists $tree->{repo}) {
+    if ($tree->{repo}) {
         print "repo $_ \n" foreach @{$tree->{repo}};
     }
 
-    if ($tree->{enable_sshd}) {
-        print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
+    if ($tree->{cmdline}) {
+        print "cmdline\n";
+    } else {
+        print "text\n";
     }
 
-    if (exists($tree->{logging})) {
+    if ($tree->{enable_sshd} && $version >= ANACONDA_VERSION_EL_6_0) {
+        print "sshpw --username=root $tree->{rootpw} --iscrypted\n";
+    }
+    if ($tree->{eula} && $version >= ANACONDA_VERSION_EL_7_0) {
+        print "eula --agreed\n";
+    }
+
+    if ($tree->{logging}) {
         print "logging --host=$tree->{logging}->{host} ",
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
         print "\n";
-        if(exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+        if($tree->{logging}->{send_aiilogs}) {
             # requirement for usleep
             push(@packages, 'initscripts');
             push(@packages, 'nc') if ($tree->{logging}->{method} eq 'netcat');
@@ -270,12 +315,12 @@ EOF
     }
     print "bootloader --location=$tree->{bootloader_location}";
     print " --driveorder=", join(',', @{$tree->{bootdisk_order}})
-        if exists $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
+        if $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
-        if exists $tree->{bootloader_append};
+        if $tree->{bootloader_append};
     print "\n";
 
-    if (exists $tree->{xwindows}) {
+    if ($tree->{xwindows}) {
         print "xconfig ";
         while (my ($key, $val) = each %{$tree->{xwindows}}) {
             if ($key eq "startxonboot") {
@@ -286,32 +331,33 @@ EOF
         }
         print "\n";
     } else {
-        print "skipx\n" unless exists $tree->{xwindows};
+        print "skipx\n";
     }
 
     print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
     print "auth ", join(" ", map("--$_",  @{$tree->{auth}})), "\n";
     print "lang $tree->{lang}\n";
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
-        if exists $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
+        if $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
 
-    print "keyboard $tree->{keyboard}\n";
+    print "keyboard ", $version >= ANACONDA_VERSION_EL_7_0 ? "--xlayouts=" : "", "$tree->{keyboard}\n";
     print "mouse $tree->{mouse}\n" if exists $tree->{mouse};
 
     print "selinux --$tree->{selinux}\n" if exists $tree->{selinux};
 
-    print "firewall --", $tree->{firewall}->{enabled}? "enabled":"disabled",
-      " ";
+    print "firewall --", $tree->{firewall}->{enabled}? "en":"dis", "abled ";
     print "--trusted $_ " foreach @{$tree->{firewall}->{trusted}};
     print "--$_ " foreach @{$tree->{firewall}->{services}};
     print "--port $_ " foreach @{$tree->{firewall}->{ports}};
     print "\n";
+
     ksnetwork ($tree, $config);
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
-    print "zerombr yes\n" if $tree->{clearmbr};
-
-    if (exists ($tree->{ignoredisk}) &&
+    if ($tree->{clearmbr}) {
+        print "zerombr", $version >= ANACONDA_VERSION_EL_7_0 ? "" : " yes", "\n";
+    }
+    if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         print "ignoredisk --drives=",
             join (',', @{$tree->{ignoredisk}}), "\n";
@@ -320,15 +366,29 @@ EOF
     ## disable and enable services, if any
     my @services;
     push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if 
-        (exists($tree->{disable_service}) && @{$tree->{disable_service}});
+        ($tree->{disable_service} && @{$tree->{disable_service}});
     push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if 
-        (exists($tree->{enable_service}) && @{$tree->{enable_service}});
+        ($tree->{enable_service} && @{$tree->{enable_service}});
 
     print "services ", join (' ', @services), "\n" if (@services);
 
-    print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
-        join ("\n", @packages), "\n",
-        $config->getElement(END_SCRIPT_FIELD)->getValue(), "\n";
+    # packages are dealt last. This returns the reference to the list of unprocessed packages 
+    # by default, all packages are processed
+    my $unprocessed_packages = [];
+
+    print "%packages";
+    if ($tree->{packagesinpost}) {
+        # to be installed later in %post using all repos
+        print "\n";
+        $unprocessed_packages = \@packages;
+    } else {
+        print " ", join(" ",@{$tree->{packages_args}}), "\n",
+            join ("\n", @packages), "\n";
+    }
+    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+          "\n";
+    return $unprocessed_packages;    
+
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -340,8 +400,10 @@ sub ksmountpoints
     return unless ( $config->elementExists (FS) );
 
     my $tree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($tree);
+
     my %ignoredisk;
-    if (exists ($tree->{ignoredisk}) &&
+    if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         foreach my $disk (@{$tree->{ignoredisk}}) {
             $ignoredisk{$disk} = 1;
@@ -362,9 +424,17 @@ EOF
         my $fs = $fss->getNextElement;
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
-        next if (exists $fstree->{block_device}->{holding_dev} &&
-                 exists $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
+        next if ($fstree->{block_device}->{holding_dev} &&
+                 $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
+
+        # EL7+ anaconda does not allow a preformatted / filesystem
+        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+                $fstree->{mountpoint} eq '/' && 
+                ! $fstree->{ksfsformat}) {
+            $fstree->{ksfsformat}=1;
+        }
+        
         $fstree->print_ks;
     }
 }
@@ -390,7 +460,7 @@ EOS
 }
 
 # Takes care of the install phase, where all the fixed directives are
-# placed.
+# placed. Retuns reference to list of unprocessed packages.
 sub install
 {
     my ($self, $config) = @_;
@@ -409,7 +479,9 @@ EOF
     # ends with the %postconfig section
     ksuserhooks ($config, ANACONDAHOOK);
 
-    kscommands ($config);
+    my $packages = kscommands ($config);
+    
+    return $packages;
 }
 
 # Create the action to be taken on the log files
@@ -422,10 +494,10 @@ sub log_action {
     push(@logactions, "exec >$logfile 2>&1"); 
     
     my $consolelogging = 1; # default behaviour
-    if (exists($tree->{logging})) {
-        $consolelogging = $tree->{logging}->{console} if(exists($tree->{logging}->{console}));
+    if ($tree->{logging}) {
+        $consolelogging = $tree->{logging}->{console} if($tree->{logging}->{console});
         
-        if (exists($tree->{logging}->{send_aiilogs}) && $tree->{logging}->{send_aiilogs}) {
+        if ($tree->{logging}->{send_aiilogs}) {
             # network must be functional 
             # (not needed in %pre and %post; we can rely on anaconda for that)
             push(@logactions, "wait_for_network $tree->{logging}->{host}") 
@@ -581,6 +653,9 @@ sub ksprint_filesystems
     # Skip the remainder if "/system/filesystems" is not defined
     return unless ( $config->elementExists (FS) );
 
+    my $kstree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($kstree);
+
     my $fss = $config->getElement (FS);
     my @filesystems = ();
 
@@ -610,6 +685,18 @@ sub ksprint_filesystems
         my $p = $fss->getNextElement;
         my $pt = NCM::Partition->new ($p->getPath->toString,
                                       $config);
+
+        # EL7+ parted doesn't seem to understand/like logical partitions
+        # without clear offset         
+        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+                ! exists $pt->{offset} &&
+                $pt->{holding_dev}->{label} &&
+                $pt->{holding_dev}->{label} eq 'msdos' &&
+                $pt->{type} &&
+                $pt->{type} eq 'logical') {
+             $pt->{offset}=1;
+        }
+
         push (@part, $pt);
     }
     # Partitions go first, as of bug #26137
@@ -663,10 +750,10 @@ sub proxy
             $me ||= $proxies[0];
             $proxyhost = $me;
         }
-        if (exists $spma->{proxyport}) {
+        if ($spma->{proxyport}) {
             $proxyport = $spma->{proxyport};
         }
-        if (exists $spma->{proxytype}) {
+        if ($spma->{proxytype}) {
             $proxytype = $spma->{proxytype};
         }
     }
@@ -685,9 +772,7 @@ sub kspostreboot_header
     my $logaction = log_action($config, $logfile, 1); 
     $logaction =~ s/\$/\\\$/g;
     
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
-    my $domain = $config->getElement (DOMAINNAME)->getValue;
-    my $fqdn = "$hostname.$domain";
+    my $fqdn = get_fqdn($config);
 
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
 
@@ -714,6 +799,7 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
+    sleep 2
     exit 1
 }
 
@@ -729,6 +815,7 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 Node $fqdn successfully installed.
 .
 End_of_sendmail
+    sleep 2
 }
 
 # Wait for functional network up by testing DNS lookup via nslookup.
@@ -818,6 +905,7 @@ sleep 5 # give nscd time to initialize
 EOF
 
     if ($clear_netcfg) {
+        # TODO adjust the eth* glob to also delete lots of other devices?
         print <<EOF;
 rm -f /etc/udev.d/rules.d/70-persistent-net.rules
 rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
@@ -975,13 +1063,17 @@ name=$repo->{name}
 gpgcheck=0
 skip_if_unavailable=1
 EOF
-        if ($ptype && $ptype eq 'forward') {
+        if ($repo->{proxy}) {
+            print <<EOF;
+proxy=$repo->{proxy}
+EOF
+        } elsif ($ptype && $ptype eq 'forward') {
             print <<EOF;
 proxy=http://$phost:$pport/
 EOF
         }
 
-        if (exists($repo->{priority})) {
+        if ($repo->{priority}) {
             print <<EOF;
 priority=$repo->{priority}
 EOF
@@ -1061,10 +1153,11 @@ sub simple_version_glob {
 
 sub yum_install_packages
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $packages) = @_;
 
     my @pkgs;
     my $t = $config->getElement (PKG)->getTree();
+    
     my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
 
     print <<EOF;
@@ -1075,21 +1168,31 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
-    my @kernel_pkgs;
     while (my ($pkg, $st) = each(%$t)) {
         my $pkgst = unescape($pkg);
         if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
             push (@pkgs, [$pkgst, $st]);
         }
     }
-    ksinstall_rpm($config, $self->simple_version_glob(@pkgs));
+
+    my @yumpkgs;
+    if ($packages) {
+        # packages are installed unconditionally, 
+        # not checked like basepackages
+        push(@yumpkgs, @$packages);    
+    }
+    push(@yumpkgs, $self->simple_version_glob(@pkgs));
+    ksinstall_rpm($config, @yumpkgs);
 }
 
 # Prints the %post script. The post_reboot script is created inside
 # this method.
 sub post_install_script
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $packages) = @_;
+
+    my $tree = $config->getElement (KS)->getTree;
+    my $version = get_anaconda_version($tree);
 
     my $logfile='/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
@@ -1111,20 +1214,24 @@ EOF
     $self->post_reboot_script ($config);
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
-    my $tree = $config->getElement (KS)->getTree;
+
     $self->yum_setup ($config);
-    $self->yum_install_packages ($config);
+    $self->yum_install_packages ($config, $packages);
     ksuserscript ($config, POSTSCRIPT);
-    if ($tree->{bootloader_location} eq "mbr") {
+
+    # TODO what is this supposed to solve? it needs to be retested on EL70+
+    # in any case, no grub on EL70+
+    if ($tree->{bootloader_location} eq "mbr" && $version < ANACONDA_VERSION_EL_7_0) {
         ksfix_grub;
     }
 
     # delete services, if any
-    if (exists($tree->{disable_service})) {
+    # on EL7 the services disabled via the kickstart commands only
+    if ($tree->{disable_service} && $version < ANACONDA_VERSION_EL_7_0) {
         ## should be a list of strings
         my $services = join(" ",@{$tree->{disable_service}});
         if ($services) {
-        print <<EOF;
+            print <<EOF;
 #
 # disable services (if they exist)
 #
@@ -1185,16 +1292,16 @@ sub Configure
 {
     my ($self, $config) = @_;
 
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
+    my $fqdn = get_fqdn($config);
     if ($NoAction) {
-        $self->info ("Would run " . ref ($self) . " on $hostname");
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
 
     $self->ksopen ($config);
-    $self->install ($config);
+    my $packages = $self->install ($config);
     $self->pre_install_script ($config);
-    $self->post_install_script ($config);
+    $self->post_install_script ($config, $packages);
     $self->ksclose;
     return 1;
 }
@@ -1202,17 +1309,15 @@ sub Configure
 # Removes the KS file. To be called by --remove.
 sub Unconfigure
 {
-    my ($self, $cfg) = @_;
+    my ($self, $config) = @_;
 
-    my $host = $cfg->getElement (HOSTNAME)->getValue;
+    my $fqdn = get_fqdn($config);
     if ($NoAction) {
-        $self->info ("Would run " . ref ($self) . " on $host");
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
 
-    my $domain = $cfg->getElement (DOMAINNAME)->getValue;
-
     my $ksdir = $main::this_app->option (KSDIROPT);
-    unlink ("$ksdir/$host.$domain.ks");
+    unlink ("$ksdir/$fqdn.ks");
     return 1;
 }

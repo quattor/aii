@@ -599,6 +599,8 @@ sub _initialize
 sub lock_node
 {
     my ($self, $node) = @_;
+    # /var/lock could be volatile, and the default lockdir depends on it
+    mkdir($self->option("lockdir"));
     my $lockfile = $self->option("lockdir") . "/$node";
     my $lock = CAF::Lock->new ($lockfile);
     if ($lock) {

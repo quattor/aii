@@ -51,6 +51,14 @@ Name of the PXE configuration file used to boot a "Live CD" image.
 Name of the PXE configuration used for firmware updates. Useful if some
 firmware cannot be updated from the live system.
 
+=item * setifnames ? boolean
+
+Set all the network interface names for each configured interfaces MAC-address (EL7+). 
+
+=item * updates ? string
+
+A url that point to a anaconda updates image.
+
 =back
 
 =head2 VARIABLES

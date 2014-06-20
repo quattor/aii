@@ -28,7 +28,7 @@ NCM::Component::ks::kscommands($cfg);
 like($fh, qr{^logging\s--host=logserver\s--port=514\s--level=debug}m, 'logging present');
 
 # netcat enabled, add nc and initscripts to packages that are required in %post and postreboot
-like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\n^initscripts\n^nc\n^EENNDD\n}m, 'installtype present');
+like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\n^bind-utils\ninitscripts\n^nc\n}m, 'installtype present');
 
 # logaction tests
 my $logaction = NCM::Component::ks::log_action($cfg, 'mylogfile', 1);

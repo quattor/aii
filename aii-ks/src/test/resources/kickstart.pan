@@ -3,8 +3,14 @@ Base kickstart data
 @}
 template kickstart;
 
-"/system/network/hostname" = 'x';
-"/system/network/domainname" = 'y';
+prefix "/system/network"; 
+"hostname" = 'x';
+"domainname" = 'y';
+"nameserver/0" = 'nm1';
+"nameserver/1" = 'nm2';
+"default_gateway" = "1.2.3.4";
+"interfaces/eth0/ip" = "1.2.3.0";
+"interfaces/eth0/netmask" = "255.255.255.0";
 
 prefix "/software/packages";
 
@@ -28,6 +34,7 @@ prefix "/system/aii/osinstall/ks";
 "ackurl" = "http://ack";
 "auth" = list ("enableshadow", "enablemd5");
 "bootloader_location" = "mbr";
+"bootloader_append" = 'append something';
 "clearmbr" = true;
 "enable_sshd" = false;
 "email_success" = false;

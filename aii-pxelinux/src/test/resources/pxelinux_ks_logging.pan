@@ -1,6 +1,6 @@
-object template pxelinux_logging;
+object template pxelinux_ks_logging;
 
-include 'pxelinux';
+include 'pxelinux_ks';
 
 prefix "/system/aii/osinstall/ks/logging";
 "host" = "logserver";
