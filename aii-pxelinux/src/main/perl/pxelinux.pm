@@ -122,6 +122,10 @@ sub pxe_ks_static_network
 
     my $fqdn = get_fqdn($config);
     my $dev = $t->{ksdevice};
+    if ($dev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
+        $this_app->error("Invalid ksdevice $dev for static ks configuration.");
+        return;
+    }
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless ($net->{ip}) {
@@ -154,6 +158,11 @@ sub pxe_network_bonding {
     my ($config, $tree) = @_;
     
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    if ($dev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
+        $this_app->error("Invalid ksdevice $dev for bonding ks configuration.");
+        return;
+    }
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 

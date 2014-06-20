@@ -176,6 +176,11 @@ sub ksnetwork
     push(@network, "--bootproto=static");
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i) {
+        $this_app->error("Invalid ksdevice $dev for static ks configuration.");
+        return;
+    }
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
