@@ -34,7 +34,8 @@ type structure_ks_ksfirewall = {
 # Information needed for logging into syslog
 # Anaconda syslog uses UDP
 type structure_ks_logging = {
-    "host" : type_hostname
+    # when host is defined, anaconda syslog will be configured
+    "host" ? type_hostname 
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
 
@@ -48,6 +49,8 @@ type structure_ks_logging = {
     "method" : string = 'netcat' with match(SELF, '^(bash|netcat)$') 
     # via tcp or udp
     "protocol" : string = 'udp' with match(SELF, '^(tcp|udp)$')
+} with {
+    (! SELF['send_aiilogs']) || is_defined(SELF['host'])
 };
 
 # Information needed for creating the Kickstart file
