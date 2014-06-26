@@ -197,9 +197,9 @@
             <needarch>noarch</needarch>
             <requires>
               <require>ncm-ncd</require>
-              <require>aii-server</require>
               <require>perl-CDB_File</require>
               <require>ccm &gt;= 2.3.0</require>
+              <require>perl(XML::Simple)</require>
             </requires>
             <mappings>
               <mapping>
