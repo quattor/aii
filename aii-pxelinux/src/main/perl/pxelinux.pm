@@ -189,7 +189,7 @@ sub pxe_ks_append
         push(@append,"${keyprefix}updates=$t->{updates}");
     };
 
-    if ($kst->{logging}) {
+    if ($kst->{logging} && $kst->{logging}->{host}) {
         push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
