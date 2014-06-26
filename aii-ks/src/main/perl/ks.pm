@@ -302,7 +302,7 @@ EOF
         print "eula --agreed\n";
     }
 
-    if ($tree->{logging}) {
+    if ($tree->{logging} && $tree->{logging}->{host}) {
         print "logging --host=$tree->{logging}->{host} ",
             "--port=$tree->{logging}->{port}";
         print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
@@ -492,10 +492,13 @@ sub log_action {
     my $tree = $config->getElement(KS)->getTree;
     my @logactions;
     push(@logactions, "exec >$logfile 2>&1"); 
-    
+
+    # when changing any of the behaviour    
     my $consolelogging = 1; # default behaviour
     if ($tree->{logging}) {
-        $consolelogging = $tree->{logging}->{console} if($tree->{logging}->{console});
+        # although mandatory in the schema (for now?), if it is missing, it should be 1
+        # adding the if(defined()) here for that reason
+        $consolelogging = $tree->{logging}->{console} if (defined($tree->{logging}->{console}));
         
         if ($tree->{logging}->{send_aiilogs}) {
             # network must be functional 
