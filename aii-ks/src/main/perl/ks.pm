@@ -727,7 +727,11 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
+    # DISABLED_REPOS doesn't exist in 13.1 
+    my $disabled = [];
+    if ( $config->elementExists(DISABLED_REPOS) ) {
+        $disabled = $config->getElement(DISABLED_REPOS)->getTree();
+    }
     my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
 
     $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
@@ -1024,14 +1028,23 @@ EOF
 }
 
 
-
-
 sub yum_setup
 {
     my ($self, $config) = @_;
 
-    my $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
-    my $repos = $config->getElement (REPO)->getTree();
+    $self->debug(5,"Configuring YUM repositories...");
+
+    # SPMA_OBSOLETES doesn't exist in 13.1 , assume false by default
+    my $obsoletes = 0;
+    if ( $config->elementExists(SPMA_OBSOLETES) ) {
+        $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
+    }
+    my $repos;
+    unless ( $config->elementExists(REPO) ) {
+      $this_app->error(REPO." not defined in configuration");
+      return
+    } 
+    $repos = $config->getElement (REPO)->getTree();
 
     print <<EOF;
 mkdir -p /tmp/aii/yum/repos
@@ -1049,10 +1062,13 @@ clean_dependencies_on_remove=1
 reposdir=/tmp/aii/yum/repos
 obsoletes=$obsoletes
 end_of_yum_conf
+
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
 EOF
 
     my ($phost, $pport, $ptype) = proxy($config);
+
+    $self->debug(5,"    Adding YUM repositories...");
 
     foreach my $repo (@$repos) {
         if ($ptype && $ptype eq 'reverse') {
@@ -1084,6 +1100,8 @@ EOF
     }
 
     print "end_of_repos\n";
+
+    $self->debug(5,"    YUM repositories added...");
 }
 
 sub process_pkgs
@@ -1158,6 +1176,8 @@ sub yum_install_packages
 {
     my ($self, $config, $packages) = @_;
 
+    $self->debug(5,"Adding packages to install with YUM...");
+
     my @pkgs;
     my $t = $config->getElement (PKG)->getTree();
     
@@ -1185,7 +1205,10 @@ EOF
         push(@yumpkgs, @$packages);    
     }
     push(@yumpkgs, $self->simple_version_glob(@pkgs));
+    $self->debug(5,"    Adding YUM commands to install ".join(",",@pkgs));
     ksinstall_rpm($config, @yumpkgs);
+
+    $self->debug(5,"Packages to installi added...");
 }
 
 # Prints the %post script. The post_reboot script is created inside
@@ -1196,6 +1219,8 @@ sub post_install_script
 
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
+
+    $self->debug(5,"Adding postinstall script...");
 
     my $logfile='/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
