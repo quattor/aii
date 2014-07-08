@@ -1,0 +1,3 @@
+=head1 SYNOPSIS
+
+OpenNebula module for AII
