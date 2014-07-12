@@ -184,10 +184,13 @@ sub ksnetwork
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
-    # if bonding not defined, assume it's allowed
-    if ($version >= ANACONDA_VERSION_EL_6_0 &&
-        (! $tree->{bonding}) &&
-        $net->{master}) {
+    if ($tree->{nobonding}) {
+        $this_app->debug (5, "Bonding config generation explictly disabled");
+        # lets hope you know what you are doing
+        $this_app->warning (5, "Bonding config generation explictly disabled for dev $dev,",
+                               " with master $net->{master} set.") if ($net->{master});
+    } elsif ($version >= ANACONDA_VERSION_EL_6_0 &&
+            $net->{master} ) {
         my $bonddev = $net->{master};
 
         # this is the dhcp code logic; adding extra error here. 

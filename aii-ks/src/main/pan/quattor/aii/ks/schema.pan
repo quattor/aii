@@ -104,7 +104,7 @@ type structure_ks_ks_info = {
     'cmdline' ? boolean # use cmdline instead of text mode
     'eula' ? boolean # agree with EULA (EL7+)
     'packagesinpost' ? boolean
-    'bonding' ? boolean
+    'nobonding' ? boolean # disable bonding support
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
