@@ -187,8 +187,8 @@ sub ksnetwork
     if ($tree->{nobonding}) {
         $this_app->debug (5, "Bonding config generation explictly disabled");
         # lets hope you know what you are doing
-        $this_app->warning (5, "Bonding config generation explictly disabled for dev $dev,",
-                               " with master $net->{master} set.") if ($net->{master});
+        $this_app->warn ("Bonding config generation explictly disabled for dev $dev,",
+                         " with master $net->{master} set.") if ($net->{master});
     } elsif ($version >= ANACONDA_VERSION_EL_6_0 &&
             $net->{master} ) {
         my $bonddev = $net->{master};
