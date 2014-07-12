@@ -23,4 +23,7 @@ prefix "/system/network";
     );
 
 prefix "/system/aii/osinstall/ks";
-"version" = "13.21";
+# to check static ip generation, 
+# static ip not strictly needed for pxelinux bonding config
+"version" = "19.31"; # EL7 for static; dhcp should work with EL6 / "13.21" 
+"bootproto" = "static"; 
