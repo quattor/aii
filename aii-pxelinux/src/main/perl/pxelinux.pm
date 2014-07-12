@@ -121,8 +121,22 @@ sub pxe_ks_static_network
     my ($config, $dev) = @_;
 
     my $fqdn = get_fqdn($config);
+    
+    my $bootdev = $dev;
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bridge: if $dev is a bridge interface, 
+    # continue with network settings on the bridge device
+    if ($net->{bridge}) {
+        my $brdev = $net->{bridge}; 
+        $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
+        # continue with bridge device
+        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        # warning: $dev only for logging purposes. there is not bridge device in anaconda phase!
+        $dev = $brdev;
+    }
+
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
@@ -144,7 +158,7 @@ sub pxe_ks_static_network
         return;                
     };
 
-    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$dev:none";
+    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$bootdev:none";
 }
 
 
