@@ -80,9 +80,9 @@ use constant   USEMODULE        => "use " . MODULEBASE;
 #   190 = local7.info
 use constant LOG_ACTION_SYSLOGHEADER => '<190>AII: '; 
 # awk command to prefix LOG_ACTION_SYSLOGHEADER and 
-# to insert sleep (usleep by initscripts), throtlles to 40 lines per sec
+# to insert sleep (usleep by initscripts), throtlles to max 1000 lines per sec
 use constant LOG_ACTION_AWK => 
-    "awk '{print \"".LOG_ACTION_SYSLOGHEADER."\"\$0; fflush(); system(\"usleep 25000 >& /dev/null\");}'";
+    "awk '{print \"".LOG_ACTION_SYSLOGHEADER."\"\$0; fflush(); system(\"usleep 1000 >& /dev/null\");}'";
 
 
 # Configuration variable for the osinstall directory.
@@ -638,6 +638,10 @@ EOF
 # https://bugzilla.redhat.com/show_bug.cgi?id=652417
 lvm vgchange -an
 echo 'End of pre section'
+
+# Drain remote logger
+sleep 10
+
 $end
 
 EOF
@@ -799,7 +803,8 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
-    sleep 2
+    # Drain remote logger
+    sleep 10
     exit 1
 }
 
@@ -815,7 +820,8 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 Node $fqdn successfully installed.
 .
 End_of_sendmail
-    sleep 2
+    # Drain remote logger
+    sleep 10
 }
 
 # Wait for functional network up by testing DNS lookup via nslookup.
@@ -930,7 +936,10 @@ sub kspostreboot_tail
     print <<EOF;
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
 echo 'End of ks-post-reboot'
-sleep 1
+
+# Drain remote logger
+sleep 10
+
 shutdown -r now
 
 EOF
@@ -1271,7 +1280,10 @@ EOF
     my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     print <<EOF;
 echo 'End of post section'
-sleep 1
+
+# Drain remote logger
+sleep 10
+
 $end
 
 EOF
