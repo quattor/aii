@@ -268,6 +268,7 @@ sub ksnetwork
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        # warning: $dev only for logging purposes. there is not bridge device in anaconda phase!
         $dev = $brdev;
     }
     

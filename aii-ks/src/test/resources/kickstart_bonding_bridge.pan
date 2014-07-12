@@ -1,5 +1,5 @@
 @{ 
-Profile to test kickstart bonding configuration 
+Profile to test kickstart bonding and bridge configuration 
 @}
 object template kickstart_bonding_bridge;
 
