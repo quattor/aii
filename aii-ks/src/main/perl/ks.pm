@@ -168,6 +168,9 @@ sub ksnetwork
     my @network = qw(network);
 
     if ($tree->{bootproto} eq 'dhcp') {
+        # TODO: no boot device selection with dhcp (e.g. needed for bonding)
+        # Although fully supported in ks and easy to add, 
+        # the issue here is backwards compatibilty (a.k.a. very old behaviour)
         $this_app->debug (5, "Node configures its network via DHCP");
         push(@network, "--bootproto=dhcp");
         return @network;
@@ -184,15 +187,13 @@ sub ksnetwork
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
+    my $bonddev = $net->{master};
     if ($tree->{nobonding}) {
-        $this_app->debug (5, "Bonding config generation explictly disabled");
+        my $msg = "Bonding config generation explicitly disabled";
+        $this_app->debug (5, $msg);
         # lets hope you know what you are doing
-        $this_app->warn ("Bonding config generation explictly disabled for dev $dev,",
-                         " with master $net->{master} set.") if ($net->{master});
-    } elsif ($version >= ANACONDA_VERSION_EL_6_0 &&
-            $net->{master} ) {
-        my $bonddev = $net->{master};
-
+        $this_app->warn ("$msg for dev $dev, with master $bonddev set.") if ($bonddev);
+    } elsif ($version >= ANACONDA_VERSION_EL_6_0 && $bonddev ) {
         # this is the dhcp code logic; adding extra error here. 
         if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
             $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
