@@ -7,20 +7,27 @@
 
 use strict;
 use warnings;
-use Test::More;
 
 use OpennebulaMock;
 
-use AII::opennebula;
+use Test::More;
+
 use CAF::Object;
 #use NCM::Component;
 use Test::Quattor qw(basic);
+
+use AII::opennebula;
+my $opennebulaaii = new Test::MockModule('AII::opennebula');
+$opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $cfg = get_config_for_profile('basic');
 #my $cmp = NCM::Component->new("dummy");
 
 my $aii = AII::opennebula->new();
 is (ref ($aii), "AII::opennebula", "AII:opennebula correctly instantiated");
+
+my $one = $aii->make_one();
+is (ref($one), "Net::OpenNebula", "returns Net::OpenNebula instance (mocked)");
 
 my $path;
 # test remove
