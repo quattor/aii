@@ -1,10 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.quattor.aii</groupId>
-  <artifactId>aii-freeipa</artifactId>
+  <artifactId>aii-opennebula</artifactId>
   <packaging>pom</packaging>
   <version>1.0.0-SNAPSHOT</version>
-  <name>OpenNebula hook for AII</name>
+  <name>FreeIPA hook for AII</name>
   <properties>
     <pyversion.short>2.6</pyversion.short>
   </properties>
@@ -22,14 +22,14 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git://github.com/alvarosimon/aii.git</connection>
-    <developerConnection>scm:git:git@github.com:alvarosimon/aii.git</developerConnection>
-    <url>https://github.com/alvarosimon/aii.git</url>
+    <connection>scm:git:git://github.com/piojo/AII-contrib.git</connection>
+    <developerConnection>scm:git:git@github.com:piojo/AII-contrib.git</developerConnection>
+    <url>https://github.com/piojo/AII-contrib</url>
   </scm>
   <developers>
     <developer>
-      <name>Álvaro Simón García</name>
-      <email>Alvaro.SimonGarcia@UGent.be</email>
+      <name>Luis Fernando Muñoz Mejías</name>
+      <email>Luis.Munoz@UGent.be</email>
     </developer>
     <developer>
       <name>Stijn De Weirdt</name>
@@ -173,7 +173,7 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
-            <summary>OpenNebula hook for AII</summary>
+            <summary>FreeIPA hook for AII</summary>
             <name>${project.artifactId}</name>
             <requires>
               <require>perl-CAF</require>
