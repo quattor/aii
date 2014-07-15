@@ -37,9 +37,9 @@ If acklist is set, then ackurl is not used.
 List of options for authentication. Defaults to ("enableshadow", "enablemd5").
 i.e. enable shadow passwords and MD5 hashing.
 
-=item * nobonding : boolean
+=item * bonding : boolean
 
-Disable bonding support.
+Support network bonding. 
 
 =item * bootloader_location : string
 

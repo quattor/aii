@@ -25,3 +25,4 @@ prefix "/system/network";
 prefix "/system/aii/osinstall/ks";
 "bootproto" = "static"; 
 "version" = "13.21";
+"bonding" = true; 

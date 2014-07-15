@@ -188,7 +188,8 @@ sub ksnetwork
 
     # check for bonding 
     my $bonddev = $net->{master};
-    if ($tree->{nobonding}) {
+    # check the existence to deal with older profiles
+    if (exists($tree->{bonding}) && (! $tree->{bonding})) {
         my $msg = "Bonding config generation explicitly disabled";
         $this_app->debug (5, $msg);
         # lets hope you know what you are doing

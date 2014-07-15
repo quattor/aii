@@ -157,7 +157,8 @@ sub pxe_network_bonding {
     # check for bonding 
     # if bonding not defined, assume it's allowed
     my $bonddev = $net->{master};
-    if ($tree->{nobonding}) {
+    # check the existence to deal with older profiles
+    if (exists($tree->{bonding}) && (! $tree->{bonding})) {
         my $msg = "Bonding config generation explicitly disabled";
         $this_app->debug (5, $msg);
         # lets hope you know what you are doing
