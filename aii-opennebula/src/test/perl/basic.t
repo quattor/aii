@@ -8,20 +8,17 @@
 use strict;
 use warnings;
 
-use OpennebulaMock;
 
 use Test::More;
-
-use CAF::Object;
-#use NCM::Component;
 use Test::Quattor qw(basic);
-
 use AII::opennebula;
+
+use OpennebulaMock;
+
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $cfg = get_config_for_profile('basic');
-#my $cmp = NCM::Component->new("dummy");
 
 my $aii = AII::opennebula->new();
 is (ref ($aii), "AII::opennebula", "AII:opennebula correctly instantiated");
@@ -31,15 +28,28 @@ is (ref($one), "Net::OpenNebula", "returns Net::OpenNebula instance (mocked)");
 
 my $path;
 # test remove
-command_history_reset;
+rpc_history_reset;
 
 $path = "/system/aii/hooks/remove/0";
 $aii->remove($cfg, $path);
 
+# diag_rpc_history;
+ok(rpc_history_ok(["one.vmpool.info", 
+                   "one.templatepool.info"]), 
+                   "remove rpc history ok");
+
 # test ks install
-command_history_reset;
+rpc_history_reset;
 
 $path = "/system/aii/hooks/install/0";
 $aii->install($cfg, $path);
+
+#diag_rpc_history;
+ok(rpc_history_ok(["one.vmpool.info", 
+                   "one.imagepool.info", 
+                   "one.templatepool.info", 
+                   "one.template.allocate", 
+                   "one.template.info"]), 
+                   "install rpc history ok");
 
 done_testing();
