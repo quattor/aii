@@ -22,9 +22,9 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git://github.com/piojo/AII-contrib.git</connection>
-    <developerConnection>scm:git:git@github.com:piojo/AII-contrib.git</developerConnection>
-    <url>https://github.com/piojo/AII-contrib</url>
+    <connection>scm:git:git://github.com/quattor/aii.git</connection>
+    <developerConnection>scm:git:git@github.com:quattor/aii.git</developerConnection>
+    <url>https://github.com/quattor/aii</url>
   </scm>
   <developers>
     <developer>
@@ -155,7 +155,9 @@
                     <argument>-I</argument>
                     <argument>target/lib/perl</argument>
                     <argument>-I</argument>
-                    <argument>src/test/resources</argument>
+                    <argument>src/test/perl</argument>
+                    <argument>-I</argument>
+                    <argument>target/dependency/build-scripts/</argument>
                     <argument>src/test/perl</argument>
                   </arguments>
 '		</configuration>

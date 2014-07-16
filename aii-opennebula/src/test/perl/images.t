@@ -9,8 +9,6 @@ use strict;
 use warnings;
 use Test::More;
 use AII::opennebula;
-use CAF::Object;
-#use NCM::Component;
 use Test::Quattor qw(images);
 use OpennebulaMock;
 

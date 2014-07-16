@@ -4,10 +4,7 @@
   <artifactId>aii-opennebula</artifactId>
   <packaging>pom</packaging>
   <version>1.0.0-SNAPSHOT</version>
-  <name>FreeIPA hook for AII</name>
-  <properties>
-    <pyversion.short>2.6</pyversion.short>
-  </properties>
+  <name>Opennebula hook for AII</name>
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
@@ -22,14 +19,14 @@
     </license>
   </licenses>
   <scm>
-    <connection>scm:git:git://github.com/piojo/AII-contrib.git</connection>
-    <developerConnection>scm:git:git@github.com:piojo/AII-contrib.git</developerConnection>
-    <url>https://github.com/piojo/AII-contrib</url>
+    <connection>scm:git:git://github.com/quattor/aii.git</connection>
+    <developerConnection>scm:git:git@github.com:quattor/aii.git</developerConnection>
+    <url>https://github.com/quattor/aii</url>
   </scm>
   <developers>
     <developer>
-      <name>Luis Fernando Muñoz Mejías</name>
-      <email>Luis.Munoz@UGent.be</email>
+      <name>Alvaro Simon Garcia</name>
+      <email>Alvaro.SimonGarcia@UGent.be</email>
     </developer>
     <developer>
       <name>Stijn De Weirdt</name>
@@ -89,25 +86,6 @@
                   </resources>
                 </configuration>
               </execution>
-              <execution>
-                <id>filter-python-sources</id>
-                <phase>process-sources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration combine.self="override">
-                  <outputDirectory>${project.build.directory}/python</outputDirectory>
-                  <resources>
-                    <resource>
-                      <directory>src/main/python</directory>
-                      <includes>
-                        <include>*.py</include>
-                      </includes>
-                      <filtering>true</filtering>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
             </executions>
           </plugin>
           <!-- Ok, so the build tools *really* want to have a bunch of
@@ -155,7 +133,9 @@
                     <argument>-I</argument>
                     <argument>target/lib/perl</argument>
                     <argument>-I</argument>
-                    <argument>src/test/resources</argument>
+                    <argument>src/test/perl</argument>
+                    <argument>-I</argument>
+                    <argument>target/dependency/build-scripts/</argument>
                     <argument>src/test/perl</argument>
                   </arguments>
 '		</configuration>
@@ -173,12 +153,9 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
-            <summary>FreeIPA hook for AII</summary>
+            <summary>Opennebula hook for AII</summary>
             <name>${project.artifactId}</name>
             <requires>
-              <require>perl-CAF</require>
-              <require>ipa-python</require>
-              <require>ipa-admintools</require>
             </requires>
             <mappings>
               <mapping>
@@ -225,34 +202,7 @@
                 </sources>
                 <recurseDirectories>true</recurseDirectories>
               </mapping>
-              <mapping>
-                <directory>/usr/lib/python${pyversion.short}/site-packages/ipalib/plugins</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
-                <configuration>false</configuration>
-                <documentation>true</documentation>
-                <directoryIncluded>false</directoryIncluded>
-                <sources>
-                  <source>
-                    <location>${project.build.directory}/python</location>
-                  </source>
-                </sources>
-                <recurseDirectories>true</recurseDirectories>
-              </mapping>
             </mappings>
-            <installScriptlet>
-                <script>
-#
-# This is a nasty hack to turn off the /usr/lib/rpm/brp-python-bytecompile
-# script. This script tries to precompile the python code, but causes the
-# rpm packaging to fail because the *.pyc and *.pyo files are not listed in
-# the list of files created by maven.
-#
-
-export RPM_BUILD_ROOT=
-                </script>
-            </installScriptlet>
           </configuration>
         </plugin>
       </plugins>
