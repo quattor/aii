@@ -7,6 +7,7 @@ prefix "/system/aii/hooks";
     "image", true,
     "vm", true,
     "template", true,
+    "onhold", true,
 );
 
 "remove/0" = nlist(

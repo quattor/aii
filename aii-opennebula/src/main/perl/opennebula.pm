@@ -16,7 +16,6 @@ use Data::Dumper;
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
 use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 
-
 # a config file in .ini style with minmal 
 #   [rpc]
 #   password=secret
@@ -36,7 +35,7 @@ sub make_one
     my $port = $Config->{rpc}->{port} || 2633;
     my $host = $Config->{rpc}->{host} || "localhost";
     my $user = $Config->{rpc}->{user} || "oneadmin";
-    my $password = $Config->{rpc}->{password} || "myfancypass";
+    my $password = $Config->{rpc}->{password};
 
     if (! $password ) {
         $main::this_app->error("No password set in configfile $filename.");
@@ -86,6 +85,7 @@ sub get_images
 		                		     " with datastore $datastore");
 	        $res{$imagename}{image} = $image;
 	        $res{$imagename}{datastore} = $datastore;
+            #$main::this_app->info("This is my template: $image");
 	    } else {
 	    # Shouldn't happen; fields are in TT
 	        $main::this_app->error("No datastore and/or imagename for image data $image.");
@@ -121,61 +121,31 @@ sub new
     return bless {}, $class;
 }
 
-# Performs VM install wich:
-# - Creates a new hds for each $ harddisks in your datastore using the imagetemplate file
-# - Instantiates a new VM using the quattor vmtemplate
-# $ oneimage create -d 103 --name "node640.cubone.os_vda" --type DATABLOCK --size 40960 --prefix vd --description "one/QUATTOR_IMAGE001" --persistent 
-# Create VM template
-# $ onetemplate create $vmtemplate
-# Instantiate the new VM
-# $ onetemplate instantiate $fqan --name $fqan
-sub opennebula_aii_vminstantiate
-{
-    my ($self, $one, $fqdn, $instantiatevm) = @_;
-    if ($instantiatevm) {
-        return undef;
-    }
-
-    return undef;
-}
 
 # Check if VM image/s exists
 # and it remove/create a new one
 sub opennebula_aii_vmimage
 {
-    my ($self, $one, $forcecreateimage, %images) = @_;
+    my ($self, $one, $forcecreateimage, %images, $remove) = @_;
     
-    # Check if the image already exists
-    # and remove it if is required
-
     while ( my ($imagename, %imagedata) = each %images) {
         $main::this_app->info ("Checking ONE image: $imagename ...");
 
         my @existimage = $one->get_images(qr{^$imagename$});
         foreach my $t (@existimage) {
-            if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+               
+                # It's safe, we can remove the image
+                $t->delete();
+
+                # And create the new image with the image data
+                if (!$remove) {
+                    my $newimage = $t->create($t, $t->{extended_data}->{TEMPLATE}->[0]->{DATASTORE}->[0]);
+                }
+
             }
 
         }
-
-            
-
-        # Missing get_image function
-        my $vmimage;
-        #$vmimage = $one->get_image($imagename);
-
-        # TODO: Check that QUATTOR = 1
-        if ($vmimage) {
-            if ($forcecreateimage) {
-                # Remove the image
-                #$vmimage->delete();
-
-                # And generate the new one
-                #$vmimageid = $one->create_image(%imagedata);
-            }
-
-        }
-
 
     }
 
@@ -187,7 +157,7 @@ sub opennebula_aii_vmrunning
     
     my @runningvms = $one->get_vms(qr{^$fqdn$});
 
-    # TODO: check if the running $fqdn has QUATTOR = 1 
+    # check if the running $fqdn has QUATTOR = 1 
     # if not don't touch it!!
     foreach my $t (@runningvms) {
         if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
@@ -201,7 +171,7 @@ sub opennebula_aii_vmrunning
 # This function creates/removes VM templates if is required
 sub opennebula_aii_vmtemplate
 {
-    my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate) = @_;
+    my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
     
     # Check if the vm template already exists
     #my $reg = "^$fqdn\$";
@@ -214,9 +184,9 @@ sub opennebula_aii_vmtemplate
         }
     }
 
-    if ($createvmtemplate) {
+    if (($createvmtemplate) && (!$remove)) {
         my $templ = $one->create_template($vmtemplate);
-        $main::this_app->info("New ONE VM template: $templ");
+        #$main::this_app->info("New ONE VM template: $templ");
         return $templ;
     }
     
@@ -233,6 +203,7 @@ sub install
     my $instantiatevm =	$tree->{vm};
     my $createvmtemplate = $tree->{template};
     my $datastore = $tree->{datastore};
+    my $onhold = $tree->{onhold};
 
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
     my $domainname = $config->getElement ('/system/network/domainname')->getValue;
@@ -251,34 +222,35 @@ sub install
     # if exixts...
     # then we remove the image/s...
     # and we create a new one
-    $self->opennebula_aii_vmimage($one,$fqdn,$forcecreateimage,@disks);
+    my %images = $self->get_images($config);
+    $self->opennebula_aii_vmimage($one,$forcecreateimage,%images);
     
-    # Finally we remove/create a VM template
-    #my $vmtemplate = $self->opennebula_aii_vmtemplate($fqdn,$createvmtemplate);
-
     # Get the VM template first
-    my $vmtemplate = $self->get_vmtemplate($config);
+    my $vmtemplatetxt = $self->get_vmtemplate($config);
     # Remove/Create if it's required
-    my $vmtemplateid = $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplate);
+    my $vmtemplate = $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplatetxt);
 
-    # and instantiate the VM
+    # and instantiate the template, returns the VM instance
     # if $instantiatevm is set
-    my $vmid = $self->opennebula_aii_vminstantiate($one,$fqdn,$instantiatevm);
-
+    if ($instantiatevm) {
+        my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
+    }
+    
 }
 
 
-# Performs VM remove wich depending on the booleans:
-# removes running VM: $ onevm delete $fqdn
-# removes VM template: $ onetemplate delete $fqdn
-# removes VM image for each $harddisks: $ oneimage delete $fqdn_$harddisks
+# Performs VM remove wich depending on the booleans
+# Stops running VM
+# Removes VM template
+# Removes VM image for each $harddisks
 sub remove
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
-    my $forcecreateimage = $tree->{image};
-    my $instantiatevm = $tree->{vm};
-    my $createvmtemplate = $tree->{template};
+    #my $forcecreateimage = $tree->{image};
+    my $forcecreateimage = 1;
+    #my $createvmtemplate = $tree->{template};
+    my $createvmtemplate = 1;
     my $datastore = $tree->{datastore};
 
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
@@ -294,12 +266,16 @@ sub remove
 
     # Remove the images
     my %images = $self->get_images($config);
-    $self->opennebula_aii_vmimage($one,$forcecreateimage,%images);
+    if (%images) {
+        $self->opennebula_aii_vmimage($one,$forcecreateimage,%images,$remove);
+    }
 
     # Remove VM templates, get the VM template name first
-    my $vmtemplate = $self->get_vmtemplate($config);
-    $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplate);
-    #my $vmtemplate = $self->opennebula_aii_vmtemplate($fqdn,$createvmtemplate);
+    my $vmtemplatetxt = $self->get_vmtemplate($config);
+    if ($vmtemplatetxt) {
+        $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplatetxt,$remove);
+    }
+
 
 }
 

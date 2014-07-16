@@ -17,6 +17,7 @@ use OpennebulaMock;
 
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
+$opennebulaaii->mock('opennebula_aii_vminstantiate', undef);
 
 my $cfg = get_config_for_profile('basic');
 
