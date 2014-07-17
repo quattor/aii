@@ -1,6 +1,6 @@
 template vm;
 
-prefix "/system/hardware";
+prefix "/hardware";
 "bios" = nlist(
     "releasedate", "01/01/2007",
     "version", "0.5.1",

@@ -35,8 +35,9 @@ $path = "/system/aii/hooks/remove/0";
 $aii->remove($cfg, $path);
 
 # diag_rpc_history;
-ok(rpc_history_ok(["one.vmpool.info", 
-                   "one.templatepool.info"]), 
+ok(rpc_history_ok(["one.vmpool.info",
+                   "one.imagepool.info",
+                   "one.templatepool.info"]),
                    "remove rpc history ok");
 
 # test ks install
@@ -46,11 +47,12 @@ $path = "/system/aii/hooks/install/0";
 $aii->install($cfg, $path);
 
 #diag_rpc_history;
-ok(rpc_history_ok(["one.vmpool.info", 
-                   "one.imagepool.info", 
-                   "one.templatepool.info", 
-                   "one.template.allocate", 
-                   "one.template.info"]), 
+ok(rpc_history_ok(["one.vmpool.info",
+                   "one.imagepool.info",
+                   "one.templatepool.info",
+                   "one.template.allocate",
+                   "one.template.info",
+                   "one.template.instantiate"]),
                    "install rpc history ok");
 
 done_testing();

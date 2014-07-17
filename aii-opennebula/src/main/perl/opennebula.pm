@@ -210,7 +210,7 @@ sub install
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
     my $domainname = $config->getElement ('/system/network/domainname')->getValue;
 
-    my @disks = $config->getElement ('/system/hardware/harddisks')->getValue;
+    my @disks = $config->getElement ('/hardware/harddisks')->getValue;
     my $fqdn = "$hostname.$domainname";
 
     my $one = make_one();
