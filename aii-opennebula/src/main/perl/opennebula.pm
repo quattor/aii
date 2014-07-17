@@ -141,16 +141,19 @@ sub opennebula_aii_vmimage
                 # And create the new image with the image data
                 if (!$remove) {
                     my $newimage = $t->create($t, $t->{extended_data}->{TEMPLATE}->[0]->{DATASTORE}->[0]);
+                    return $newimage;
                 }
 
             }
 
         }
-
     }
+    return undef;
 
 }
 
+# This function stops running VMs based on fqdn names
+# and if QUATTOR flag is set
 sub opennebula_aii_vmrunning
 {
     my ($self, $one, $fqdn) = @_;
@@ -174,7 +177,6 @@ sub opennebula_aii_vmtemplate
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
     
     # Check if the vm template already exists
-    #my $reg = "^$fqdn\$";
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
     foreach my $t (@existtmpls) {
@@ -202,7 +204,7 @@ sub install
     my $forcecreateimage = $tree->{image};
     my $instantiatevm =	$tree->{vm};
     my $createvmtemplate = $tree->{template};
-    my $datastore = $tree->{datastore};
+    #my $datastore = $tree->{datastore};
     my $onhold = $tree->{onhold};
 
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
@@ -213,7 +215,7 @@ sub install
 
     my $one = make_one();
 
-    $main::this_app->info("Create image $forcecreateimage into datastore: $datastore");
+    #$main::this_app->info("Create image $forcecreateimage into datastore: $datastore");
 
     # Check if the VM is still running, if so we stop it
     $self->opennebula_aii_vmrunning($one,$fqdn);
@@ -251,7 +253,7 @@ sub remove
     my $forcecreateimage = 1;
     #my $createvmtemplate = $tree->{template};
     my $createvmtemplate = 1;
-    my $datastore = $tree->{datastore};
+    #my $datastore = $tree->{datastore};
 
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
     my $domainname = $config->getElement ('/system/network/domainname')->getValue;
@@ -275,7 +277,6 @@ sub remove
     if ($vmtemplatetxt) {
         $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplatetxt,$remove);
     }
-
 
 }
 

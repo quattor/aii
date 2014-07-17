@@ -21,7 +21,4 @@ our $opennebula = new Test::MockModule('Net::OpenNebula');
 $opennebula->mock( '_rpc',  \&mock_rpc);
 
 
-
-
 1;
-
