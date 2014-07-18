@@ -473,10 +473,23 @@ wipe_metadata () {
     path="$1"
     clear="$2"
 
+    #assign an initial value
+    SIZE=0
+    #try get the size with fdisk
     SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
+    #if zero assume we failed and try with parted
+    if [ -z $SIZE ]; then
+        SIZE=`parted "$path" -s -- u s p | grep "Disk $path" |awk '{print substr($3, 0, length($3)-1)}'`
+    fi
+    #if at this point the SIZE is still 0, set it to 20, so the entire disk gets wiped. Bad, but better than spitting confusing errors
+    if [ -z $SIZE ]; then
+        SIZE=20
+        echo "Warning! Could not determine size of device $path with both fdisk and parted. Wiping whole drive instead. This may take a long time!"
+    fi
     let START=$SIZE-20
     dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
     dd if=/dev/zero of="$path" bs=512 seek=$START 2>/dev/null
+    
 }
 
 EOF
