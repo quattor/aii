@@ -473,12 +473,6 @@ wipe_metadata () {
     path="$1"
     clear="$2"
 
-<<<<<<< HEAD
-    SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
-    let START=$SIZE-20
-    dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
-    dd if=/dev/zero of="$path" bs=512 seek=$START 2>/dev/null
-=======
     #assign an initial value
     SIZE=0
     #try get the size with fdisk
@@ -496,7 +490,6 @@ wipe_metadata () {
     dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
     dd if=/dev/zero of="$path" bs=512 seek=$START 2>/dev/null
     
->>>>>>> wipemetadata
 }
 
 EOF
