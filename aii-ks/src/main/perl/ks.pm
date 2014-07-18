@@ -247,6 +247,10 @@ timezone --utc $tree->{timezone}
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
+    if (exists $tree->{repo}) {
+        print "repo $_ \n" foreach @{$tree->{repo}};
+    }
+
     if ($tree->{enable_sshd}) {
         print "sshpw  --username=root $tree->{rootpw} --iscrypted \n";
     }
@@ -308,6 +312,16 @@ EOF
     print "%packages ", join(" ",@{$tree->{packages_args}}), "\n",
         join ("\n", @{$tree->{packages}}), "\n";
 
+        ## enable services, if any
+    if (exists($tree->{enable_service})) {
+        ## should be a list of strings
+        my $services = join(" ",@{$tree->{enable_service}});
+        if ($services) {
+        print "services --enabled=",
+            join (',', @{$tree->{enable_service}}), "\n";;
+        }
+    };
+    
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -459,10 +473,30 @@ wipe_metadata () {
     path="$1"
     clear="$2"
 
+<<<<<<< HEAD
     SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
     let START=$SIZE-20
     dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
     dd if=/dev/zero of="$path" bs=512 seek=$START 2>/dev/null
+=======
+    #assign an initial value
+    SIZE=0
+    #try get the size with fdisk
+    SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
+    #if zero assume we failed and try with parted
+    if [ -z $SIZE ]; then
+        SIZE=`parted "$path" -s -- u s p | grep "Disk $path" |awk '{print substr($3, 0, length($3)-1)}'`
+    fi
+    #if at this point the SIZE is still 0, set it to 20, so the entire disk gets wiped. Bad, but better than spitting confusing errors
+    if [ -z $SIZE ]; then
+        SIZE=20
+        echo "Warning! Could not determine size of device $path with both fdisk and parted. Wiping whole drive instead. This may take a long time!"
+    fi
+    let START=$SIZE-20
+    dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
+    dd if=/dev/zero of="$path" bs=512 seek=$START 2>/dev/null
+    
+>>>>>>> wipemetadata
 }
 
 EOF
@@ -556,7 +590,7 @@ sub ksinstall_rpm
     my $disabled = $config->getElement(DISABLED_REPOS)->getTree();
     my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
 
-    $cmd .= " --disablerepo=" . join(",", @$disabled) if @$disabled;
+    $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
     print $cmd, join("\\\n    ", @pkgs),
          "|| fail 'Unable to install packages'\n";
