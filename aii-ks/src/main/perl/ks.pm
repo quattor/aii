@@ -159,24 +159,15 @@ End_Of_Post_Reboot
 EOF
 }
 
-# Configures the network, allowing both DHCP and static boots.
-sub ksnetwork
+# Determine the network device name, and return the 
+# device ip configuration and any additional network 
+# options (e.g. to handle with bonding)  
+sub ksnetwork_get_dev_net
 {
-    my ($tree, $config) = @_;
-
+    my ($tree, $config) = @_; 
+    
+    my @networkopts = ();
     my $version = get_anaconda_version($tree);
-    my @network = qw(network);
-
-    if ($tree->{bootproto} eq 'dhcp') {
-        # TODO: no boot device selection with dhcp (e.g. needed for bonding)
-        # Although fully supported in ks and easy to add, 
-        # the issue here is backwards compatibilty (a.k.a. very old behaviour)
-        $this_app->debug (5, "Node configures its network via DHCP");
-        push(@network, "--bootproto=dhcp");
-        return @network;
-    }
-
-    push(@network, "--bootproto=static");
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
     if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i) {
@@ -215,7 +206,7 @@ sub ksnetwork
                                       !(grep { $_ eq $intf } @slaves));
         };
 
-        push(@network, "--bondslaves=".join(',', @slaves));
+        push(@networkopts, "--bondslaves=".join(',', @slaves));
 
         # gather the options
         if ($net->{bonding_opts}) {
@@ -223,7 +214,7 @@ sub ksnetwork
             while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
                 push(@opts, "$k=$v");
             }
-            push(@network, "--bondopts=".join(',', @opts));
+            push(@networkopts, "--bondopts=".join(',', @opts));
         }
         
         # continue with the bond device as network device
@@ -231,6 +222,32 @@ sub ksnetwork
         
     }
     
+    return ($dev, $net, @networkopts);
+
+}    
+
+
+# Configures the network, allowing both DHCP and static boots.
+sub ksnetwork
+{
+    my ($tree, $config) = @_;
+
+    my @network = qw(network);
+
+    if ($tree->{bootproto} eq 'dhcp') {
+        # TODO: no boot device selection with dhcp (e.g. needed for bonding)
+        # Although fully supported in ks and easy to add, 
+        # the issue here is backwards compatibilty (a.k.a. very old behaviour)
+        $this_app->debug (5, "Node configures its network via DHCP");
+        push(@network, "--bootproto=dhcp");
+        return @network;
+    }
+
+    push(@network, "--bootproto=static");
+
+    my ($dev, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
+    push(@network, @networkopts);
+
     $this_app->debug (5, "Node will boot from $dev");
     push(@network, "--device=$dev");
     
