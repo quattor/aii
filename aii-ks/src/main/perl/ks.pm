@@ -491,6 +491,8 @@ sub log_action {
 
     my $tree = $config->getElement(KS)->getTree;
     my @logactions;
+    my $drainsleep = 0;
+    
     push(@logactions, "exec >$logfile 2>&1"); 
     
     my $consolelogging = 1; # default behaviour
@@ -526,6 +528,9 @@ sub log_action {
 
             # insert extra sleep to get all started before any output is send
             push(@logactions, 'sleep 1');
+            
+            # fix drain sleep to 10 seconds
+            $drainsleep = 10;
         }
     }
 
@@ -534,6 +539,7 @@ sub log_action {
                           "tail -f $logfile > /dev/console &");
     }
     
+    push(@logactions,"drainsleep=$drainsleep"); # add trailing newline 
     push(@logactions,''); # add trailing newline 
     return join("\n", @logactions)
 }
@@ -639,8 +645,8 @@ EOF
 lvm vgchange -an
 echo 'End of pre section'
 
-# Drain remote logger
-sleep 10
+# Drain remote logger (0 if not relevant)
+sleep \$drainsleep
 
 $end
 
@@ -803,8 +809,8 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
-    # Drain remote logger
-    sleep 10
+    # Drain remote logger (0 if not relevant)
+    sleep \\\$drainsleep
     exit 1
 }
 
@@ -820,8 +826,8 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
 Node $fqdn successfully installed.
 .
 End_of_sendmail
-    # Drain remote logger
-    sleep 10
+    # Drain remote logger (0 if not relevant)
+    sleep \\\$drainsleep
 }
 
 # Wait for functional network up by testing DNS lookup via nslookup.
@@ -937,8 +943,8 @@ sub kspostreboot_tail
 rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
 echo 'End of ks-post-reboot'
 
-# Drain remote logger
-sleep 10
+# Drain remote logger (0 if not relevant)
+sleep \\\$drainsleep
 
 shutdown -r now
 
@@ -1281,8 +1287,8 @@ EOF
     print <<EOF;
 echo 'End of post section'
 
-# Drain remote logger
-sleep 10
+# Drain remote logger (0 if not relevant)
+sleep \$drainsleep
 
 $end
 
