@@ -197,19 +197,19 @@ sub ksnetwork
     } elsif ($version >= ANACONDA_VERSION_EL_6_0 && $bonddev ) {
         # this is the dhcp code logic; adding extra error here. 
         if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
-            $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
+            $this_app->warn("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
                              "But bootproto=none is missing, so ncm-network will not treat it as one.");
         }
         $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
 
         # network settings are part of the bond master
-        $net = $config->getElement("/system/network/interfaces/$bonddev")->getTree;
+        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
+        $net = $intfs->{$bonddev};
         
         # gather the slaves, the ksdevice is put first 
         my @slaves;
         push(@slaves, $dev);
-        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
-        for my $intf (sort keys %$intfs) {
+        foreach my $intf (sort keys %$intfs) {
             push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
                                       $intfs->{$intf}->{master} eq $bonddev &&
                                       !(grep { $_ eq $intf } @slaves));
