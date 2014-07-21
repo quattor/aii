@@ -7,6 +7,7 @@ package NCM::Component::pxelinux;
 
 use strict;
 use warnings;
+use version;
 use NCM::Component;
 use EDG::WP4::CCM::Property;
 use NCM::Check;
@@ -17,7 +18,6 @@ use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
 use Readonly;
-use version;
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant NBPDIR => 'nbpdir';
