@@ -18,7 +18,6 @@ use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
 use Readonly;
-use version;
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant NBPDIR => 'nbpdir';
