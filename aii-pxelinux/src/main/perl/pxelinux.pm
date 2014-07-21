@@ -7,6 +7,7 @@ package NCM::Component::pxelinux;
 
 use strict;
 use warnings;
+use version;
 use NCM::Component;
 use EDG::WP4::CCM::Property;
 use NCM::Check;

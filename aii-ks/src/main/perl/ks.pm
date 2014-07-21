@@ -8,6 +8,7 @@ package NCM::Component::ks;
 
 use strict;
 use warnings;
+use version;
 use NCM::Component;
 use EDG::WP4::CCM::Property;
 use EDG::WP4::CCM::Element qw (unescape);
