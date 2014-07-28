@@ -43,6 +43,7 @@ use constant KS => "/system/aii/osinstall/ks";
 
 # Lowest supported version is EL 5.0
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
+use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
@@ -117,10 +118,9 @@ sub link_filepath
 # (EL7+ only)
 sub pxe_ks_static_network
 {
-    my ($config, $t) = @_;
+    my ($config, $dev) = @_;
 
     my $fqdn = get_fqdn($config);
-    my $dev = $t->{ksdevice};
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
     unless ($net->{ip}) {
@@ -145,6 +145,60 @@ sub pxe_ks_static_network
     };
 
     return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$dev:none";
+}
+
+
+# create the network bonding parameters (if any)
+sub pxe_network_bonding {
+    my ($config, $tree, $dev) = @_;
+
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bonding 
+    # if bonding not defined, assume it's allowed
+    my $bonddev = $net->{master};
+    # check the existence to deal with older profiles
+    if (exists($tree->{bonding}) && (! $tree->{bonding})) {
+        my $msg = "Bonding config generation explicitly disabled";
+        $this_app->debug (5, $msg);
+        # lets hope you know what you are doing
+        $this_app->warn ("$msg for dev $dev, with master $bonddev set.") if ($bonddev);
+        return;
+   } elsif ($bonddev) {
+        # this is the dhcp code logic; adding extra error here. 
+        if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
+            $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
+                             "But bootproto=none is missing, so ncm-network will not treat it as one.");
+        }
+        $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
+
+        # bond network config
+        $net = $config->getElement("/system/network/interfaces/$bonddev")->getTree;
+
+        # gather the slaves, the ksdevice is put first 
+        my @slaves;
+        push(@slaves, $dev);
+        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
+        for my $intf (sort keys %$intfs) {
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+                                      $intfs->{$intf}->{master} eq $bonddev &&
+                                      !(grep { $_ eq $intf } @slaves));
+        };
+
+        my $bondtxt = "bond=$bonddev:". join(',', @slaves);
+        # gather the options
+        if ($net->{bonding_opts}) {
+            my @opts;
+            while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
+                push(@opts, "$k=$v");
+            }
+            $bondtxt .= ":". join(',', @opts);
+        }
+        
+        return ($bonddev, $bondtxt);
+        
+    }
+    
 }
 
 
@@ -182,8 +236,20 @@ sub pxe_ks_append
          "ramdisk=32768",
          "initrd=$t->{initrd}",
          "${keyprefix}ks=$ksloc",
-         "$ksdevicename=$t->{ksdevice}"
          );         
+
+    my $ksdev = $t->{ksdevice};
+    if ($version >= ANACONDA_VERSION_EL_6_0) {
+        # bond support in pxelinunx config 
+        # (i.e using what device will the ks file be retrieved).
+        my ($bonddev, $bondingtxt) = pxe_network_bonding($cfg, $kst, $ksdev);
+        if ($bonddev) {
+            $ksdev = $bonddev;
+            push (@append, $bondingtxt);
+        }
+    }
+
+    push(@append, "$ksdevicename=$ksdev");
 
     if ($t->{updates}) {
         push(@append,"${keyprefix}updates=$t->{updates}");
@@ -212,8 +278,12 @@ sub pxe_ks_append
         }
 
         if($kst->{bootproto} eq 'static') {
-            my $static = pxe_ks_static_network($cfg, $t);            
-            push(@append,"ip=$static") if ($static);
+            if ($ksdev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
+                $this_app->error("Invalid ksdevice $ksdev for static ks configuration.");
+            } else {
+                my $static = pxe_ks_static_network($cfg, $ksdev);            
+                push(@append,"ip=$static") if ($static);
+            }
         } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
             push(@append,"ip=$kst->{bootproto}");
         }

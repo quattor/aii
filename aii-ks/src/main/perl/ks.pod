@@ -37,12 +37,16 @@ If acklist is set, then ackurl is not used.
 List of options for authentication. Defaults to ("enableshadow", "enablemd5").
 i.e. enable shadow passwords and MD5 hashing.
 
-=item * booloader_location : string
+=item * bonding : boolean
+
+Support network bonding. 
+
+=item * bootloader_location : string
 
 The location of the bootloader. Valid values are "mbr", "partition"
 and "none". Defaults to "mbr".
 
-=item * booloader_append ? string
+=item * bootloader_append ? string
 
 String to add in an "--append" option for the bootloader
 

@@ -160,30 +160,109 @@ End_Of_Post_Reboot
 EOF
 }
 
+# Determine the network device name, and return the 
+# device ip configuration and any additional network 
+# options (e.g. to handle with bonding)  
+sub ksnetwork_get_dev_net
+{
+    my ($tree, $config) = @_; 
+    
+    my @networkopts = ();
+    my $version = get_anaconda_version($tree);
+
+    my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i) {
+        $this_app->error("Invalid ksdevice $dev for static ks configuration.");
+        return;
+    }
+
+    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bonding 
+    my $bonddev = $net->{master};
+    # check the existence to deal with older profiles
+    if (exists($tree->{bonding}) && (! $tree->{bonding})) {
+        my $msg = "Bonding config generation explicitly disabled";
+        $this_app->debug (5, $msg);
+        # lets hope you know what you are doing
+        $this_app->warn ("$msg for dev $dev, with master $bonddev set.") if ($bonddev);
+    } elsif ($version >= ANACONDA_VERSION_EL_6_0 && $bonddev ) {
+        # this is the dhcp code logic; adding extra error here. 
+        if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
+            $this_app->warn("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
+                             "But bootproto=none is missing, so ncm-network will not treat it as one.");
+        }
+        $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
+
+        # network settings are part of the bond master
+        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
+        $net = $intfs->{$bonddev};
+        
+        # gather the slaves, the ksdevice is put first 
+        my @slaves;
+        push(@slaves, $dev);
+        foreach my $intf (sort keys %$intfs) {
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+                                      $intfs->{$intf}->{master} eq $bonddev &&
+                                      !(grep { $_ eq $intf } @slaves));
+        };
+
+        push(@networkopts, "--bondslaves=".join(',', @slaves));
+
+        # gather the options
+        if ($net->{bonding_opts}) {
+            my @opts;
+            while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
+                push(@opts, "$k=$v");
+            }
+            push(@networkopts, "--bondopts=".join(',', @opts));
+        }
+        
+        # continue with the bond device as network device
+        $dev = $bonddev;
+        
+    }
+    
+    return ($dev, $net, @networkopts);
+
+}    
+
+
 # Configures the network, allowing both DHCP and static boots.
 sub ksnetwork
 {
     my ($tree, $config) = @_;
 
+    my @network = qw(network);
+
     if ($tree->{bootproto} eq 'dhcp') {
+        # TODO: no boot device selection with dhcp (e.g. needed for bonding)
+        # Although fully supported in ks and easy to add, 
+        # the issue here is backwards compatibilty (a.k.a. very old behaviour)
         $this_app->debug (5, "Node configures its network via DHCP");
-        print "network --bootproto=dhcp\n";
-        return;
+        push(@network, "--bootproto=dhcp");
+        return @network;
     }
 
-    my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    push(@network, "--bootproto=static");
+
+    my ($dev, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
+    push(@network, @networkopts);
+
     $this_app->debug (5, "Node will boot from $dev");
-
+    push(@network, "--device=$dev");
+    
     my $fqdn = get_fqdn($config);
-
-    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    push(@network, "--hostname=$fqdn");
+    
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
-            return;
+            return ();
     }
+    push(@network, "--ip=$net->{ip}", "--netmask=$net->{netmask}");
 
-    my $mtu = $net->{mtu} ? "--mtu=$net->{mtu} " : "";
+    push(@network, "--mtu=$net->{mtu}") if $net->{mtu};
 
     my $gw = '--gateway=';
     if ($net->{gateway}) {
@@ -203,12 +282,12 @@ sub ksnetwork
 ## Lets hope all is reachable through direct route.
 EOF
     };
+    push(@network, $gw);
 
     my $ns = $config->getElement(NAMESERVER)->getValue;
-    print <<EOF;
-network --bootproto=static --ip=$net->{ip} --netmask=$net->{netmask} $gw --nameserver=$ns --device=$dev --hostname=$fqdn $mtu
-EOF
+    push(@network, "--nameserver=$ns");
 
+    return @network;
 }
 
 # Instantiates and executes the user hooks for a given path.
@@ -352,7 +431,7 @@ EOF
     print "--port $_ " foreach @{$tree->{firewall}->{ports}};
     print "\n";
 
-    ksnetwork ($tree, $config);
+    print join(" ",ksnetwork ($tree, $config)), "\n";
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
     if ($tree->{clearmbr}) {
