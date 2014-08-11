@@ -85,7 +85,7 @@ sub get_images
 		                		     " with datastore $datastore");
 	        $res{$imagename}{image} = $image;
 	        $res{$imagename}{datastore} = $datastore;
-            #$main::this_app->info("This is my template: $image");
+            $main::this_app->debug(3, "This is image template $imagename: $image");
 	    } else {
 	    # Shouldn't happen; fields are in TT
 	        $main::this_app->error("No datastore and/or imagename for image data $image.");
@@ -110,7 +110,7 @@ sub get_vmtemplate
         return undef;
     };
 
-    #$main::this_app->info("This is my template: $vm_template.");
+    $main::this_app->debug(3, "This is vmtemplate $vmtemplatename: $vm_template.");
     return $vm_template
 }
 
@@ -126,9 +126,9 @@ sub new
 # and it remove/create a new one
 sub opennebula_aii_vmimage
 {
-    my ($self, $one, $forcecreateimage, %images, $remove) = @_;
-    
-    while ( my ($imagename, %imagedata) = each %images) {
+    my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
+
+    while ( my ($imagename, $imagedata) = each %{$imagesref}) {
         $main::this_app->info ("Checking ONE image: $imagename ...");
 
         my @existimage = $one->get_images(qr{^$imagename$});
@@ -138,15 +138,19 @@ sub opennebula_aii_vmimage
                 # It's safe, we can remove the image
                 $t->delete();
 
-                # And create the new image with the image data
-                if (!$remove) {
-                    my $newimage = $t->create($t, $t->{extended_data}->{TEMPLATE}->[0]->{DATASTORE}->[0]);
-                    return $newimage;
-                }
-
             }
 
         }
+
+        # TODO deal with images  that have same name but bot QUATTOR tag set (or set to 0).
+        # we should just skip the creation then and fail hard?
+
+    	# And create the new image with the image data
+    	if (!$remove) {
+    	    my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
+    	    return $newimage;
+    	}
+
     }
     return undef;
 
@@ -181,14 +185,16 @@ sub opennebula_aii_vmtemplate
 
     foreach my $t (@existtmpls) {
         if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($createvmtemplate)) {
-            $main::this_app->info("QUATTOR VM template, going to delete: $t->name");
+            $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
             $t->delete();
         }
     }
-
+    
+    # TODO extract the IP, MAC and VNET and create them
+    
     if (($createvmtemplate) && (!$remove)) {
         my $templ = $one->create_template($vmtemplate);
-        #$main::this_app->info("New ONE VM template: $templ");
+        $main::this_app->debug(1, "New ONE VM template: $templ");
         return $templ;
     }
     
@@ -204,7 +210,6 @@ sub install
     my $forcecreateimage = $tree->{image};
     my $instantiatevm =	$tree->{vm};
     my $createvmtemplate = $tree->{template};
-    #my $datastore = $tree->{datastore};
     my $onhold = $tree->{onhold};
 
     my $hostname = $config->getElement ('/system/network/hostname')->getValue;
@@ -215,26 +220,28 @@ sub install
 
     my $one = make_one();
 
-    #$main::this_app->info("Create image $forcecreateimage into datastore: $datastore");
-
     # Check if the VM is still running, if so we stop it
-    $self->opennebula_aii_vmrunning($one,$fqdn);
+    $self->opennebula_aii_vmrunning($one, $fqdn);
 
     # Check VM image/s status
     # if exixts...
     # then we remove the image/s...
     # and we create a new one
     my %images = $self->get_images($config);
-    $self->opennebula_aii_vmimage($one,$forcecreateimage,%images);
+
+    $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images);
     
     # Get the VM template first
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     # Remove/Create if it's required
-    my $vmtemplate = $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplatetxt);
+    my $vmtemplate = $self->opennebula_aii_vmtemplate($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
 
     # and instantiate the template, returns the VM instance
     # if $instantiatevm is set
     if ($instantiatevm) {
+    	$main::this_app->debug(1, "Instantiate vm with name $fqdn with template ", $vmtemplate->name);
+    	# TODO check that image is in READY state. use sleep for now
+    	sleep 10;
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
     }
     
@@ -269,13 +276,13 @@ sub remove
     # Remove the images
     my %images = $self->get_images($config);
     if (%images) {
-        $self->opennebula_aii_vmimage($one,$forcecreateimage,%images,$remove);
+        $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images, $remove);
     }
 
     # Remove VM templates, get the VM template name first
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->opennebula_aii_vmtemplate($one,$fqdn,$createvmtemplate,$vmtemplatetxt,$remove);
+        $self->opennebula_aii_vmtemplate($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $remove);
     }
 
 }
