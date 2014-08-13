@@ -46,6 +46,8 @@ sub make_one
         url      => "http://$host:$port/RPC2",
         user     => $user,
         password => $password,
+        log => $main::this_app,
+        fail_on_rpc_fail => 0,
     );
     return $one;
 }
@@ -87,11 +89,42 @@ sub get_images
 	        $res{$imagename}{datastore} = $datastore;
             $main::this_app->debug(3, "This is image template $imagename: $image");
 	    } else {
-	    # Shouldn't happen; fields are in TT
+	        # Shouldn't happen; fields are in TT
 	        $main::this_app->error("No datastore and/or imagename for image data $image.");
 	    };
     }
 
+    return %res;
+}
+
+# It gets the vnet leases from tt file
+# and gathers vnet names and IPs/MAC addresses
+sub get_vnetleases
+{
+    my ($self, $config) = @_;
+    my $all_leases = $self->process_template($config, "vnetleases");
+    my %res;
+
+    my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_leases);
+
+    while (my ($lease,$network) = splice(@tmp, 0 ,2)) {
+        #my $vnetlease = $1 if ($lease =~ m/^LEASES=(?:"|')(.*?)(?:"|')$/m);
+        #$main::this_app->verbose("This is the vnet lease $vnetlease");
+
+        if ($network && $lease) {
+            $main::this_app->verbose("Adding vnet lease: $lease",
+                                     " within network $network");
+            #$res{$vnetlease}{lease} = $lease;
+            #$res{$vnetlease}{network} = $network;
+            $res{$network}{lease} = $lease;
+            $res{$network}{network} = $network;
+            $main::this_app->debug(3, "This is vnet lease template for $network: $lease");
+
+        } else {
+            # No leases found for this VM
+            $main::this_app->error("No leases and/or network info $lease.");
+        };
+    }
     return %res;
 }
 
@@ -155,6 +188,31 @@ sub opennebula_aii_vmimage
     return undef;
 
 }
+
+# Check if VNET lease exists
+# and it add/remove a new one
+sub opennebula_aii_vnetleases
+{
+    my ($self, $one, $leasesref, $remove) = @_;
+    while ( my ($lease, $leasedata) = each %{$leasesref}) {
+        $main::this_app->info ("Testing ONE vnet lease: $lease ...");
+
+        my @existlease = $one->get_vnets(qr{^$lease$});
+        foreach my $t (@existlease) {
+            if ($remove) {
+                # We remove the lease
+                $t->rmleases($leasedata->{lease});
+            } else {
+                # $remove is not set, we add the new Vnet  lease
+                $t->addleases($leasedata->{lease});
+            };
+
+        }
+    }
+    return undef;
+
+}
+
 
 # This function stops running VMs based on fqdn names
 # and if QUATTOR flag is set
@@ -230,6 +288,13 @@ sub install
     my %images = $self->get_images($config);
 
     $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images);
+
+    # Check network leases
+    # add/remove leases on demand
+    my %leases = $self->get_vnetleases($config);
+
+    $self->opennebula_aii_vnetleases($one, \%leases);
+
     
     # Get the VM template first
     my $vmtemplatetxt = $self->get_vmtemplate($config);
@@ -252,6 +317,7 @@ sub install
 # Stops running VM
 # Removes VM template
 # Removes VM image for each $harddisks
+# Removes vnet leases
 sub remove
 {
     my ($self, $config, $path) = @_;
@@ -277,6 +343,12 @@ sub remove
     my %images = $self->get_images($config);
     if (%images) {
         $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images, $remove);
+    }
+
+    # Remove network leases
+    my %leases = $self->get_vnetleases($config);
+    if (%leases) {
+        $self->opennebula_aii_vnetleases($one, \%leases, $remove);
     }
 
     # Remove VM templates, get the VM template name first
