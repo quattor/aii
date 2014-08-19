@@ -220,9 +220,9 @@ sub opennebula_aii_vmrunning
     # check if the running $fqdn has QUATTOR = 1 
     # if not don't touch it!!
     foreach my $t (@runningvms) {
-        if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
+        if ($t->{extended_data}->{USER_TEMPLATE}->[0]->{QUATTOR}->[0]) {
             # Die!!
-            $main::this_app->info("Running VM will be stopped: $t->name");
+            $main::this_app->info("Running VM will be removed: $t->name");
             $t->delete();
         }
     }
