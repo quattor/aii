@@ -88,6 +88,7 @@ sub get_images
 	        $res{$imagename}{image} = $image;
 	        $res{$imagename}{datastore} = $datastore;
             $main::this_app->debug(3, "This is image template $imagename: $image");
+
 	    } else {
 	        # Shouldn't happen; fields are in TT
 	        $main::this_app->error("No datastore and/or imagename for image data $image.");
@@ -108,14 +109,10 @@ sub get_vnetleases
     my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_leases);
 
     while (my ($lease,$network) = splice(@tmp, 0 ,2)) {
-        #my $vnetlease = $1 if ($lease =~ m/^LEASES=(?:"|')(.*?)(?:"|')$/m);
-        #$main::this_app->verbose("This is the vnet lease $vnetlease");
 
         if ($network && $lease) {
             $main::this_app->verbose("Adding vnet lease: $lease",
                                      " within network $network");
-            #$res{$vnetlease}{lease} = $lease;
-            #$res{$vnetlease}{network} = $network;
             $res{$network}{lease} = $lease;
             $res{$network}{network} = $network;
             $main::this_app->debug(3, "This is vnet lease template for $network: $lease");
@@ -194,16 +191,14 @@ sub opennebula_aii_vmimage
 sub opennebula_aii_vnetleases
 {
     my ($self, $one, $leasesref, $remove) = @_;
-    while ( my ($lease, $leasedata) = each %{$leasesref}) {
-        $main::this_app->info ("Testing ONE vnet lease: $lease ...");
+    while ( my ($vnet, $leasedata) = each %{$leasesref}) {
+        $main::this_app->info ("Testing ONE vnet lease: $vnet ...");
 
-        my @existlease = $one->get_vnets(qr{^$lease$});
+        my @existlease = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@existlease) {
             if ($remove) {
-                # We remove the lease
                 $t->rmleases($leasedata->{lease});
             } else {
-                # $remove is not set, we add the new Vnet  lease
                 $t->addleases($leasedata->{lease});
             };
 
@@ -305,8 +300,21 @@ sub install
     # if $instantiatevm is set
     if ($instantiatevm) {
     	$main::this_app->debug(1, "Instantiate vm with name $fqdn with template ", $vmtemplate->name);
-    	# TODO check that image is in READY state. use sleep for now
-    	sleep 10;
+    	
+        # Check that image is in READY state.
+        my @myimages = $one->get_images(qr{^${fqdn}\_vd[a-z]$});
+        foreach my $t (@myimages) {
+
+                my $imagestate = $t->state();
+
+                while($imagestate ne "READY") {
+                    sleep 5; # wait 5 seconds for the next request
+                    $imagestate = $t->state();
+                    # TODO include a timeout
+                }
+        }
+
+    	#sleep 10;
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
     }
     
