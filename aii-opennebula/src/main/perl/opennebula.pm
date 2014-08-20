@@ -83,7 +83,7 @@ sub get_images
     while (my ($image,$datastore) = splice(@tmp, 0, 2)) {
 	    my $imagename = $1 if ($image =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
 	    if ($datastore && $imagename) {
-	        $main::this_app->verbose("Adding imagename $imagename",
+	        $main::this_app->verbose("Detected imagename $imagename",
 		                		     " with datastore $datastore");
 	        $res{$imagename}{image} = $image;
 	        $res{$imagename}{datastore} = $datastore;
@@ -111,7 +111,7 @@ sub get_vnetleases
     while (my ($lease,$network) = splice(@tmp, 0 ,2)) {
 
         if ($network && $lease) {
-            $main::this_app->verbose("Adding vnet lease: $lease",
+            $main::this_app->verbose("Detected vnet lease: $lease",
                                      " within network $network");
             $res{$network}{lease} = $lease;
             $res{$network}{network} = $network;
@@ -209,7 +209,7 @@ sub opennebula_aii_vnetleases
 }
 
 
-# This function stops running VMs based on fqdn names
+# This function stops/removes running VMs based on fqdn names
 # and if QUATTOR flag is set
 sub opennebula_aii_vmrunning
 {
@@ -308,7 +308,8 @@ sub install
                 my $imagestate = $t->state();
 
                 while($imagestate ne "READY") {
-                    sleep 5; # wait 5 seconds for the next request
+                    $main::this_app->info("VM Image status: ${imagestate} , waiting 5 seconds...");
+                    sleep 5;
                     $imagestate = $t->state();
                     # TODO include a timeout
                 }
@@ -344,7 +345,7 @@ sub remove
 
     my $one = make_one();
 
-    # Stop the VM
+    # Stop/remove the running VM
     $self->opennebula_aii_vmrunning($one,$fqdn);
 
     # Remove the images
