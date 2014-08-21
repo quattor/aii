@@ -15,6 +15,8 @@ use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
 use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
+use constant HOSTNAME => "/system/network/hostname";
+use constant DOMAINNAME => "/system/network/domainname";
 
 # a config file in .ini style with minmal 
 #   [rpc]
@@ -68,6 +70,16 @@ sub process_template
     }
     return $res;
 }
+
+# Return fqdn of the node
+sub get_fqdn
+{
+    my ($self,$config) = @_;
+    my $hostname = $config->getElement (HOSTNAME)->getValue;
+    my $domainname = $config->getElement (DOMAINNAME)->getValue;
+    return "${hostname}.${domainname}";
+}
+
 
 # It gets the image template from tt file
 # and gathers image names format: <fqdn>_<vdx> 
@@ -264,12 +276,7 @@ sub install
     my $instantiatevm =	$tree->{vm};
     my $createvmtemplate = $tree->{template};
     my $onhold = $tree->{onhold};
-
-    my $hostname = $config->getElement ('/system/network/hostname')->getValue;
-    my $domainname = $config->getElement ('/system/network/domainname')->getValue;
-
-    my @disks = $config->getElement ('/hardware/harddisks')->getValue;
-    my $fqdn = "$hostname.$domainname";
+    my $fqdn = $self->get_fqdn($config);
 
     my $one = make_one();
 
@@ -336,11 +343,7 @@ sub remove
     #my $createvmtemplate = $tree->{template};
     my $createvmtemplate = 1;
     #my $datastore = $tree->{datastore};
-
-    my $hostname = $config->getElement ('/system/network/hostname')->getValue;
-    my $domainname = $config->getElement ('/system/network/domainname')->getValue;
-
-    my $fqdn = "$hostname.$domainname";
+    my $fqdn = $self->get_fqdn($config);
     my $remove = 1;
 
     my $one = make_one();
