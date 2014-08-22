@@ -17,6 +17,7 @@ use constant TEMPLATEPATH => "/usr/share/templates/quattor";
 use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
+use constant TIMEOUT => 60;
 
 # a config file in .ini style with minmal 
 #   [rpc]
@@ -313,12 +314,23 @@ sub install
         foreach my $t (@myimages) {
 
                 my $imagestate = $t->state();
-
-                while($imagestate ne "READY") {
-                    $main::this_app->info("VM Image status: ${imagestate} , waiting 5 seconds...");
-                    sleep 5;
-                    $imagestate = $t->state();
-                    # TODO include a timeout
+                # If something wrong happens set a timeout 
+                eval { 
+                    local $SIG{ALRM} = sub { die "alarm\n" };
+                    alarm TIMEOUT;
+                    while($imagestate ne "READY") {
+                        $main::this_app->info("VM Image status: ${imagestate} , waiting 5 seconds...");
+                        sleep 5;
+                        $imagestate = $t->state();
+                    }
+                    alarm 0;
+                };
+                if ($@) {
+                    die unless $@ eq "alarm\n"; #timeout!
+                    $main::this_app->error("TIMEOUT! Image status: ${imagestate} after ".TIMEOUT." seconds...");
+                }
+                else {
+                    $main::this_app->info("VM Image status: ${imagestate} ,OK");
                 }
         }
 
