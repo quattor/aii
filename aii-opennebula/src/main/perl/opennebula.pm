@@ -334,12 +334,25 @@ sub install
                 }
         }
 
-    	#sleep 10;
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
     }
     
 }
 
+# Performs Quattor post_reboot
+# ACPID service is mandatory for ONE VMs 
+sub post_reboot
+{
+    my ($self, $config, $path) = @_;
+    my $tree = $config->getElement($path)->getTree();
+
+    print <<EOF;
+yum install -y acpid
+
+service acpid start
+EOF
+
+}
 
 # Performs VM remove wich depending on the booleans
 # Stops running VM
