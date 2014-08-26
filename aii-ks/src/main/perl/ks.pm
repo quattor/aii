@@ -697,14 +697,25 @@ end_of_fdisk
 }
 
 wipe_metadata () {
-    local path clear SIZE START
+    local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
-    clear="$2"
-
-    SIZE=`fdisk -s "$path"`
-    let START=$SIZE/1024-$clear
-    dd if=/dev/zero of="$path" bs=1M count=$clear 2>/dev/null
-    dd if=/dev/zero of="$path" bs=1M seek=$START 2>/dev/null
+	ENDSEEK_OFFSET=20
+    # try to get the size with fdisk
+    SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
+    # if empty, assume we failed and try with parted
+    if [ -z $SIZE ]; then
+        SIZE=`parted "$path" -s -- u s p | grep "Disk $path" |awk '{print substr($3, 0, length($3)-1)}'`
+        # if at this point the SIZE has not been determined, 
+        # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped. 
+        if [ -z $SIZE ]; then
+            SIZE=$ENDSEEK_OFFSET
+            echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
+        fi
+    fi
+    let ENDSEEK=$SIZE-$ENDSEEK_OFFSET
+    echo "[INFO] wipe path $path with SIZE $SIZE and ENDSEEK $ENDSEEK"
+    dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
+    dd if=/dev/zero of="$path" bs=512 seek=$ENDSEEK 2>/dev/null
 }
 
 EOF
