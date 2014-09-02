@@ -11,7 +11,7 @@ prefix "/system/aii/hooks";
 );
 
 "remove/0" = nlist(
-    "vm", true,
+    "remove", true,
     "image", true,
     "vmtemplate", true,
 );

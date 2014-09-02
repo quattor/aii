@@ -29,7 +29,7 @@ bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('install');
 
         "image", OPENNEBULA_AII_FORCE,
         "template", OPENNEBULA_AII_FORCE,
-        "vm", OPENNEBULA_AII_FORCE,
+        "remove", OPENNEBULA_AII_FORCE,
         ));
 
     SELF;
@@ -37,3 +37,14 @@ bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('install');
 
 bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('remove');
 
+
+# Enable ACPI daemon
+"/system/aii/hooks/post_reboot/" = {
+    append(nlist(
+        'module', OPENNEBULA_AII_MODULE_NAME
+        ));
+
+    SELF;
+};
+
+bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('post_reboot');
