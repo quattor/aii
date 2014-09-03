@@ -52,6 +52,12 @@ sub make_one
         log => $main::this_app,
         fail_on_rpc_fail => 0,
     );
+
+    if (!$one) {
+        $main::this_app->error("No ONE instance.");
+        return;
+    }
+
     return $one;
 }
 
