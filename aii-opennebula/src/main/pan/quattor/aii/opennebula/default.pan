@@ -1,6 +1,6 @@
 template quattor/aii/opennebula/default;
 
-include { 'quattor/aii/opennebula/schema' };
+include 'quattor/aii/opennebula/schema';
 
 
 #  undef are set via schema default

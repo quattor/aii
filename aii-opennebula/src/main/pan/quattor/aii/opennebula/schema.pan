@@ -3,8 +3,6 @@ unique template quattor/aii/opennebula/schema;
 variable OPENNEBULA_AII_MODULE_NAME = 'opennebula';
 
 ## a function to validate all aii_opennebula hooks
-## bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('install')
-##
 
 function validate_aii_opennebula_hooks = {
     name = 'validate_aii_opennebula_hooks';
@@ -39,17 +37,12 @@ function validate_aii_opennebula_hooks = {
         error(format("%s: aii_opennebula %s hook has to be last hook (idx %s of %s)", name, ARGV[0], ind, length(l)));
     };
     
-    ##
     ## validate the hook
-    ## the module name is already validated
-    ##
-    # TODO implement 
-
     return(true);
 };
 
 type structure_aii_freeipa = {
-	"module"   : string with SELF == OPENNEBULA_AII_MODULE_NAME
+	"module" : string with SELF == OPENNEBULA_AII_MODULE_NAME
 
     "image" : boolean = false # force create image [implies on remove remove image (also stop/delete vm) ]
     "template" : boolean = false # force (re)create template [implies on remove remove template (also stop/delete vm) ] 
