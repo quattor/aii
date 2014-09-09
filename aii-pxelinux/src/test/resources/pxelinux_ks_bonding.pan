@@ -27,4 +27,4 @@ prefix "/system/aii/osinstall/ks";
 # static ip not strictly needed for pxelinux bonding config
 "version" = "19.31"; # EL7 for static; dhcp should work with EL6 / "13.21" 
 "bootproto" = "static"; 
-"bonding" = true; 
+"bonding" = true;
