@@ -166,6 +166,12 @@ sub pxe_ks_static_network
 sub pxe_network_bonding {
     my ($config, $tree, $dev) = @_;
 
+    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i && 
+        ! $config->elementExists("/system/network/interfaces/$dev")) {
+        $this_app->error("Invalid ksdevice $dev for bonding network configuration.");
+        return;
+    }
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
@@ -234,8 +240,8 @@ sub pxe_ks_append
         $keyprefix="inst.";
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
-            ! $cfg->hasElement("/system/network/interfaces/$t->{ksdevice}")) {
-            $this_app->debug("Using depreacted legacy behaviour. Please look into the configuration.");
+            ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
+            $this_app->debug(1, "Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";  
         }
