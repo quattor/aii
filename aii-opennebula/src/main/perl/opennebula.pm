@@ -32,13 +32,13 @@ sub make_one
         return;
     }
 
-    my $Config = Config::Tiny->new;
+    my $config = Config::Tiny->new;
 
-    $Config = Config::Tiny->read($filename);
-    my $port = $Config->{rpc}->{port} || 2633;
-    my $host = $Config->{rpc}->{host} || "localhost";
-    my $user = $Config->{rpc}->{user} || "oneadmin";
-    my $password = $Config->{rpc}->{password};
+    $config = Config::Tiny->read($filename);
+    my $port = $config->{rpc}->{port} || 2633;
+    my $host = $config->{rpc}->{host} || "localhost";
+    my $user = $config->{rpc}->{user} || "oneadmin";
+    my $password = $config->{rpc}->{password};
 
     if (! $password ) {
         $main::this_app->error("No password set in configfile $filename.");
@@ -173,9 +173,7 @@ sub new
 }
 
 
-# Check if VM image/s exists
-# and it remove/create a new one
-sub opennebula_aii_vmimage
+sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
 
@@ -205,9 +203,8 @@ sub opennebula_aii_vmimage
 
 }
 
-# Check if VNET lease exists
-# and it add/remove a new one
-sub opennebula_aii_vnetleases
+
+sub remove_and_create_vn_leases
 {
     my ($self, $one, $leasesref, $remove) = @_;
     while ( my ($vnet, $leasedata) = each %{$leasesref}) {
@@ -228,9 +225,7 @@ sub opennebula_aii_vnetleases
 }
 
 
-# This function stops/removes running VMs based on fqdn names
-# and if QUATTOR flag is set
-sub opennebula_aii_vmrunning
+sub stop_and_remove_one_vms
 {
     my ($self, $one, $fqdn) = @_;
     
@@ -248,8 +243,8 @@ sub opennebula_aii_vmrunning
     }
 }
 
-# This function creates/removes VM templates if is required
-sub opennebula_aii_vmtemplate
+
+sub remove_and_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
     
@@ -274,7 +269,11 @@ sub opennebula_aii_vmtemplate
     
 }
 
-
+# Based on Quattor template this function:
+# creates new VM templates
+# creates new VM image for each $harddisks
+# creates new vnet leases if required
+# instantiates the new VM
 sub install
 {
     my ($self, $config, $path) = @_;
@@ -299,28 +298,17 @@ sub install
         return 0;
     }
 
-    # Check if the VM is still running, if so we delete it
-    $self->opennebula_aii_vmrunning($one, $fqdn);
+    $self->stop_and_remove_one_vms($one, $fqdn);
 
-    # Check VM image/s status
-    # if exixts...
-    # then we remove the image/s...
-    # and we create a new one
     my %images = $self->get_images($config);
-    $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images);
+    $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
 
-    # Check network leases
-    # add/remove leases on demand
     my %leases = $self->get_vnetleases($config);
-    $self->opennebula_aii_vnetleases($one, \%leases);
+    $self->remove_and_create_vn_leases($one, \%leases);
 
-    
-    # Get the VM template first
     my $vmtemplatetxt = $self->get_vmtemplate($config);
-    # Remove/Create if it's required
-    my $vmtemplate = $self->opennebula_aii_vmtemplate($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
-    # and instantiate the template, returns the VM instance
-    # if $instantiatevm is set
+    my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
+
     if ($instantiatevm) {
     	$main::this_app->debug(1, "Instantiate vm with name $fqdn with template ", $vmtemplate->name);
     	
@@ -382,25 +370,21 @@ sub remove
         return 0;
     }
 
-    # Stop/remove the running VM
-    $self->opennebula_aii_vmrunning($one,$fqdn);
+    $self->stop_and_remove_one_vms($one,$fqdn);
 
-    # Remove the images
     my %images = $self->get_images($config);
     if (%images) {
-        $self->opennebula_aii_vmimage($one, $forcecreateimage, \%images, $remove);
+        $self->remove_and_create_vm_images($one, $forcecreateimage, \%images, $remove);
     }
 
-    # Remove network leases
     my %leases = $self->get_vnetleases($config);
     if (%leases) {
-        $self->opennebula_aii_vnetleases($one, \%leases, $remove);
+        $self->remove_and_create_vn_leases($one, \%leases, $remove);
     }
 
-    # Remove VM templates, get the VM template name first
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->opennebula_aii_vmtemplate($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $remove);
+        $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $remove);
     }
 
 }
