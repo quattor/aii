@@ -1,8 +1,8 @@
 @{ 
 Profile to ensure that the kickstart commands and packages section are generated 
 @}
-object template kickstart_bootif;
+object template kickstart_ksdevice_link;
 include 'kickstart';
 
 prefix "/system/aii/nbp/pxelinux";
-"ksdevice" = "bootif";
+"ksdevice" = "link";
