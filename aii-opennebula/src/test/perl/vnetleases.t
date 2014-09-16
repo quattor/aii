@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use Test::More;
 use AII::opennebula;
+use Test::MockModule;
 use Test::Quattor qw(vnetleases);
 use OpennebulaMock;
 
@@ -22,14 +23,14 @@ like($ttout, qr{^NETWORK\s+=\s+}m, "Found vnet NETWORK name");
 
 my %networks = $aii->get_vnetleases($cfg);
 
-my $networka = "br100";
-my $networkb = "br101";
+my $networka = "altaria.os";
+my $networkb = "altaria.vsc";
 
 ok(exists($networks{$networka}), "vnet a exists");
 ok(exists($networks{$networkb}), "vnet b exists");
 
-is($networks{$networka}{network}, "br100", "vneta name is br100");
-is($networks{$networkb}{network}, "br101", "vnetb name is br101");
+is($networks{$networka}{network}, "altaria.os", "vneta name is altaria.os");
+is($networks{$networkb}{network}, "altaria.vsc", "vnetb name is altaria.vsc");
 
 like($networks{$networka}{lease}, qr{^LEASES=\[IP=.+,\s+MAC=.+\]$}m, "vnet a contains LEASES info");
 like($networks{$networkb}{lease}, qr{^LEASES=\[IP=.+,\s+MAC=.+\]$}m, "vnet b contains LEASES info");

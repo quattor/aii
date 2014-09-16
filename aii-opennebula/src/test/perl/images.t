@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use Test::More;
 use AII::opennebula;
+use Test::MockModule;
 use Test::Quattor qw(images);
 use OpennebulaMock;
 
@@ -28,8 +29,8 @@ my $imageb = "node630.cubone.os_vdb";
 ok(exists($images{$imagea}), "image a exists");
 ok(exists($images{$imageb}), "image b exists");
 
-is($images{$imagea}{datastore}, "ceph", "datastore of image a is ceph");
-is($images{$imageb}{datastore}, "default", "datastore of image b is default");
+is($images{$imagea}{datastore}, "ceph.altaria", "datastore of image a is ceph.altaria");
+is($images{$imageb}{datastore}, "ceph.altaria", "datastore of image b is ceph.altaria");
 
 like($images{$imagea}{image}, qr{^TARGET\s+=\s+"vda"\s*$}m, "image a contains TARGET vda");
 like($images{$imageb}{image}, qr{^TARGET\s+=\s+"vdb"\s*$}m, "image b contains TARGET vdb");

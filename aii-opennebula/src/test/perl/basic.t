@@ -10,6 +10,7 @@ use warnings;
 
 
 use Test::More;
+use Test::MockModule;
 use Test::Quattor qw(basic);
 use AII::opennebula;
 

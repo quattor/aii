@@ -4,6 +4,9 @@ use Test::MockModule;
 use Test::More;
 use Data::Dumper;
 use base 'Exporter';
+use XML::Simple;
+
+use rpcdata;
 
 our @EXPORT = qw(rpc_history_reset rpc_history_ok diag_rpc_history);
 
@@ -11,6 +14,15 @@ our @EXPORT = qw(rpc_history_reset rpc_history_ok diag_rpc_history);
 my @rpc_history = ();
 my @rpc_history_full = ();
 
+## DEBUG only (can't get the output in unittests otherwise)
+#sub dlog {
+#    my ($type, @args) = @_;
+#    diag("[".uc($type)."] ".join(" ", @args));
+#}
+#our $nco = new Test::MockModule('AII::opennebula');
+#foreach my $type ("error", "info", "verbose", "debug") {
+#    $nco->mock( $type, sub { shift; dlog($type, @_); } );
+#}
 
 sub dump_rpc {
     return Dumper(\@rpc_history);
@@ -44,18 +56,47 @@ sub rpc_history_ok {
     
 }
 
-sub mock_rpc {
+sub mock_rpc_basic {
     my ($self, $method, @params) = @_;
     push(@rpc_history, $method);
     push(@rpc_history_full, [$method, @params]);
     return (); # return empty list
 };
 
+sub mock_rpc {
+    my ($self, $method, @params) = @_;
+    my @params_values;
+    foreach my $param (@params) {
+        push(@params_values, $param->[1]);
+    };
+
+    push(@rpc_history, $method);
+    push(@rpc_history_full, [$method, @params]);
+    # we need to reset the loop for some reason
+    keys %rpcdata::cmds;
+    while (my ($short, $data) = each %rpcdata::cmds) {
+        my $sameparams = join(" _ ", @params_values) eq join(" _ ", @{$data->{params}});
+        my $samemethod = $method eq $data->{method};
+        #diag("This is my shortname:", $short);
+        #diag("rpc internal params: ", join(" _ ", @params_values));
+        #diag("rpc dictionary params: ", join(" _ ", @{$data->{params}})); 
+        #diag("rpc method: ", $method);
+
+        if ($samemethod && $sameparams && defined($data->{out})) {
+                if ($data->{out} =~ m/^\d+$/) {
+                #diag("is id ", $data->{out});
+                return $data->{out};
+            } else {
+                #diag("is xml ", $data->{out});
+                return XMLin($data->{out}, forcearray => 1);
+                } 
+        }
+    }
+};
+
+
 our $opennebula = new Test::MockModule('Net::OpenNebula');
+#$opennebula->mock( '_rpc',  \&mock_rpc_basic);
 $opennebula->mock( '_rpc',  \&mock_rpc);
 
-
-
-
 1;
-

@@ -75,9 +75,9 @@ prefix "/system/network";
 
 prefix "/system/opennebula";
 "vnet" = nlist(
-    "eth0", "br100",
-    "eth1", "br101");
+    "eth0", "altaria.os",
+    "eth1", "altaria.vsc");
 
 "datastore" = nlist(
-    "vda", "ceph",
-    "vdb", "default");
+    "vda", "ceph.altaria",
+    "vdb", "ceph.altaria");

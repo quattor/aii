@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use Test::More;
 use AII::opennebula;
+use Test::MockModule;
 use Test::Quattor qw(vmtemplate);
 use OpennebulaMock;
 
