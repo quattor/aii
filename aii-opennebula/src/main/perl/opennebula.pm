@@ -178,7 +178,7 @@ sub remove_and_create_vm_images
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
 
     while ( my ($imagename, $imagedata) = each %{$imagesref}) {
-        $main::this_app->info ("Checking ONE image: $imagename ...");
+        $main::this_app->info ("Checking ONE image: $imagename");
 
         my @existimage = $one->get_images(qr{^$imagename$});
         foreach my $t (@existimage) {
@@ -194,7 +194,7 @@ sub remove_and_create_vm_images
     	# And create the new image with the image data
     	if (!$remove) {
     	    my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-            $main::this_app->info("Created new VM image ID: $newimage");
+            $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
     	    return $newimage;
     	}
 
@@ -208,7 +208,7 @@ sub remove_and_create_vn_leases
 {
     my ($self, $one, $leasesref, $remove) = @_;
     while ( my ($vnet, $leasedata) = each %{$leasesref}) {
-        $main::this_app->info ("Testing ONE vnet lease: $vnet ...");
+        $main::this_app->info ("Testing ONE vnet lease: $vnet");
 
         my @existlease = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@existlease) {

@@ -35,5 +35,4 @@ is($images{$imageb}{datastore}, "ceph.altaria", "datastore of image b is ceph.al
 like($images{$imagea}{image}, qr{^TARGET\s+=\s+"vda"\s*$}m, "image a contains TARGET vda");
 like($images{$imageb}{image}, qr{^TARGET\s+=\s+"vdb"\s*$}m, "image b contains TARGET vdb");
 
-
 done_testing();
