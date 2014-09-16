@@ -28,7 +28,7 @@ NCM::Component::pxelinux::pxeprint($cfg);
 
 my $fh = get_file($fp);
 
-# these tests are idnentical to the regular pxelinux_ks_bonding, but the ip is fetched from the br0 device
+# these tests are identical to the regular pxelinux_ks_bonding, but the ip is fetched from the br0 device
 
 # bonding opts
 like($fh, qr{^\s{4}append\s.*?\sbond=bond0:eth0,eth1:(opt1=val1,opt2=val2|opt2=val2,opt1=val1)(\s|$)}m, 'append bond');

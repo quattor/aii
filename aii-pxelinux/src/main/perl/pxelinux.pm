@@ -131,9 +131,11 @@ sub pxe_ks_static_network
     if ($net->{bridge}) {
         my $brdev = $net->{bridge}; 
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
-        # continue with bridge device
+        # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
-        # warning: $dev only for logging purposes. there is not bridge device in anaconda phase!
+        # warning: $dev is changed here to the bridge device to create correct log 
+        # messages in remainder of this method. as there is not bridge device 
+        # in anaconda phase, the new value of $dev is not an actual network device!
         $dev = $brdev;
     }
 
@@ -241,7 +243,7 @@ sub pxe_ks_append
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
             ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
-            $this_app->debug(1, "Using deprecated legacy behaviour. Please look into the configuration.");
+            $this_app->warning("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";  
         }
