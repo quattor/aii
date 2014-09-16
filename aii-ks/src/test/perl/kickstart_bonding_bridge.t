@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(kickstart_bonding);
+use Test::Quattor qw(kickstart_bonding_bridge);
 use NCM::Component::ks;
 use CAF::FileWriter;
 use CAF::Object;
@@ -21,7 +21,7 @@ my $fh = CAF::FileWriter->new("target/test/ks");
 select($fh);
 
 my $ks = NCM::Component::ks->new('ks');
-my $cfg = get_config_for_profile('kickstart_bonding');
+my $cfg = get_config_for_profile('kickstart_bonding_bridge');
 
 NCM::Component::ks::kscommands($cfg);
 

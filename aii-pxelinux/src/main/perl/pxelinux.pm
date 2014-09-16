@@ -121,8 +121,24 @@ sub pxe_ks_static_network
     my ($config, $dev) = @_;
 
     my $fqdn = get_fqdn($config);
+    
+    my $bootdev = $dev;
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+
+    # check for bridge: if $dev is a bridge interface, 
+    # continue with network settings on the bridge device
+    if ($net->{bridge}) {
+        my $brdev = $net->{bridge}; 
+        $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
+        # continue with network settings for the bridge device
+        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        # warning: $dev is changed here to the bridge device to create correct log 
+        # messages in remainder of this method. as there is not bridge device 
+        # in anaconda phase, the new value of $dev is not an actual network device!
+        $dev = $brdev;
+    }
+
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
@@ -144,13 +160,19 @@ sub pxe_ks_static_network
         return;                
     };
 
-    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$dev:none";
+    return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$bootdev:none";
 }
 
 
 # create the network bonding parameters (if any)
 sub pxe_network_bonding {
     my ($config, $tree, $dev) = @_;
+
+    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i && 
+        ! $config->elementExists("/system/network/interfaces/$dev")) {
+        $this_app->error("Invalid ksdevice $dev for bonding network configuration.");
+        return;
+    }
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
@@ -220,8 +242,8 @@ sub pxe_ks_append
         $keyprefix="inst.";
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
-            ! $cfg->hasElement("/system/network/interfaces/$t->{ksdevice}")) {
-            $this_app->debug("Using depreacted legacy behaviour. Please look into the configuration.");
+            ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
+            $this_app->warning("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";  
         }

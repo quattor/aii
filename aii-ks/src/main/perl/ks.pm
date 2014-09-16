@@ -254,6 +254,25 @@ sub ksnetwork
     
     my $fqdn = get_fqdn($config);
     push(@network, "--hostname=$fqdn");
+
+    my $ns = $config->getElement(NAMESERVER)->getValue;
+    push(@network, "--nameserver=$ns");
+
+    # from now on, only IP related settings
+    
+    # check for bridge: if $dev is a bridge interface, 
+    # continue with network settings on the bridge device
+    # (do this here, i.e. after --device is set)
+    if ($net->{bridge}) {
+        my $brdev = $net->{bridge}; 
+        $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
+        # continue with network settings for the bridge device
+        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        # warning: $dev is changed here to the bridge device to create correct log 
+        # messages in remainder of this method. as there is not bridge device 
+        # in anaconda phase, the new value of $dev is not an actual network device!
+        $dev = $brdev;
+    }
     
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
@@ -283,9 +302,6 @@ sub ksnetwork
 EOF
     };
     push(@network, $gw);
-
-    my $ns = $config->getElement(NAMESERVER)->getValue;
-    push(@network, "--nameserver=$ns");
 
     return @network;
 }

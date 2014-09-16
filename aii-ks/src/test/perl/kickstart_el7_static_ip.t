@@ -37,7 +37,7 @@ like($fh, qr{^bootloader\s--location=mbr}m, 'bootloader present');
 like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');
 like($fh, qr{^keyboard\s--xlayouts=us}m, 'keyboard present (with xlayouts)');
 like($fh, qr{^firewall\s--disabled }m, 'firewall disabled present');
-like($fh, qr{^network\s--bootproto=static\s--device=eth0\s--hostname=x.y\s--ip=1.2.3.0\s--netmask=255.255.255.0\s--gateway=1.2.3.4\s--nameserver=nm1}m, ' present');
+like($fh, qr{^network\s--bootproto=static\s--device=eth0\s--hostname=x.y\s--nameserver=nm1\s--ip=1.2.3.0\s--netmask=255.255.255.0\s--gateway=1.2.3.4}m, ' present');
 like($fh, qr{^zerombr$}m, 'zerombr present (no yes)');
 like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
 like($fh, qr{^sshpw\s--username=root\sveryverysecret\s--iscrypted}m, "sshd enabled");
