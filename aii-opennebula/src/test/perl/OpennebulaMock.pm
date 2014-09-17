@@ -83,20 +83,19 @@ sub mock_rpc {
         note("rpc method: ", $method);
 
         if ($samemethod && $sameparams && defined($data->{out})) {
-                if ($data->{out} =~ m/^\d+$/) {
+            if ($data->{out} =~ m/^\d+$/) {
                 note("is id ", $data->{out});
                 return $data->{out};
             } else {
                 note("is xml ", $data->{out});
                 return XMLin($data->{out}, forcearray => 1);
-                } 
+            } 
         }
     }
 };
 
 
 our $opennebula = new Test::MockModule('Net::OpenNebula');
-#$opennebula->mock( '_rpc',  \&mock_rpc_basic);
 $opennebula->mock( '_rpc',  \&mock_rpc);
 
 1;
