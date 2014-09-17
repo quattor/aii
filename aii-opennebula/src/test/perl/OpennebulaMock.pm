@@ -14,15 +14,15 @@ our @EXPORT = qw(rpc_history_reset rpc_history_ok diag_rpc_history);
 my @rpc_history = ();
 my @rpc_history_full = ();
 
-## DEBUG only (can't get the output in unittests otherwise)
-#sub dlog {
-#    my ($type, @args) = @_;
-#    diag("[".uc($type)."] ".join(" ", @args));
-#}
-#our $nco = new Test::MockModule('AII::opennebula');
-#foreach my $type ("error", "info", "verbose", "debug") {
-#    $nco->mock( $type, sub { shift; dlog($type, @_); } );
-#}
+# DEBUG only (can't get the output in unittests otherwise)
+sub dlog {
+    my ($type, @args) = @_;
+    diag("[".uc($type)."] ".join(" ", @args));
+}
+our $nco = new Test::MockModule('AII::opennebula');
+foreach my $type ("error", "info", "verbose", "debug") {
+    $nco->mock( $type, sub { shift; dlog($type, @_); } );
+}
 
 sub dump_rpc {
     return Dumper(\@rpc_history);
@@ -77,17 +77,17 @@ sub mock_rpc {
     while (my ($short, $data) = each %rpcdata::cmds) {
         my $sameparams = join(" _ ", @params_values) eq join(" _ ", @{$data->{params}});
         my $samemethod = $method eq $data->{method};
-        #diag("This is my shortname:", $short);
-        #diag("rpc internal params: ", join(" _ ", @params_values));
-        #diag("rpc dictionary params: ", join(" _ ", @{$data->{params}})); 
-        #diag("rpc method: ", $method);
+        note("This is my shortname:", $short);
+        note("rpc internal params: ", join(" _ ", @params_values));
+        note("rpc dictionary params: ", join(" _ ", @{$data->{params}})); 
+        note("rpc method: ", $method);
 
         if ($samemethod && $sameparams && defined($data->{out})) {
                 if ($data->{out} =~ m/^\d+$/) {
-                #diag("is id ", $data->{out});
+                note("is id ", $data->{out});
                 return $data->{out};
             } else {
-                #diag("is xml ", $data->{out});
+                note("is xml ", $data->{out});
                 return XMLin($data->{out}, forcearray => 1);
                 } 
         }

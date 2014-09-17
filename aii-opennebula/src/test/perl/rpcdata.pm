@@ -24,12 +24,10 @@ my $data;
 $cmds{rpc_create_newuser}{params} = ["lsimngar", "my_fancy_pass", "core"];
 $cmds{rpc_create_newuser}{method} = "one.user.allocate";
 $cmds{rpc_create_newuser}{out} = 3;
-$cmds{rpc_create_newuser}{error} = "sending request method one.user.allocate args [string, lsimngar], [string, my_fancy_pass], [string, core]: [UserAllocate] Error allocating a new user. NAME is already taken by USER 5. (code 8192)";
 
 $cmds{rpc_create_newuser2}{params} = ["stdweird", "another_fancy_pass", "core"];
 $cmds{rpc_create_newuser2}{method} = "one.user.allocate";
 $cmds{rpc_create_newuser2}{out} = 4;
-$cmds{rpc_create_newuser2}{error} = "sending request method one.user.allocate args [string, lsimngar], [string, my_fancy_pass], [string, core]: [UserAllocate] Error allocating a new user. NAME is already taken by USER 6. (code 8192)";
 
 $cmds{rpc_delete_user}{params} = [3];
 $cmds{rpc_delete_user}{method} = "one.user.delete";
@@ -83,16 +81,6 @@ EOF
 $cmds{rpc_create_newvnet}{params} = [$data, -1];
 $cmds{rpc_create_newvnet}{method} = "one.vn.allocate";
 $cmds{rpc_create_newvnet}{out} = 68;
-$cmds{rpc_create_newvnet}{error} = <<'EOF';
-sending request method one.vn.allocate args [string, BRIDGE = "br100"
-DNS = "10.141.3.250"
-GATEWAY = "10.141.3.250"
-NAME = "altaria.os"
-NETWORK_MASK = "255.255.0.0"
-TYPE = "FIXED"
-QUATTOR = 1
-], [int, -1]: [VirtualNetworkAllocate] Error allocating a new virtual network. NAME is already taken by NET 68. (code 8192)
-EOF
 
 $data = <<'EOF';
 BRIDGE = "br101"
@@ -106,30 +94,14 @@ EOF
 $cmds{rpc_create_newvnet2}{params} = [$data, -1];
 $cmds{rpc_create_newvnet2}{method} = "one.vn.allocate";
 $cmds{rpc_create_newvnet2}{out} = 88;
-$cmds{rpc_create_newvnet2}{error} = <<'EOF';
-sending request method one.vn.allocate args [string, BRIDGE = "br101"
-DNS = "10.141.3.250"
-GATEWAY = "10.141.3.250"
-NAME = "altaria.vsc"
-NETWORK_MASK = "255.255.0.0"
-TYPE = "FIXED"
-QUATTOR = 1
-], [int, -1]: [VirtualNetworkAllocate] Error allocating a new virtual network. NAME is already taken by NET 88. (code 8192)
-EOF
 
 $cmds{rpc_delete_vnet}{params} = [68];
 $cmds{rpc_delete_vnet}{method} = "one.vn.delete";
 $cmds{rpc_delete_vnet}{out} = 68;
-$cmds{rpc_delete_vnet}{error} = <<'EOF';
-sending request method one.vn.delete args [int, 68]: [VirtualNetworkDelete] Cannot delete virtual network. Can not remove a virtual network with leases in use (code 8192)
-EOF
 
 $cmds{rpc_delete_vnet2}{params} = [88];
 $cmds{rpc_delete_vnet2}{method} = "one.vn.delete";
 $cmds{rpc_delete_vnet2}{out} = 88;
-$cmds{rpc_delete_vnet2}{error} = <<'EOF';
-sending request method one.vn.delete args [int, 68]: [VirtualNetworkDelete] Cannot delete virtual network. Can not remove a virtual network with leases in use (code 8192)
-EOF
 
 $cmds{rpc_list_vnetspool}{params} = [-2, -1, -1];
 $cmds{rpc_list_vnetspool}{method} = "one.vnpool.info";
@@ -148,6 +120,13 @@ $cmds{rpc_list_vnet2}{method} = "one.vn.info";
 $cmds{rpc_list_vnet2}{out} = <<'EOF';
 <VNET><ID>88</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.vsc</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER></CLUSTER><TYPE>1</TYPE><BRIDGE>br101</BRIDGE><VLAN>0</VLAN><PHYDEV/><VLAN_ID/><GLOBAL_PREFIX/><SITE_PREFIX/><TOTAL_LEASES>1</TOTAL_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><LEASES><LEASE><MAC>02:00:0a:8d:08:1e</MAC><IP>10.141.8.30</IP><IP6_LINK>fe80::400:aff:fe8d:81e</IP6_LINK><USED>1</USED><VID>55</VID></LEASE></LEASES></VNET>
 EOF
+
+$cmds{rpc_list_vnet3}{params} = [0];
+$cmds{rpc_list_vnet3}{method} = "one.vn.info";
+$cmds{rpc_list_vnet3}{out} = <<'EOF';
+<VNET><ID>0</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.vsc</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER></CLUSTER><TYPE>1</TYPE><BRIDGE>br101</BRIDGE><VLAN>0</VLAN><PHYDEV/><VLAN_ID/><GLOBAL_PREFIX/><SITE_PREFIX/><TOTAL_LEASES>1</TOTAL_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><LEASES><LEASE><MAC>02:00:0a:8d:08:1e</MAC><IP>10.141.8.30</IP><IP6_LINK>fe80::400:aff:fe8d:81e</IP6_LINK><USED>1</USED><VID>55</VID></LEASE></LEASES></VNET>
+EOF
+
 
 $data = <<'EOF';
 
@@ -185,9 +164,6 @@ $cmds{rpc_create_newdatastore}{out} = 102;
 $cmds{rpc_delete_datastore}{params} = [102];
 $cmds{rpc_delete_datastore}{method} = "one.datastore.delete";
 $cmds{rpc_delete_datastore}{out} = 102;
-$cmds{rpc_delete_datastore}{error} = <<'EOF';
-sending request method one.datastore.delete args [int, 102]: [DatastoreDelete] Cannot delete datastore. Datastore 102 is not empty. (code 8192)
-EOF
 
 $cmds{rpc_list_datastorespool}{params} = [];
 $cmds{rpc_list_datastorespool}{method} = "one.datastorepool.info";
@@ -206,58 +182,34 @@ EOF
 $cmds{rpc_create_newhost}{params} = ["hyp101", "kvm", "kvm", "dummy", -1];
 $cmds{rpc_create_newhost}{method} = "one.host.allocate";
 $cmds{rpc_create_newhost}{out} = 1;
-$cmds{rpc_create_newhost}{error} = <<'EOF';
-sending request method one.host.allocate args [string, hyp101], [string, kvm], [string, kvm], [string, dummy], [int, -1]: [HostAllocate] Error allocating a new host. NAME is already taken by HOST 1. (code 8192)
-EOF
 
 $cmds{rpc_create_newhost2}{params} = ["hyp102", "kvm", "kvm", "dummy", -1];
 $cmds{rpc_create_newhost2}{method} = "one.host.allocate";
 $cmds{rpc_create_newhost2}{out} = 167;
-$cmds{rpc_create_newhost2}{error} = <<'EOF';
-sending request method one.host.allocate args [string, hyp102], [string, kvm], [string, kvm], [string, dummy], [int, -1]: [HostAllocate] Error allocating a new host. NAME is already taken by HOST 1. (code 8192)
-EOF
 
 $cmds{rpc_create_newhost3}{params} = ["hyp103", "kvm", "kvm", "dummy", -1];
 $cmds{rpc_create_newhost3}{method} = "one.host.allocate";
 $cmds{rpc_create_newhost3}{out} = 168;
-$cmds{rpc_create_newhost3}{error} = <<'EOF';
-sending request method one.host.allocate args [string, hyp103], [string, kvm], [string, kvm], [string, dummy], [int, -1]: [HostAllocate] Error allocating a new host. NAME is already taken by HOST 1. (code 8192)
-EOF
 
 $cmds{rpc_create_newhost4}{params} = ["hyp104", "kvm", "kvm", "dummy", -1];
 $cmds{rpc_create_newhost4}{method} = "one.host.allocate";
 $cmds{rpc_create_newhost4}{out} = 169;
-$cmds{rpc_create_newhost4}{error} = <<'EOF';
-sending request method one.host.allocate args [string, hyp104], [string, kvm], [string, kvm], [string, dummy], [int, -1]: [HostAllocate] Error allocating a new host. NAME is already taken by HOST 1. (code 8192)
-EOF
 
 $cmds{rpc_delete_host}{params} = [1];
 $cmds{rpc_delete_host}{method} = "one.host.delete";
 $cmds{rpc_delete_host}{out} = 1;
-$cmds{rpc_delete_host}{error} = <<'EOF';
-sending request method one.host.delete args [int, 1]: [HostDelete] Cannot delete host. Can not remove a host with running VMs (code 8192)
-EOF
 
 $cmds{rpc_delete_host2}{params} = [167];
 $cmds{rpc_delete_host2}{method} = "one.host.delete";
 $cmds{rpc_delete_host2}{out} = 167;
-$cmds{rpc_delete_host2}{error} = <<'EOF';
-sending request method one.host.delete args [int, 167]: [HostDelete] Cannot delete host. Can not remove a host with running VMs (code 8192)
-EOF
 
 $cmds{rpc_delete_host3}{params} = [168];
 $cmds{rpc_delete_host3}{method} = "one.host.delete";
 $cmds{rpc_delete_host3}{out} = 168;
-$cmds{rpc_delete_host3}{error} = <<'EOF';
-sending request method one.host.delete args [int, 168]: [HostDelete] Cannot delete host. Can not remove a host with running VMs (code 8192)
-EOF
 
 $cmds{rpc_delete_host4}{params} = [169];
 $cmds{rpc_delete_host4}{method} = "one.host.delete";
 $cmds{rpc_delete_host4}{out} = 169;
-$cmds{rpc_delete_host4}{error} = <<'EOF';
-sending request method one.host.delete args [int, 169]: [HostDelete] Cannot delete host. Can not remove a host with running VMs (code 8192)
-EOF
 
 $cmds{rpc_list_hostspool}{params} = [];
 $cmds{rpc_list_hostspool}{method} = "one.hostpool.info";
