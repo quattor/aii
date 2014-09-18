@@ -103,11 +103,10 @@ sub get_images
 	    my $imagename = $1 if ($image =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
 	    if ($datastore && $imagename) {
 	        $main::this_app->verbose("Detected imagename $imagename",
-                                    " with datastore $datastore");
+                                     " with datastore $datastore");
 	        $res{$imagename}{image} = $image;
 	        $res{$imagename}{datastore} = $datastore;
             $main::this_app->debug(3, "This is image template $imagename: $image");
-
 	    } else {
 	        # Shouldn't happen; fields are in TT
 	        $main::this_app->error("No datastore and/or imagename for image data $image.");
@@ -135,7 +134,6 @@ sub get_vnetleases
             $res{$network}{lease} = $lease;
             $res{$network}{network} = $network;
             $main::this_app->debug(3, "This is vnet lease template for $network: $lease");
-
         } else {
             # No leases found for this VM
             $main::this_app->error("No leases and/or network info $lease.");
@@ -190,17 +188,14 @@ sub remove_and_create_vm_images
                 $main::this_app->info("No QUATTOR flag found for VM image: $t->name");
             }
         }
-
     	# And create the new image with the image data
     	if (!$remove) {
     	    my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
             $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
     	    return $newimage;
     	}
-
     }
     return undef;
-
 }
 
 
@@ -217,11 +212,9 @@ sub remove_and_create_vn_leases
             } else {
                 $t->addleases($leasedata->{lease});
             };
-
         }
     }
     return undef;
-
 }
 
 
@@ -258,7 +251,6 @@ sub remove_and_create_vm_template
         } else {
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
-
     }
     
     if ($createvmtemplate && !$remove) {
@@ -266,7 +258,6 @@ sub remove_and_create_vm_template
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
         return $templ;
     }
-    
 }
 
 # Based on Quattor template this function:
@@ -316,21 +307,18 @@ sub install
         my @myimages = $one->get_images(qr{^${fqdn}\_vd[a-z]$});
         $opts{max_iter} = MAXITER;
         foreach my $t (@myimages) {
-                # If something wrong happens set a timeout
-                my $imagestate = $t->wait_for_state("READY", %opts);
+            # If something wrong happens set a timeout
+            my $imagestate = $t->wait_for_state("READY", %opts);
 
-                if ($imagestate ne "READY") {
-                    $main::this_app->error("TIMEOUT! Image status: ${imagestate} is not ready yet...");
-                } else {
-                    $main::this_app->info("VM Image status: ${imagestate} ,OK");
-                };
-
+            if ($imagestate ne "READY") {
+                $main::this_app->error("TIMEOUT! Image status: ${imagestate} is not ready yet...");
+            } else {
+                $main::this_app->info("VM Image status: ${imagestate} ,OK");
+            };
         }
-
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
         $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
     }
-    
 }
 
 # Performs Quattor post_reboot
@@ -386,8 +374,6 @@ sub remove
     if ($vmtemplatetxt) {
         $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $remove);
     }
-
 }
-
 
 1;
