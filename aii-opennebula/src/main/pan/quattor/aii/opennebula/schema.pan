@@ -41,7 +41,7 @@ function validate_aii_opennebula_hooks = {
     return(true);
 };
 
-type structure_aii_freeipa = {
+type structure_aii_opennebula = {
 	"module" : string with SELF == OPENNEBULA_AII_MODULE_NAME
 
     "image" : boolean = false # force create image [implies on remove remove image (also stop/delete vm) ]
