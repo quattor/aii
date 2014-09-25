@@ -130,7 +130,7 @@ EOF
 
 $data = <<'EOF';
 
-LEASES=[IP=10.141.8.30, MAC=AA:00:00:80:01:00]
+LEASES = [IP=10.141.8.30, MAC=AA:00:00:80:01:00]
 EOF
 $cmds{rpc_delete_newvnet_lease}{params} = [68, $data];
 $cmds{rpc_delete_newvnet_lease}{method} = "one.vn.rmleases";
