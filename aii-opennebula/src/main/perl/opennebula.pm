@@ -236,7 +236,7 @@ sub remove_and_create_vm_template
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
     foreach my $t (@existtmpls) {
-        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($remove)) {
+        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($createvmtemplate)) {
             $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
             $t->delete();
         } else {
@@ -360,7 +360,7 @@ sub remove
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 0, $vmtemplatetxt, $remove);
+        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, $remove);
     }
 }
 
