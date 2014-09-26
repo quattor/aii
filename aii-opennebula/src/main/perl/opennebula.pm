@@ -334,12 +334,10 @@ sub remove
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
-    my $forcecreateimage = $tree->{image};
-    $main::this_app->info("Remove image flag is set to: $forcecreateimage");
-    my $createvmtemplate = $tree->{template};
-    $main::this_app->info("Remove VM template flag is set to: $createvmtemplate");
-    my $remove = $tree->{remove};
-    $main::this_app->info("Remove VM resources flag is set to: $remove");
+    my $rmimage = $tree->{image};
+    $main::this_app->info("Remove image flag is set to: $rmimage");
+    my $rmvmtemplate = $tree->{template};
+    $main::this_app->info("Remove VM template flag is set to: $rmvmtemplate");
     my $fqdn = $self->get_fqdn($config);
 
     my $one = make_one();
@@ -352,15 +350,17 @@ sub remove
 
     my %images = $self->get_images($config);
     if (%images) {
-        $self->remove_and_create_vm_images($one, $forcecreateimage, \%images, $remove);
+        $self->remove_and_create_vm_images($one, 1, \%images, $rmimage);
     }
 
     my %leases = $self->get_vnetleases($config);
-    $self->remove_and_create_vn_leases($one, \%leases, $remove);
+    if (%leases) {
+    $self->remove_and_create_vn_leases($one, \%leases, 1);
+    }
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, $remove);
+        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, $rmvmtemplate);
     }
 }
 
