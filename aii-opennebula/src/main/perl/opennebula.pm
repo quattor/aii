@@ -200,13 +200,14 @@ sub remove_and_create_vn_leases
         my @existlease = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@existlease) {
             if ($remove) {
+                $main::this_app->info("Removing from $vnet lease: $leasedata->{lease}");
                 $t->rmleases($leasedata->{lease});
             } else {
+                $main::this_app->info("Creating new $vnet lease: $leasedata->{lease}");
                 $t->addleases($leasedata->{lease});
             };
         }
     }
-    return undef;
 }
 
 sub stop_and_remove_one_vms
