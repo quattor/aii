@@ -61,19 +61,16 @@ sub make_one
     return $one;
 }
 
-
 sub process_template 
 {
     my ($self, $config, $tt_name) = @_;
     my $res;
-    
     my $tt_rel = "metaconfig/opennebula/$tt_name.tt";
     my $tree = $config->getElement('/')->getTree();
     my $tpl = Template->new(INCLUDE_PATH => TEMPLATEPATH);
     if (! $tpl->process($tt_rel, $tree, \$res)) {
-	    $main::this_app->error("TT processing of $tt_rel failed:", 
-			                  $tpl->error());
-	    return;
+        $main::this_app->error("TT processing of $tt_rel failed: ", $tpl->error());
+        return;
     }
     return $res;
 }
@@ -87,7 +84,6 @@ sub get_fqdn
     return "${hostname}.${domainname}";
 }
 
-
 # It gets the image template from tt file
 # and gathers image names format: <fqdn>_<vdx> 
 # and datastore names to store the new images 
@@ -100,19 +96,18 @@ sub get_images
     my @tmp = split(qr{^DATASTORE\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_images);
 
     while (my ($image,$datastore) = splice(@tmp, 0, 2)) {
-	    my $imagename = $1 if ($image =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
-	    if ($datastore && $imagename) {
-	        $main::this_app->verbose("Detected imagename $imagename",
-                                     " with datastore $datastore");
-	        $res{$imagename}{image} = $image;
-	        $res{$imagename}{datastore} = $datastore;
+        my $imagename = $1 if ($image =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
+        if ($datastore && $imagename) {
+            $main::this_app->verbose("Detected imagename $imagename",
+                                    " with datastore $datastore");
+            $res{$imagename}{image} = $image;
+            $res{$imagename}{datastore} = $datastore;
             $main::this_app->debug(3, "This is image template $imagename: $image");
-	    } else {
-	        # Shouldn't happen; fields are in TT
-	        $main::this_app->error("No datastore and/or imagename for image data $image.");
-	    };
+        } else {
+            # Shouldn't happen; fields are in TT
+            $main::this_app->error("No datastore and/or imagename for image data $image.");
+        };
     }
-
     return %res;
 }
 
@@ -163,13 +158,11 @@ sub get_vmtemplate
     return $vm_template
 }
 
-
 sub new
 {
     my $class = shift;
     return bless {}, $class;
 }
-
 
 sub remove_and_create_vm_images
 {
@@ -180,7 +173,7 @@ sub remove_and_create_vm_images
 
         my @existimage = $one->get_images(qr{^$imagename$});
         foreach my $t (@existimage) {
-             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+            if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
                 # It's safe, we can remove the image
                 $main::this_app->info("Removing VM image: $t->name");
                 $t->delete();
@@ -190,14 +183,13 @@ sub remove_and_create_vm_images
         }
     	# And create the new image with the image data
     	if (!$remove) {
-    	    my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
+            my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
             $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
     	    return $newimage;
     	}
     }
     return undef;
 }
-
 
 sub remove_and_create_vn_leases
 {
@@ -217,7 +209,6 @@ sub remove_and_create_vn_leases
     return undef;
 }
 
-
 sub stop_and_remove_one_vms
 {
     my ($self, $one, $fqdn) = @_;
@@ -235,7 +226,6 @@ sub stop_and_remove_one_vms
         }
     }
 }
-
 
 sub remove_and_create_vm_template
 {
@@ -332,7 +322,6 @@ sub post_reboot
 yum -c /tmp/aii/yum/yum.conf -y install acpid
 service acpid start
 EOF
-
 }
 
 # Performs VM remove wich depending on the booleans
