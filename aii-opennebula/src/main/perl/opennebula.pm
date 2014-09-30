@@ -214,9 +214,9 @@ sub stop_and_remove_one_vms
 {
     my ($self, $one, $fqdn) = @_;
     
-    my @runningvms = $one->get_vms(qr{^$fqdn$});
+    my @runningvms = $one->get_vms(qr{^$fqdn});
 
-    # check if the running $fqdn has QUATTOR = 1 
+    # check if the running $fqdn has QUATTOR = 1
     # if not don't touch it!!
     foreach my $t (@runningvms) {
         if ($t->{extended_data}->{USER_TEMPLATE}->[0]->{QUATTOR}->[0]) {
