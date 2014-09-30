@@ -1,13 +1,10 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.quattor.aii</groupId>
-  <artifactId>aii-freeipa</artifactId>
+  <artifactId>aii-opennebula</artifactId>
   <packaging>pom</packaging>
   <version>1.0.0-SNAPSHOT</version>
-  <name>FreeIPA hook for AII</name>
-  <properties>
-    <pyversion.short>2.6</pyversion.short>
-  </properties>
+  <name>Opennebula hook for AII</name>
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
@@ -28,8 +25,8 @@
   </scm>
   <developers>
     <developer>
-      <name>Luis Fernando Muñoz Mejías</name>
-      <email>Luis.Munoz@UGent.be</email>
+      <name>Alvaro Simon Garcia</name>
+      <email>Alvaro.SimonGarcia@UGent.be</email>
     </developer>
     <developer>
       <name>Stijn De Weirdt</name>
@@ -83,25 +80,6 @@
                       <directory>src/main/perl</directory>
                       <includes>
                         <include>*.pod</include>
-                      </includes>
-                      <filtering>true</filtering>
-                    </resource>
-                  </resources>
-                </configuration>
-              </execution>
-              <execution>
-                <id>filter-python-sources</id>
-                <phase>process-sources</phase>
-                <goals>
-                  <goal>copy-resources</goal>
-                </goals>
-                <configuration combine.self="override">
-                  <outputDirectory>${project.build.directory}/python</outputDirectory>
-                  <resources>
-                    <resource>
-                      <directory>src/main/python</directory>
-                      <includes>
-                        <include>*.py</include>
                       </includes>
                       <filtering>true</filtering>
                     </resource>
@@ -175,12 +153,9 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
-            <summary>FreeIPA hook for AII</summary>
+            <summary>Opennebula hook for AII</summary>
             <name>${project.artifactId}</name>
             <requires>
-              <require>perl-CAF</require>
-              <require>ipa-python</require>
-              <require>ipa-admintools</require>
             </requires>
             <mappings>
               <mapping>
@@ -227,34 +202,7 @@
                 </sources>
                 <recurseDirectories>true</recurseDirectories>
               </mapping>
-              <mapping>
-                <directory>/usr/lib/python${pyversion.short}/site-packages/ipalib/plugins</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
-                <configuration>false</configuration>
-                <documentation>true</documentation>
-                <directoryIncluded>false</directoryIncluded>
-                <sources>
-                  <source>
-                    <location>${project.build.directory}/python</location>
-                  </source>
-                </sources>
-                <recurseDirectories>true</recurseDirectories>
-              </mapping>
             </mappings>
-            <installScriptlet>
-                <script>
-#
-# This is a nasty hack to turn off the /usr/lib/rpm/brp-python-bytecompile
-# script. This script tries to precompile the python code, but causes the
-# rpm packaging to fail because the *.pyc and *.pyo files are not listed in
-# the list of files created by maven.
-#
-
-export RPM_BUILD_ROOT=
-                </script>
-            </installScriptlet>
           </configuration>
         </plugin>
       </plugins>
