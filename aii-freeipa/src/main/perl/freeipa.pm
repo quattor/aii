@@ -112,6 +112,16 @@ yum -c /tmp/aii/yum/yum.conf -y install ipa-client
     --realm=$tree->{realm} \\
     --server=$tree->{server} \\
     || fail "ipa-client-install failed"
+
+mkdir -p /etc/ipa/quattor/certs
+certutil -L -d /etc/pki/nssdb -a -n "IPA CA" > /etc/ipa/quattor/certs/ca.pem
+certutil -L -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname" > /etc/ipa/quattor/certs/hostcert.pem
+certutil -K -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname"
+pk12util -o keys.p12 -n "IPA Machine Certificate - $hostname.$domainname" -d /etc/pki/nssdb -W ""
+openssl pkcs12 -in keys.p12 -out /etc/ipa/quattor/certs/hostkey.pem -nodes -password pass:''
+chmod 600 /etc/ipa/quattor/certs/hostkey.pem
+rm -f keys.p12
+
 EOF
 
 }
