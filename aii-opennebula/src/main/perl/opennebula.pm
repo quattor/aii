@@ -111,27 +111,27 @@ sub get_images
     return %res;
 }
 
-# It gets the vnet leases from tt file
+# It gets the network ARs (address range) from tt file
 # and gathers vnet names and IPs/MAC addresses
-sub get_vnetleases
+sub get_vnetars
 {
     my ($self, $config) = @_;
-    my $all_leases = $self->process_template($config, "vnetleases");
+    my $all_ars = $self->process_template($config, "aii_network_ar");
     my %res;
 
-    my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_leases);
+    my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_ars);
 
-    while (my ($lease,$network) = splice(@tmp, 0 ,2)) {
+    while (my ($ar,$network) = splice(@tmp, 0 ,2)) {
 
-        if ($network && $lease) {
-            $main::this_app->verbose("Detected vnet lease: $lease",
+        if ($network && $ar) {
+            $main::this_app->verbose("Detected network AR: $ar",
                                      " within network $network");
-            $res{$network}{lease} = $lease;
+            $res{$network}{ar} = $ar;
             $res{$network}{network} = $network;
-            $main::this_app->debug(3, "This is vnet lease template for $network: $lease");
+            $main::this_app->debug(3, "This is the network AR template for $network: $ar");
         } else {
-            # No leases found for this VM
-            $main::this_app->error("No leases and/or network info $lease.");
+            # No ars found for this VM
+            $main::this_app->error("No network ARs and/or network info $ar.");
         };
     }
     return %res;
@@ -188,25 +188,48 @@ sub remove_and_create_vm_images
     	    return $newimage;
     	}
     }
-    return undef;
 }
 
-sub remove_and_create_vn_leases
+# Since ONE 4.8 we use network address ranges
+# instead of leases. This function removes/creates ARs
+sub remove_and_create_vn_ars
 {
-    my ($self, $one, $leasesref, $remove) = @_;
-    while ( my ($vnet, $leasedata) = each %{$leasesref}) {
-        $main::this_app->info ("Testing ONE vnet lease: $vnet");
+    my ($self, $one, $arsref, $remove) = @_;
+    while ( my ($vnet, $ardata) = each %{$arsref}) {
+        $main::this_app->info ("Testing ONE vnet network AR: $vnet");
 
-        my @existlease = $one->get_vnets(qr{^$vnet$});
-        foreach my $t (@existlease) {
-            if ($remove) {
-                $main::this_app->info("Removing from $vnet lease: $leasedata->{lease}");
-                $t->rmleases($leasedata->{lease});
-            } else {
-                $main::this_app->info("Creating new $vnet lease: $leasedata->{lease}");
-                $t->addleases($leasedata->{lease});
-            };
-        }
+        my %ar_opts = ('template' => $ardata->{ar});
+        my @exisvnet = $one->get_vnets(qr{^$vnet$});
+        foreach my $t (@exisvnet) {
+            my $arinfo = $t->get_ar(%ar_opts);
+            if ($remove and $arinfo) {
+                # Detect Quattor and id first
+                my $arid = $self->detect_vn_ar_quattor($arinfo);
+                if ($arid) {
+                    $main::this_app->info("Removing from $vnet AR: ", $ardata->{ar});
+                    $t->rmar($arid);
+                }
+            } elsif (!$remove and $arinfo) {
+                # Update the AR info
+                $main::this_app->info("Updating $vnet AR info: ", $ardata->{ar});
+                $t->updatear($ardata->{ar});
+            } else { 
+                # Create a new network AR
+                $main::this_app->info("Creating new $vnet AR: ", $ardata->{ar});
+                $t->addar($ardata->{ar});
+            }
+       }
+    }
+}
+
+sub detect_vn_ar_quattor
+{
+    my ($self, $ar)  =@_;
+    if ($ar->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
+            $main::this_app->info("QUATTOR flag found within AR",$ar);
+            return $ar->{extended_data}->{TEMPLATE}->[0]->{AR_ID}->[0];
+    } else {
+            $main::this_app->info("QUATTOR flag not found within AR",$ar);
     }
 }
 
@@ -254,7 +277,7 @@ sub remove_and_create_vm_template
 # Based on Quattor template this function:
 # creates new VM templates
 # creates new VM image for each $harddisks
-# creates new vnet leases if required
+# creates new vnet ars if required
 # instantiates the new VM
 sub install
 {
@@ -285,8 +308,8 @@ sub install
     my %images = $self->get_images($config);
     $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
 
-    my %leases = $self->get_vnetleases($config);
-    $self->remove_and_create_vn_leases($one, \%leases);
+    my %ars = $self->get_vnetars($config);
+    $self->remove_and_create_vn_ars($one, \%ars);
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
@@ -329,7 +352,7 @@ EOF
 # Stops running VM
 # Removes VM template
 # Removes VM image for each $harddisks
-# Removes vnet leases
+# Removes vnet ars
 sub remove
 {
     my ($self, $config, $path) = @_;
@@ -353,9 +376,9 @@ sub remove
         $self->remove_and_create_vm_images($one, 1, \%images, $rmimage);
     }
 
-    my %leases = $self->get_vnetleases($config);
-    if (%leases) {
-    $self->remove_and_create_vn_leases($one, \%leases, 1);
+    my %ars = $self->get_vnetars($config);
+    if (%ars) {
+    $self->remove_and_create_vn_ars($one, \%ars, 1);
     }
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
