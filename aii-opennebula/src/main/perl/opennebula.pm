@@ -190,7 +190,7 @@ sub remove_and_create_vm_images
     }
 }
 
-# Since ONE 4.8 we use network address ranges
+# Since ONE 4.8 we use network address ranges (ARs)
 # instead of leases. This function removes/creates ARs
 sub remove_and_create_vn_ars
 {
