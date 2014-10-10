@@ -202,7 +202,6 @@ sub remove_and_create_vn_ars
         my @exisvnet = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@exisvnet) {
             my $arinfo = $t->get_ar(%ar_opts);
-            #$main::this_app->info("Here is the AR data from $vnet: ", Dumper($arinfo));
             if ($remove and $arinfo) {
                 # Detect Quattor and id first
                 my $arid = $self->detect_vn_ar_quattor($arinfo);
@@ -210,7 +209,7 @@ sub remove_and_create_vn_ars
                     $main::this_app->info("Removing from $vnet AR: ", $ardata->{ar});
                     $t->rmar($arid);
                 } else {
-                    $main::this_app->error("Quattor flag not found within AR: $arinfo. ", 
+                    $main::this_app->error("Quattor flag not found within AR. ", 
                                         "ONE AII is not allowed to remove this AR.");
                 }
             } elsif (!$remove and $arinfo) {
@@ -229,11 +228,13 @@ sub remove_and_create_vn_ars
 sub detect_vn_ar_quattor
 {
     my ($self, $ar)  =@_;
+    my $arid = $ar->{AR_ID}->[0];
+
     if ($ar->{QUATTOR}->[0]) {
-            $main::this_app->info("QUATTOR flag found within AR, id: ", $ar->{AR_ID}->[0]);
-            return $ar->{AR_ID}->[0];
+            $main::this_app->info("QUATTOR flag found within AR, id: ", $arid);
+            return $arid;
     } else {
-            $main::this_app->info("QUATTOR flag not found within AR, id: ", $ar->{AR_ID}->[0]);
+            $main::this_app->info("QUATTOR flag not found within AR, id: ", $arid);
             return;
     }
 }
