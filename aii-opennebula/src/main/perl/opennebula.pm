@@ -195,6 +195,7 @@ sub remove_and_create_vm_images
 sub remove_and_create_vn_ars
 {
     my ($self, $one, $arsref, $remove) = @_;
+    my $arid;
     while ( my ($vnet, $ardata) = each %{$arsref}) {
         $main::this_app->info ("Testing ONE vnet network AR: $vnet");
 
@@ -204,22 +205,25 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove and $arinfo) {
                 # Detect Quattor and id first
-                my $arid = $self->detect_vn_ar_quattor($arinfo);
+                $arid = $self->detect_vn_ar_quattor($arinfo);
                 if (defined($arid)) {
-                    $main::this_app->info("Removing from $vnet AR: ", $ardata->{ar});
+                    $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
                     $t->rmar($arid);
+                    $main::this_app->info("Removed from $vnet AR id: ", $arid);
                 } else {
                     $main::this_app->error("Quattor flag not found within AR. ", 
                                         "ONE AII is not allowed to remove this AR.");
                 }
             } elsif (!$remove and $arinfo) {
                 # Update the AR info
-                $main::this_app->info("Updating $vnet AR info: ", $ardata->{ar});
-                $t->updatear($ardata->{ar});
+                $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
+                $arid = $t->updatear($ardata->{ar});
+                $main::this_app->info("Updated $vnet AR id: ", $arid);
             } else { 
                 # Create a new network AR
-                $main::this_app->info("Creating new $vnet AR: ", $ardata->{ar});
-                $t->addar($ardata->{ar});
+                $main::this_app->debug(1, "New AR template in $vnet: ", $ardata->{ar});
+                $arid = $t->addar($ardata->{ar});
+                $main::this_app->info("Created new $vnet AR id: ", $arid);
             }
        }
     }
@@ -242,8 +246,9 @@ sub detect_vn_ar_quattor
 sub stop_and_remove_one_vms
 {
     my ($self, $one, $fqdn) = @_;
-    
-    my @runningvms = $one->get_vms(qr{^$fqdn});
+    # Quattor only stops and removes fqdn names
+    # running VM names such: fqdn-<ID> are not removed
+    my @runningvms = $one->get_vms(qr{^$fqdn$});
 
     # check if the running $fqdn has QUATTOR = 1
     # if not don't touch it!!
