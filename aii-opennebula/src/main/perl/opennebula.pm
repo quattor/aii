@@ -175,10 +175,10 @@ sub remove_and_create_vm_images
         foreach my $t (@existimage) {
             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
                 # It's safe, we can remove the image
-                $main::this_app->info("Removing VM image: $t->name");
+                $main::this_app->info("Removing VM image: $imagename");
                 $t->delete();
             } else {
-                $main::this_app->info("No QUATTOR flag found for VM image: $t->name");
+                $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
             }
         }
     	# And create the new image with the image data
