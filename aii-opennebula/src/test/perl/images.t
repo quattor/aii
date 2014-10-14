@@ -14,6 +14,8 @@ use Test::Quattor qw(images);
 use OpennebulaMock;
 
 my $cfg = get_config_for_profile('images');
+my $opennebulaaii = new Test::MockModule('AII::opennebula');
+$opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
@@ -34,5 +36,8 @@ is($images{$imageb}{datastore}, "ceph.altaria", "datastore of image b is ceph.al
 
 like($images{$imagea}{image}, qr{^TARGET\s+=\s+"vda"\s*$}m, "image a contains TARGET vda");
 like($images{$imageb}{image}, qr{^TARGET\s+=\s+"vdb"\s*$}m, "image b contains TARGET vdb");
+
+my $one = $aii->make_one();
+$aii->remove_and_create_vm_images($one, 1, \%images);
 
 done_testing();
