@@ -202,8 +202,6 @@ sub remove_and_create_vn_ars
         my @exisvnet = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@exisvnet) {
             my $arinfo = $t->get_ar(%ar_opts);
-            $main::this_app->info("HERE IS WHAT I WANT FROM $vnet: ", $ardata->{ar});
-            $main::this_app->info("HERE IS WHAT I GET: ", Dumper($arinfo));
             if ($remove and $arinfo) {
                 # Detect Quattor and id first
                 $arid = $self->detect_vn_ar_quattor($arinfo);
