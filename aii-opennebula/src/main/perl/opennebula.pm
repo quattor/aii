@@ -185,7 +185,6 @@ sub remove_and_create_vm_images
         if (!$remove) {
             my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
             $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
-    	    return $newimage;
     	}
     }
 }
