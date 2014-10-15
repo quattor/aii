@@ -38,6 +38,9 @@ like($images{$imagea}{image}, qr{^TARGET\s+=\s+"vda"\s*$}m, "image a contains TA
 like($images{$imageb}{image}, qr{^TARGET\s+=\s+"vdb"\s*$}m, "image b contains TARGET vdb");
 
 my $one = $aii->make_one();
+# Check image creation
 $aii->remove_and_create_vm_images($one, 1, \%images);
+# Check image remove
+$aii->remove_and_create_vm_images($one, 1, \%images, 1);
 
 done_testing();

@@ -167,7 +167,7 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-
+    my (@rimages, @nimages);
     while ( my ($imagename, $imagedata) = each %{$imagesref}) {
         $main::this_app->info ("Checking ONE image: $imagename");
 
@@ -176,7 +176,12 @@ sub remove_and_create_vm_images
             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
                 # It's safe, we can remove the image
                 $main::this_app->info("Removing VM image: $imagename");
-                $t->delete();
+                my $id = $t->delete();
+                if ($id) {
+                    push(@rimages, $imagename);
+                } else {
+                    $main::this_app->error("Error removing VM image: $imagename");
+                }
             } else {
                 $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
             }
@@ -184,8 +189,19 @@ sub remove_and_create_vm_images
     	# And create the new image with the image data
         if (!$remove) {
             my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-            $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
+            if ($newimage) {
+                $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
+                push(@nimages, $imagename);
+            } else {
+                $main::this_app->error("Error creating VM image: $imagename");
+            }
     	}
+    }
+    if (scalar @rimages > 0) {
+        $self->info("It were removed these images: ", join(',', @rimages));
+    }
+    if (scalar @nimages > 0) {
+        $self->info("It were created these images: ", join(',', @nimages));
     }
 }
 
