@@ -167,10 +167,10 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-    my (@rimages, @nimages);
+    my (@rimages, @nimages, @qimages);
     while ( my ($imagename, $imagedata) = each %{$imagesref}) {
         $main::this_app->info ("Checking ONE image: $imagename");
-
+        push(@qimages, $imagename);
         my @existimage = $one->get_images(qr{^$imagename$});
         foreach my $t (@existimage) {
             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
@@ -180,7 +180,7 @@ sub remove_and_create_vm_images
                 if ($id) {
                     push(@rimages, $imagename);
                 } else {
-                    $main::this_app->error("Error removing VM image: $imagename");
+                    $main::this_app->error("VM image: $imagename was not removed");
                 }
             } else {
                 $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
@@ -193,16 +193,39 @@ sub remove_and_create_vm_images
                 $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
                 push(@nimages, $imagename);
             } else {
-                $main::this_app->error("Error creating VM image: $imagename");
+                $main::this_app->error("VM image: $imagename is not available");
             }
     	}
     }
-    if (scalar @rimages > 0) {
-        $self->info("It were removed these images: ", join(',', @rimages));
+
+    if (!$remove) {
+        my @diff = $self->check_vm_images_list(\@nimages, \@qimages);
+        if (scalar @diff >0) {
+            $main::this_app->error("Creating these VM images: ", join(',', @diff));
+        }
+    } else {
+        my @diff = $self->check_vm_images_list(\@rimages, \@qimages);
+        if (scalar @diff >0) {
+            $main::this_app->error("Removing these VM images: ", join(',', @diff));
+        }
     }
-    if (scalar @nimages > 0) {
-        $self->info("It were created these images: ", join(',', @nimages));
+}
+
+sub check_vm_images_list
+{
+    my ($self, $myimages, $qimages) = @_;
+    my (%count, $item, @diff);
+
+    foreach $item (@{$qimages}, @{$myimages}) { 
+        $count{$item}++;
     }
+
+    foreach $item (keys %count) {
+        if ($count{$item} != 2) {
+            push @diff, $item;
+        }
+    }
+    return @diff;
 }
 
 # Since ONE 4.8 we use network address ranges (ARs)
