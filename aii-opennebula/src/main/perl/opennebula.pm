@@ -200,12 +200,12 @@ sub remove_and_create_vm_images
 
     if (!$remove) {
         my @diff = $self->check_vm_images_list(\@nimages, \@qimages);
-        if (scalar @diff >0) {
+        if (@diff) {
             $main::this_app->error("Creating these VM images: ", join(',', @diff));
         }
     } else {
         my @diff = $self->check_vm_images_list(\@rimages, \@qimages);
-        if (scalar @diff >0) {
+        if (@diff) {
             $main::this_app->error("Removing these VM images: ", join(',', @diff));
         }
     }
