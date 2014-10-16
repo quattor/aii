@@ -6,6 +6,7 @@ package AII::opennebula;
 
 use strict;
 use warnings;
+use version;
 use CAF::Process;
 use Template;
 
@@ -18,6 +19,7 @@ use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
+use constant ONEVERSION => "4.8.0";
 
 # a config file in .ini style with minmal 
 #   [rpc]
@@ -327,6 +329,19 @@ sub remove_and_create_vm_template
     }
 }
 
+sub check_opennebula_version
+{
+    my ($self, $one) = @_;
+
+    my $oneversion = $one->version();
+    $main::this_app->info("Detected OpenNebula version: $oneversion");
+
+    if (version->parse($oneversion) < version->parse(ONEVERSION)) {
+        $main::this_app->error("OpenNebula AII requires ONE v".ONEVERSION." or higher.");
+        exit;
+    }
+}
+
 # Based on Quattor template this function:
 # creates new VM templates
 # creates new VM image for each $harddisks
@@ -355,6 +370,7 @@ sub install
         error("No ONE instance returned");
         return 0;
     }
+    $self->check_opennebula_version($one);
 
     $self->stop_and_remove_one_vms($one, $fqdn);
 
@@ -421,6 +437,7 @@ sub remove
         error("No ONE instance returned");
         return 0;
     }
+    $self->check_opennebula_version($one);
 
     $self->stop_and_remove_one_vms($one,$fqdn);
 
