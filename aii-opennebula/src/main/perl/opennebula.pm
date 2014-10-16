@@ -211,6 +211,9 @@ sub remove_and_create_vm_images
     }
 }
 
+# This function returns an array
+# with the difference between two image lists
+# to detect if the images were correctly created/removed
 sub check_vm_images_list
 {
     my ($self, $myimages, $qimages) = @_;
@@ -267,16 +270,17 @@ sub remove_and_create_vn_ars
     }
 }
 
+# Detects Quattor flag within AR template
 sub detect_vn_ar_quattor
 {
     my ($self, $ar)  =@_;
     my $arid = $ar->{AR_ID}->[0];
 
     if ($ar->{QUATTOR}->[0]) {
-            $main::this_app->info("QUATTOR flag found within AR, id: ", $arid);
+            $main::this_app->info("QUATTOR flag found within AR, id: $arid");
             return $arid;
     } else {
-            $main::this_app->info("QUATTOR flag not found within AR, id: ", $arid);
+            $main::this_app->info("QUATTOR flag not found within AR, id: $arid");
             return;
     }
 }

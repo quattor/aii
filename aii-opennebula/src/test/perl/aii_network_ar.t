@@ -32,8 +32,4 @@ ok(exists($networks{$networkb}), "vnet b exists");
 is($networks{$networka}{network}, "altaria.os", "vneta name is altaria.os");
 is($networks{$networkb}{network}, "altaria.vsc", "vnetb name is altaria.vsc");
 
-#like($networks{$networka}{lease}, qr{^LEASES\s+=\s+\[IP=.+,\s+MAC=.+\]$}m, "vnet a contains LEASES info");
-#like($networks{$networkb}{lease}, qr{^LEASES\s+=\s+\[IP=.+,\s+MAC=.+\]$}m, "vnet b contains LEASES info");
-
-
 done_testing();
