@@ -338,8 +338,9 @@ sub check_opennebula_version
 
     if (version->parse($oneversion) < version->parse(ONEVERSION)) {
         $main::this_app->error("OpenNebula AII requires ONE v".ONEVERSION." or higher.");
-        exit;
+        return 1;
     }
+    return;
 }
 
 # Based on Quattor template this function:
@@ -370,7 +371,10 @@ sub install
         error("No ONE instance returned");
         return 0;
     }
-    $self->check_opennebula_version($one);
+
+    if ($self->check_opennebula_version($one)){
+        return 0;
+    }
 
     $self->stop_and_remove_one_vms($one, $fqdn);
 
@@ -437,7 +441,10 @@ sub remove
         error("No ONE instance returned");
         return 0;
     }
-    $self->check_opennebula_version($one);
+
+    if ($self->check_opennebula_version($one)){
+        return 0;
+    }
 
     $self->stop_and_remove_one_vms($one,$fqdn);
 
