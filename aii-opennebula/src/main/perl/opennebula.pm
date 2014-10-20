@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use version;
 use CAF::Process;
+use Set::Scalar;
 use Template;
 
 use Config::Tiny;
@@ -201,14 +202,14 @@ sub remove_and_create_vm_images
     }
 
     if (!$remove) {
-        my @diff = $self->check_vm_images_list(\@nimages, \@qimages);
-        if (@diff) {
-            $main::this_app->error("Creating these VM images: ", join(',', @diff));
+        my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
+        if ($diff) {
+            $main::this_app->error("Creating these VM images: $diff");
         }
     } else {
-        my @diff = $self->check_vm_images_list(\@rimages, \@qimages);
-        if (@diff) {
-            $main::this_app->error("Removing these VM images: ", join(',', @diff));
+        my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
+        if ($diff) {
+            $main::this_app->error("Removing these VM images: $diff");
         }
     }
 }
@@ -219,18 +220,10 @@ sub remove_and_create_vm_images
 sub check_vm_images_list
 {
     my ($self, $myimages, $qimages) = @_;
-    my (%count, $item, @diff);
 
-    foreach $item (@{$qimages}, @{$myimages}) { 
-        $count{$item}++;
-    }
-
-    foreach $item (keys %count) {
-        if ($count{$item} != 2) {
-            push @diff, $item;
-        }
-    }
-    return @diff;
+    my $a = Set::Scalar->new(@{$qimages});
+    my $b = Set::Scalar->new(@{$myimages});
+    return $a->symmetric_difference($b);
 }
 
 # Since ONE 4.8 we use network address ranges (ARs)
@@ -329,7 +322,9 @@ sub remove_and_create_vm_template
     }
 }
 
-sub check_opennebula_version
+# Detects ONE version
+# returns false if ONE version is not supported by AII
+sub is_supported_one_version
 {
     my ($self, $one) = @_;
 
@@ -338,9 +333,8 @@ sub check_opennebula_version
 
     if (version->parse($oneversion) < version->parse(ONEVERSION)) {
         $main::this_app->error("OpenNebula AII requires ONE v".ONEVERSION." or higher.");
-        return 1;
     }
-    return;
+    return version->parse($oneversion) >= version->parse(ONEVERSION);
 }
 
 # Based on Quattor template this function:
@@ -371,10 +365,7 @@ sub install
         error("No ONE instance returned");
         return 0;
     }
-
-    if ($self->check_opennebula_version($one)){
-        return 0;
-    }
+    return 0 if !$self->is_supported_one_version($one);
 
     $self->stop_and_remove_one_vms($one, $fqdn);
 
@@ -441,10 +432,7 @@ sub remove
         error("No ONE instance returned");
         return 0;
     }
-
-    if ($self->check_opennebula_version($one)){
-        return 0;
-    }
+    return 0 if !$self->is_supported_one_version($one);
 
     $self->stop_and_remove_one_vms($one,$fqdn);
 
