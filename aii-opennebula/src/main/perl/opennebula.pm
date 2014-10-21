@@ -204,18 +204,17 @@ sub remove_and_create_vm_images
     if (!$remove) {
         my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
         if ($diff) {
-            $main::this_app->error("Creating these VM images: $diff");
+            $main::this_app->error("Creating these VM images: ", join(',', @qimages));
         }
     } else {
         my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
         if ($diff) {
-            $main::this_app->error("Removing these VM images: $diff");
+            $main::this_app->error("Removing these VM images: ", join(',', @qimages));
         }
     }
 }
 
-# This function returns an array
-# with the difference between two image lists
+# This function checks the difference between two image lists
 # to detect if the images were correctly created/removed
 sub check_vm_images_list
 {
@@ -239,13 +238,17 @@ sub remove_and_create_vn_ars
         my @exisvnet = $one->get_vnets(qr{^$vnet$});
         foreach my $t (@exisvnet) {
             my $arinfo = $t->get_ar(%ar_opts);
-            if ($remove and $arinfo) {
+            if ($remove) {
                 # Detect Quattor and id first
                 $arid = $self->detect_vn_ar_quattor($arinfo);
                 if (defined($arid)) {
                     $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
-                    $t->rmar($arid);
-                    $main::this_app->info("Removed from $vnet AR id: ", $arid);
+                    my $rmid = $t->rmar($arid);
+                    if (defined($rmid)) {
+                        $main::this_app->info("Removed from vnet: $vnet AR id: $arid");
+                    } else {
+                        $main::this_app->error("Unable to remove AR id: $arid from vnet: $vnet");
+                    }
                 } else {
                     $main::this_app->error("Quattor flag not found within AR. ", 
                                         "ONE AII is not allowed to remove this AR.");
@@ -254,12 +257,20 @@ sub remove_and_create_vn_ars
                 # Update the AR info
                 $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
                 $arid = $t->updatear($ardata->{ar});
-                $main::this_app->info("Updated $vnet AR id: ", $arid);
+                if (defined($arid)) {
+                    $main::this_app->info("Updated $vnet AR id: ", $arid);
+                } else {
+                    $main::this_app->error("Unable to update AR from vnet: $vnet");
+                }
             } else { 
                 # Create a new network AR
                 $main::this_app->debug(1, "New AR template in $vnet: ", $ardata->{ar});
                 $arid = $t->addar($ardata->{ar});
-                $main::this_app->info("Created new $vnet AR id: ", $arid);
+                if (defined($arid)) {
+                    $main::this_app->info("Created new $vnet AR id: ", $arid);
+                } else {
+                    $main::this_app->error("Unable to create new AR within vnet: $vnet");
+                }
             }
        }
     }
