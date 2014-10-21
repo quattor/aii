@@ -14,6 +14,8 @@ use Test::Quattor qw(aii_network_ar);
 use OpennebulaMock;
 
 my $cfg = get_config_for_profile('aii_network_ar');
+my $opennebulaaii = new Test::MockModule('AII::opennebula');
+$opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
@@ -31,5 +33,27 @@ ok(exists($networks{$networkb}), "vnet b exists");
 
 is($networks{$networka}{network}, "altaria.os", "vneta name is altaria.os");
 is($networks{$networkb}{network}, "altaria.vsc", "vnetb name is altaria.vsc");
+
+my $one = $aii->make_one();
+
+# Check AR creation
+rpc_history_reset;
+$aii->remove_and_create_vn_ars($one, \%networks);
+#diag_rpc_history;
+ok(rpc_history_ok(["one.vnpool.info",
+                   "one.vn.info",
+                   "one.vn.add_ar",
+                   "one.vnpool.info",
+                   "one.vn.info",
+                   "one.vn.update_ar"]),
+                   "remove_and_create_vn_ars install rpc history ok");
+
+# Check AR remove
+rpc_history_reset;
+$aii->remove_and_create_vn_ars($one, \%networks, 1);
+ok(rpc_history_ok(["one.vnpool.info",
+                   "one.vn.info",
+                   "one.vn.rm_ar"]),
+                   "remove_and_create_vn_ars remove rpc history ok");
 
 done_testing();

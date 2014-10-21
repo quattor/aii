@@ -144,9 +144,14 @@ AR = [
     SIZE = "1"
 ]
 EOF
-$cmds{rpc_create_newvnet_ar}{params} = [2, $data];
-$cmds{rpc_create_newvnet_ar}{method} = "one.vn.add_ar";
-$cmds{rpc_create_newvnet_ar}{out} = 2;
+$cmds{rpc_create_vnet_ar}{params} = [2, $data];
+$cmds{rpc_create_vnet_ar}{method} = "one.vn.add_ar";
+$cmds{rpc_create_vnet_ar}{out} = 2;
+
+$cmds{rpc_update_vnet_ar}{params} = [2, $data];
+$cmds{rpc_update_vnet_ar}{method} = "one.vn.update_ar";
+$cmds{rpc_update_vnet_ar}{out} = 2;
+
 
 $data = <<'EOF';
 
@@ -159,17 +164,17 @@ AR = [
     SIZE = "1"
 ]
 EOF
-$cmds{rpc_create_newvnet_ar2}{params} = [0, $data];
-$cmds{rpc_create_newvnet_ar2}{method} = "one.vn.add_ar";
-$cmds{rpc_create_newvnet_ar2}{out} = 0;
+$cmds{rpc_create_vnet_ar2}{params} = [0, $data];
+$cmds{rpc_create_vnet_ar2}{method} = "one.vn.add_ar";
+$cmds{rpc_create_vnet_ar2}{out} = 0;
 
-$cmds{rpc_create_newvnet_ar2}{params} = [0, $data];
-$cmds{rpc_create_newvnet_ar2}{method} = "one.vn.update_ar";
-$cmds{rpc_create_newvnet_ar2}{out} = 0;
+$cmds{rpc_update_vnet_ar2}{params} = [0, $data];
+$cmds{rpc_update_vnet_ar2}{method} = "one.vn.update_ar";
+$cmds{rpc_update_vnet_ar2}{out} = 0;
 
-$cmds{rpc_remove_vnet_ar}{params} = [0, 0];
-$cmds{rpc_remove_vnet_ar}{method} = "one.vn.rm_ar";
-$cmds{rpc_remove_vnet_ar}{out} = 0;
+$cmds{rpc_remove_vnet_ar2}{params} = [0, 0];
+$cmds{rpc_remove_vnet_ar2}{method} = "one.vn.rm_ar";
+$cmds{rpc_remove_vnet_ar2}{out} = 0;
 
 # Manage Datastores
 
@@ -350,13 +355,13 @@ $cmds{rpc_create_image2}{out} = 44;
 $cmds{rpc_list_templatespool}{params} = [-2, -1, -1];
 $cmds{rpc_list_templatespool}{method} = "one.templatepool.info";
 $cmds{rpc_list_templatespool}{out} = <<'EOF';
-<VMTEMPLATE_POOL><VMTEMPLATE><ID>4</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>testttylinux</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><REGTIME>1405587240</REGTIME><TEMPLATE><CONTEXT><NETWORK><![CDATA[YES]]></NETWORK><SSH_PUBLIC_KEY><![CDATA[$USER[SSH_PUBLIC_KEY]]]></SSH_PUBLIC_KEY></CONTEXT><CPU><![CDATA[1]]></CPU><DISK><CACHE><![CDATA[none]]></CACHE><DEV_PREFIX><![CDATA[hd]]></DEV_PREFIX><IMAGE><![CDATA[ttylinux-kvm_file0]]></IMAGE><IMAGE_UNAME><![CDATA[oneadmin]]></IMAGE_UNAME></DISK><GRAPHICS><LISTEN><![CDATA[0.0.0.0]]></LISTEN><TYPE><![CDATA[VNC]]></TYPE></GRAPHICS><MEMORY><![CDATA[512]]></MEMORY><QUATTOR><![CDATA[1]]></QUATTOR></TEMPLATE></VMTEMPLATE></VMTEMPLATE_POOL>
+<VMTEMPLATE_POOL><VMTEMPLATE><ID>4</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>node630.cubone.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><REGTIME>1405587240</REGTIME><TEMPLATE><CONTEXT><NETWORK><![CDATA[YES]]></NETWORK><SSH_PUBLIC_KEY><![CDATA[$USER[SSH_PUBLIC_KEY]]]></SSH_PUBLIC_KEY></CONTEXT><CPU><![CDATA[1]]></CPU><DISK><CACHE><![CDATA[none]]></CACHE><DEV_PREFIX><![CDATA[hd]]></DEV_PREFIX><IMAGE><![CDATA[ttylinux-kvm_file0]]></IMAGE><IMAGE_UNAME><![CDATA[oneadmin]]></IMAGE_UNAME></DISK><GRAPHICS><LISTEN><![CDATA[0.0.0.0]]></LISTEN><TYPE><![CDATA[VNC]]></TYPE></GRAPHICS><MEMORY><![CDATA[512]]></MEMORY><QUATTOR><![CDATA[1]]></QUATTOR></TEMPLATE></VMTEMPLATE></VMTEMPLATE_POOL>
 EOF
 
 $cmds{rpc_list_template}{params} = [4];
 $cmds{rpc_list_template}{method} = "one.template.info";
 $cmds{rpc_list_template}{out} = <<'EOF';
-<VMTEMPLATE><ID>4</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>testttylinux</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><REGTIME>1405587240</REGTIME><TEMPLATE><CONTEXT><NETWORK><![CDATA[YES]]></NETWORK><SSH_PUBLIC_KEY><![CDATA[$USER[SSH_PUBLIC_KEY]]]></SSH_PUBLIC_KEY></CONTEXT><CPU><![CDATA[1]]></CPU><DISK><CACHE><![CDATA[none]]></CACHE><DEV_PREFIX><![CDATA[hd]]></DEV_PREFIX><IMAGE><![CDATA[ttylinux-kvm_file0]]></IMAGE><IMAGE_UNAME><![CDATA[oneadmin]]></IMAGE_UNAME></DISK><GRAPHICS><LISTEN><![CDATA[0.0.0.0]]></LISTEN><TYPE><![CDATA[VNC]]></TYPE></GRAPHICS><MEMORY><![CDATA[512]]></MEMORY><QUATTOR><![CDATA[1]]></QUATTOR></TEMPLATE></VMTEMPLATE>
+<VMTEMPLATE><ID>4</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>node630.cubone.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><REGTIME>1405587240</REGTIME><TEMPLATE><CONTEXT><NETWORK><![CDATA[YES]]></NETWORK><SSH_PUBLIC_KEY><![CDATA[$USER[SSH_PUBLIC_KEY]]]></SSH_PUBLIC_KEY></CONTEXT><CPU><![CDATA[1]]></CPU><DISK><CACHE><![CDATA[none]]></CACHE><DEV_PREFIX><![CDATA[hd]]></DEV_PREFIX><IMAGE><![CDATA[ttylinux-kvm_file0]]></IMAGE><IMAGE_UNAME><![CDATA[oneadmin]]></IMAGE_UNAME></DISK><GRAPHICS><LISTEN><![CDATA[0.0.0.0]]></LISTEN><TYPE><![CDATA[VNC]]></TYPE></GRAPHICS><MEMORY><![CDATA[512]]></MEMORY><QUATTOR><![CDATA[1]]></QUATTOR></TEMPLATE></VMTEMPLATE>
 EOF
 
 $data = <<'EOF';
@@ -419,3 +424,7 @@ EOF
 $cmds{rpc_instantiate_template}{params} = [4, "node630.cubone.os", 1, $data];
 $cmds{rpc_instantiate_template}{method} = "one.template.instantiate";
 $cmds{rpc_instantiate_template}{out} = 60;
+
+$cmds{rpc_remove_template}{params} = [4];
+$cmds{rpc_remove_template}{method} = "one.template.delete";
+$cmds{rpc_remove_template}{out} = 4;
