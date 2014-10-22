@@ -38,14 +38,14 @@ my $one = $aii->make_one();
 
 # Check AR creation
 rpc_history_reset;
-$aii->remove_and_create_vn_ars($one, \%networks);
+$aii->remove_and_create_vn_ars($one, \%networks, 0);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.vnpool.info",
                    "one.vn.info",
-                   "one.vn.add_ar",
+                   "one.vn.update_ar",
                    "one.vnpool.info",
                    "one.vn.info",
-                   "one.vn.update_ar"]),
+                   "one.vn.add_ar"]),
                    "remove_and_create_vn_ars install rpc history ok");
 
 # Check AR remove

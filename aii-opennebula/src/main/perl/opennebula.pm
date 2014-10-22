@@ -310,6 +310,8 @@ sub stop_and_remove_one_vms
     }
 }
 
+# Creates and removes VM templates
+# $createvmtemplate hook forces to remove/create
 sub remove_and_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
@@ -321,6 +323,11 @@ sub remove_and_create_vm_template
         if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($createvmtemplate)) {
             $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
             $t->delete();
+        } elsif ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0] && !$createvmtemplate) {
+            $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
+            $self->debug(1, "New $fqdn template : $vmtemplate");
+            my $update = $t->update($vmtemplate, 0);
+            return $update;
         } else {
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
