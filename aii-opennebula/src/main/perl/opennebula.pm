@@ -201,15 +201,15 @@ sub remove_and_create_vm_images
     	}
     }
 
-    if (!$remove) {
-        my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
-        if ($diff) {
-            $main::this_app->error("Creating these VM images: ", join(',', @qimages));
+    if ($remove) {
+        my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
+        if ($diff) { 
+            $main::this_app->error("Removing these VM images: ", join(',', @qimages));
         }
     } else {
-        my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
-        if ($diff) {
-            $main::this_app->error("Removing these VM images: ", join(',', @qimages));
+        my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
+        if ($diff) { 
+            $main::this_app->error("Creating these VM images: ", join(',', @qimages));
         }
     }
 }
@@ -320,14 +320,18 @@ sub remove_and_create_vm_template
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
     foreach my $t (@existtmpls) {
-        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($createvmtemplate)) {
-            $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
-            $t->delete();
-        } elsif ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0] && !$createvmtemplate) {
-            $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
-            $self->debug(1, "New $fqdn template : $vmtemplate");
-            my $update = $t->update($vmtemplate, 0);
-            return $update;
+        if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
+            if ($createvmtemplate) {
+                # force to remove and create the template again
+                $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
+                $t->delete();
+            } else {
+                # Update the current template
+                $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
+                $self->debug(1, "New $fqdn template : $vmtemplate");
+                my $update = $t->update($vmtemplate, 0);
+                return $update;
+            }
         } else {
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
