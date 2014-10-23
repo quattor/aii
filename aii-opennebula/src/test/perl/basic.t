@@ -35,7 +35,7 @@ rpc_history_reset;
 $path = "/system/aii/hooks/remove/0";
 $aii->remove($cfg, $path);
 
-# diag_rpc_history;
+#diag_rpc_history;
 ok(rpc_history_ok(["one.vmpool.info",
                    "one.imagepool.info",
                    "one.templatepool.info"]),
@@ -55,5 +55,4 @@ ok(rpc_history_ok(["one.vmpool.info",
                    "one.template.info",
                    "one.template.instantiate"]),
                    "install rpc history ok");
-
 done_testing();

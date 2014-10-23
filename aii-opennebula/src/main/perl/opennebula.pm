@@ -344,14 +344,20 @@ sub remove_and_create_vm_template
     }
 }
 
-# Detects ONE version
+# Check RPC endpoint and ONE version
 # returns false if ONE version is not supported by AII
 sub is_supported_one_version
 {
     my ($self, $one) = @_;
 
     my $oneversion = $one->version();
-    $main::this_app->info("Detected OpenNebula version: $oneversion");
+
+    if ($oneversion) {
+        $main::this_app->info("Detected OpenNebula version: $oneversion");
+    } else {
+        $main::this_app->error("OpenNebula RPC endpoint is not reachable.");
+        return;
+    }
 
     if (version->parse($oneversion) < version->parse(ONEVERSION)) {
         $main::this_app->error("OpenNebula AII requires ONE v".ONEVERSION." or higher.");
@@ -381,12 +387,15 @@ sub install
         
     my $fqdn = $self->get_fqdn($config);
     my %opts;
-
+    
+    # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
         error("No ONE instance returned");
         return 0;
     }
+
+    # Check RPC endpoint and OpenNebula version
     return 0 if !$self->is_supported_one_version($one);
 
     $self->stop_and_remove_one_vms($one, $fqdn);
@@ -449,11 +458,14 @@ sub remove
     $main::this_app->info("Remove VM template flag is set to: $rmvmtemplate");
     my $fqdn = $self->get_fqdn($config);
 
+    # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
         error("No ONE instance returned");
         return 0;
     }
+
+    # Check RPC endpoint and OpenNebula version
     return 0 if !$self->is_supported_one_version($one);
 
     $self->stop_and_remove_one_vms($one,$fqdn);
