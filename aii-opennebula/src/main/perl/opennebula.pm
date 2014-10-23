@@ -20,7 +20,7 @@ use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
-use constant ONEVERSION => "4.8.0";
+use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 
 # a config file in .ini style with minmal 
 #   [rpc]
@@ -359,10 +359,13 @@ sub is_supported_one_version
         return;
     }
 
-    if (version->parse($oneversion) < version->parse(ONEVERSION)) {
-        $main::this_app->error("OpenNebula AII requires ONE v".ONEVERSION." or higher.");
+    my $res= $oneversion >= MINIMAL_ONE_VERSION;
+    if ($res) {
+        $main::this_app->verbose("Version $oneversion is ok.");
+    } else {
+        $main::this_app->error("OpenNebula AII requires ONE v".MINIMAL_ONE_VERSION." or higher (found $oneversion).");
     }
-    return version->parse($oneversion) >= version->parse(ONEVERSION);
+    return $res;
 }
 
 # Based on Quattor template this function:
