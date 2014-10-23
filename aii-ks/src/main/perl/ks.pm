@@ -361,7 +361,7 @@ sub kscommands
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
     
     my $installtype = $tree->{installtype};
-    if ($installtype =~ /^http/) {
+    if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
         if ($proxyhost) {
             if ($proxyport) {
