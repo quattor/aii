@@ -106,23 +106,36 @@ sub post_reboot
 yum -c /tmp/aii/yum/yum.conf -y install ipa-client
 
 /usr/sbin/ipa-client-install $dns \\
-    --domain=$tree->{domain} \\
-    --password=$passwd \\
-    --unattended \\
-    --realm=$tree->{realm} \\
-    --server=$tree->{server} \\
-    || fail "ipa-client-install failed"
-
-mkdir -p /etc/ipa/quattor/certs
-certutil -L -d /etc/pki/nssdb -a -n "IPA CA" > /etc/ipa/quattor/certs/ca.pem
-certutil -L -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname" > /etc/ipa/quattor/certs/hostcert.pem
-certutil -K -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname"
-pk12util -o keys.p12 -n "IPA Machine Certificate - $hostname.$domainname" -d /etc/pki/nssdb -W ""
-openssl pkcs12 -in keys.p12 -out /etc/ipa/quattor/certs/hostkey.pem -nodes -password pass:''
-chmod 600 /etc/ipa/quattor/certs/hostkey.pem
-rm -f keys.p12
-
+--domain=$tree->{domain} \\
+--password=$passwd \\
+--unattended \\
+--realm=$tree->{realm} \\
+--server=$tree->{server} \\
+|| fail "ipa-client-install failed"
 EOF
+
+     my $ccm_use_ssl = $config->getElement('/software/components/ccm/use_ssl')->getValue;
+    
+    if ( $ccm_use_ssl ) {
+        my $ccm_cert_file = $config->elementExists('/software/components/ccm/cert_file') ? $config->getElement('/software/components/ccm/cert_file')->getValue : '';
+        my $ccm_key_file = $config->elementExists('/software/components/ccm/key_file') ? $config->getElement('/software/components/ccm/key_file')->getValue : '';
+        my $ccm_ca_file = $config->elementExists('/software/components/ccm/ca_file') ? $config->getElement('/software/components/ccm/ca_file')->getValue : '';
+        if ( $ccm_cert_file eq '' || $ccm_key_file eq '' || $ccm_ca_file eq '' ) {
+            $main::this_app->error ("At least one of the paths for cert and/or key and/or ca is missing");
+        }
+        print <<EOF;
+mkdir -p `dirname $ccm_cert_file`
+mkdir -p `dirname $ccm_key_file`
+mkdir -p `dirname $ccm_ca_file`
+certutil -L -d /etc/pki/nssdb -a -n "IPA CA" > $ccm_ca_file
+certutil -L -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname" > $ccm_cert_file
+certutil -K -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname"
+pk12util -o /tmp/keys.p12 -n "IPA Machine Certificate - $hostname.$domainname" -d /etc/pki/nssdb -W ""
+openssl pkcs12 -in /tmp/keys.p12 -out $ccm_key_file -nodes -password pass:''
+chmod 600 $ccm_key_file
+rm -f /tmp/keys.p12
+EOF
+    }
 
 }
 
