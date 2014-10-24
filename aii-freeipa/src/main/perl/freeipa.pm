@@ -120,8 +120,8 @@ EOF
         my $ccm_cert_file = $config->elementExists('/software/components/ccm/cert_file') ? $config->getElement('/software/components/ccm/cert_file')->getValue : '';
         my $ccm_key_file = $config->elementExists('/software/components/ccm/key_file') ? $config->getElement('/software/components/ccm/key_file')->getValue : '';
         my $ccm_ca_file = $config->elementExists('/software/components/ccm/ca_file') ? $config->getElement('/software/components/ccm/ca_file')->getValue : '';
-        if ( $ccm_cert_file eq '' || $ccm_key_file eq '' || $ccm_ca_file eq '' ) {
-            $main::this_app->error ("At least one of the paths for cert and/or key and/or ca is missing");
+        unless ( $ccm_cert_file =~ /^\// && $ccm_key_file =~ /^\// && $ccm_ca_file =~ /^\// ) {
+            $main::this_app->error ("At least one of the paths for cert and/or key and/or ca is not a valid absolute path.");
         }
         print <<EOF;
 mkdir -p `dirname $ccm_cert_file`
