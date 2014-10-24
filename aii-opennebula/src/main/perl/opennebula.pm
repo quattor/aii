@@ -193,7 +193,7 @@ sub remove_and_create_vm_images
         if (!$remove) {
             my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
             if ($newimage) {
-                $main::this_app->info("Created new VM image ID: $newimage->id");
+                $main::this_app->info("Created new VM image ID: ", $newimage->id);
                 push(@nimages, $imagename);
             } else {
                 $main::this_app->error("VM image: $imagename is not available");
