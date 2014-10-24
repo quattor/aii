@@ -12,7 +12,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula;
+use Net::OpenNebula 0.2.2;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -193,7 +193,7 @@ sub remove_and_create_vm_images
         if (!$remove) {
             my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
             if ($newimage) {
-                $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
+                $main::this_app->info("Created new VM image ID: $newimage->id");
                 push(@nimages, $imagename);
             } else {
                 $main::this_app->error("VM image: $imagename is not available");
@@ -464,7 +464,7 @@ sub remove
     # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
-        error("No ONE instance returned");
+        $main::this_app->error("No ONE instance returned");
         return 0;
     }
 
