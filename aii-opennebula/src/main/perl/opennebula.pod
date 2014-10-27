@@ -11,7 +11,7 @@ This document describes AII's OpenNebula. It must be called from aii-shellfe 2 o
 
 =head1 SYNOPSIS
 
-This AII component generates the required resources and templates to instantiate/create/remove VMs within an OpenNebula infrastructure.
+This AII hook generates the required resources and templates to instantiate/create/remove VMs within an OpenNebula infrastructure.
 
 =head2 RESOURCES
 
