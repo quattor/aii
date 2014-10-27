@@ -7,7 +7,7 @@
 
 =head1 OpenNebula
 
-This document describes AII's OpenNebula. It must be called from aii-shellfe 2 or higher.
+This document describes AII's OpenNebula hook. It must be called from aii-shellfe 2 or higher.
 
 =head1 SYNOPSIS
 
@@ -26,11 +26,15 @@ Modify your machine template to:
 
 =item * Create or include a new pan file to:
 
+=over 5
+
 =item * Include 'metaconfig/opennebula/schema'
 
 =item * Set the OpenNebula opennebula/datastore name for each vdx
       
 =item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
+
+=back
         
 =item * enable acpid service
 
