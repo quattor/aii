@@ -6,11 +6,13 @@ package AII::opennebula;
 
 use strict;
 use warnings;
+use version;
 use CAF::Process;
+use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula;
+use Net::OpenNebula 0.2.2;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -18,6 +20,7 @@ use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
+use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 
 # a config file in .ini style with minmal 
 #   [rpc]
@@ -111,27 +114,27 @@ sub get_images
     return %res;
 }
 
-# It gets the vnet leases from tt file
+# It gets the network ARs (address range) from tt file
 # and gathers vnet names and IPs/MAC addresses
-sub get_vnetleases
+sub get_vnetars
 {
     my ($self, $config) = @_;
-    my $all_leases = $self->process_template($config, "vnetleases");
+    my $all_ars = $self->process_template($config, "aii_network_ar");
     my %res;
 
-    my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_leases);
+    my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_ars);
 
-    while (my ($lease,$network) = splice(@tmp, 0 ,2)) {
+    while (my ($ar,$network) = splice(@tmp, 0 ,2)) {
 
-        if ($network && $lease) {
-            $main::this_app->verbose("Detected vnet lease: $lease",
+        if ($network && $ar) {
+            $main::this_app->verbose("Detected network AR: $ar",
                                      " within network $network");
-            $res{$network}{lease} = $lease;
+            $res{$network}{ar} = $ar;
             $res{$network}{network} = $network;
-            $main::this_app->debug(3, "This is vnet lease template for $network: $lease");
+            $main::this_app->debug(3, "This is the network AR template for $network: $ar");
         } else {
-            # No leases found for this VM
-            $main::this_app->error("No leases and/or network info $lease.");
+            # No ars found for this VM
+            $main::this_app->error("No network ARs and/or network info $ar.");
         };
     }
     return %res;
@@ -167,56 +170,135 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-
+    my (@rimages, @nimages, @qimages);
     while ( my ($imagename, $imagedata) = each %{$imagesref}) {
         $main::this_app->info ("Checking ONE image: $imagename");
-
+        push(@qimages, $imagename);
         my @existimage = $one->get_images(qr{^$imagename$});
         foreach my $t (@existimage) {
             if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
                 # It's safe, we can remove the image
-                $main::this_app->info("Removing VM image: $t->name");
-                $t->delete();
+                $main::this_app->info("Removing VM image: $imagename");
+                my $id = $t->delete();
+                if ($id) {
+                    push(@rimages, $imagename);
+                } else {
+                    $main::this_app->error("VM image: $imagename was not removed");
+                }
             } else {
-                $main::this_app->info("No QUATTOR flag found for VM image: $t->name");
+                $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
             }
         }
     	# And create the new image with the image data
         if (!$remove) {
             my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-            $main::this_app->info("Created new VM image ID: $newimage->{data}->{ID}->[0]");
-    	    return $newimage;
+            if ($newimage) {
+                $main::this_app->info("Created new VM image ID: ", $newimage->id);
+                push(@nimages, $imagename);
+            } else {
+                $main::this_app->error("VM image: $imagename is not available");
+            }
     	}
     }
-    return undef;
+
+    if ($remove) {
+        my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
+        if ($diff) { 
+            $main::this_app->error("Removing these VM images: ", join(',', @qimages));
+        }
+    } else {
+        my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
+        if ($diff) { 
+            $main::this_app->error("Creating these VM images: ", join(',', @qimages));
+        }
+    }
 }
 
-sub remove_and_create_vn_leases
+# This function checks the difference between two image lists
+# to detect if the images were correctly created/removed
+sub check_vm_images_list
 {
-    my ($self, $one, $leasesref, $remove) = @_;
-    while ( my ($vnet, $leasedata) = each %{$leasesref}) {
-        $main::this_app->info ("Testing ONE vnet lease: $vnet");
+    my ($self, $myimages, $qimages) = @_;
 
-        my @existlease = $one->get_vnets(qr{^$vnet$});
-        foreach my $t (@existlease) {
+    my $a = Set::Scalar->new(@{$qimages});
+    my $b = Set::Scalar->new(@{$myimages});
+    return $a->symmetric_difference($b);
+}
+
+# Since ONE 4.8 we use network address ranges (ARs)
+# instead of leases. This function removes/creates ARs
+sub remove_and_create_vn_ars
+{
+    my ($self, $one, $arsref, $remove) = @_;
+    my $arid;
+    while ( my ($vnet, $ardata) = each %{$arsref}) {
+        $main::this_app->info ("Testing ONE vnet network AR: $vnet");
+
+        my %ar_opts = ('template' => $ardata->{ar});
+        my @exisvnet = $one->get_vnets(qr{^$vnet$});
+        foreach my $t (@exisvnet) {
+            my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
-                $main::this_app->info("Removing from $vnet lease: $leasedata->{lease}");
-                $t->rmleases($leasedata->{lease});
-            } else {
-                $main::this_app->info("Creating new $vnet lease: $leasedata->{lease}");
-                $t->addleases($leasedata->{lease});
-            };
-        }
+                # Detect Quattor and id first
+                $arid = $self->detect_vn_ar_quattor($arinfo);
+                if (defined($arid)) {
+                    $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
+                    my $rmid = $t->rmar($arid);
+                    if (defined($rmid)) {
+                        $main::this_app->info("Removed from vnet: $vnet AR id: $arid");
+                    } else {
+                        $main::this_app->error("Unable to remove AR id: $arid from vnet: $vnet");
+                    }
+                } else {
+                    $main::this_app->error("Quattor flag not found within AR. ", 
+                                        "ONE AII is not allowed to remove this AR.");
+                }
+            } elsif (!$remove and $arinfo) {
+                # Update the AR info
+                $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
+                $arid = $t->updatear($ardata->{ar});
+                if (defined($arid)) {
+                    $main::this_app->info("Updated $vnet AR id: ", $arid);
+                } else {
+                    $main::this_app->error("Unable to update AR from vnet: $vnet");
+                }
+            } else { 
+                # Create a new network AR
+                $main::this_app->debug(1, "New AR template in $vnet: ", $ardata->{ar});
+                $arid = $t->addar($ardata->{ar});
+                if (defined($arid)) {
+                    $main::this_app->info("Created new $vnet AR id: ", $arid);
+                } else {
+                    $main::this_app->error("Unable to create new AR within vnet: $vnet");
+                }
+            }
+       }
+    }
+}
+
+# Detects Quattor flag within AR template
+sub detect_vn_ar_quattor
+{
+    my ($self, $ar)  =@_;
+    my $arid = $ar->{AR_ID}->[0];
+
+    if ($ar->{QUATTOR}->[0]) {
+            $main::this_app->info("QUATTOR flag found within AR, id: $arid");
+            return $arid;
+    } else {
+            $main::this_app->info("QUATTOR flag not found within AR, id: $arid");
+            return;
     }
 }
 
 sub stop_and_remove_one_vms
 {
     my ($self, $one, $fqdn) = @_;
-    
+    # Quattor only stops and removes fqdn names
+    # running VM names such: fqdn-<ID> are not removed
     my @runningvms = $one->get_vms(qr{^$fqdn$});
 
-    # check if the running $fqdn has QUATTOR = 1 
+    # check if the running $fqdn has QUATTOR = 1
     # if not don't touch it!!
     foreach my $t (@runningvms) {
         if ($t->{extended_data}->{USER_TEMPLATE}->[0]->{QUATTOR}->[0]) {
@@ -228,6 +310,8 @@ sub stop_and_remove_one_vms
     }
 }
 
+# Creates and removes VM templates
+# $createvmtemplate hook forces to remove/create
 sub remove_and_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
@@ -236,9 +320,18 @@ sub remove_and_create_vm_template
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
     foreach my $t (@existtmpls) {
-        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($createvmtemplate)) {
-            $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
-            $t->delete();
+        if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
+            if ($createvmtemplate) {
+                # force to remove and create the template again
+                $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
+                $t->delete();
+            } else {
+                # Update the current template
+                $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
+                $self->debug(1, "New $fqdn template : $vmtemplate");
+                my $update = $t->update($vmtemplate, 0);
+                return $update;
+            }
         } else {
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
@@ -251,10 +344,34 @@ sub remove_and_create_vm_template
     }
 }
 
+# Check RPC endpoint and ONE version
+# returns false if ONE version is not supported by AII
+sub is_supported_one_version
+{
+    my ($self, $one) = @_;
+
+    my $oneversion = $one->version();
+
+    if ($oneversion) {
+        $main::this_app->info("Detected OpenNebula version: $oneversion");
+    } else {
+        $main::this_app->error("OpenNebula RPC endpoint is not reachable.");
+        return;
+    }
+
+    my $res= $oneversion >= MINIMAL_ONE_VERSION;
+    if ($res) {
+        $main::this_app->verbose("Version $oneversion is ok.");
+    } else {
+        $main::this_app->error("OpenNebula AII requires ONE v".MINIMAL_ONE_VERSION." or higher (found $oneversion).");
+    }
+    return $res;
+}
+
 # Based on Quattor template this function:
 # creates new VM templates
 # creates new VM image for each $harddisks
-# creates new vnet leases if required
+# creates new vnet ars if required
 # instantiates the new VM
 sub install
 {
@@ -273,20 +390,24 @@ sub install
         
     my $fqdn = $self->get_fqdn($config);
     my %opts;
-
+    
+    # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
         error("No ONE instance returned");
         return 0;
     }
 
+    # Check RPC endpoint and OpenNebula version
+    return 0 if !$self->is_supported_one_version($one);
+
     $self->stop_and_remove_one_vms($one, $fqdn);
 
     my %images = $self->get_images($config);
     $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
 
-    my %leases = $self->get_vnetleases($config);
-    $self->remove_and_create_vn_leases($one, \%leases);
+    my %ars = $self->get_vnetars($config);
+    $self->remove_and_create_vn_ars($one, \%ars);
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
@@ -329,7 +450,7 @@ EOF
 # Stops running VM
 # Removes VM template
 # Removes VM image for each $harddisks
-# Removes vnet leases
+# Removes vnet ars
 sub remove
 {
     my ($self, $config, $path) = @_;
@@ -340,11 +461,15 @@ sub remove
     $main::this_app->info("Remove VM template flag is set to: $rmvmtemplate");
     my $fqdn = $self->get_fqdn($config);
 
+    # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
-        error("No ONE instance returned");
+        $main::this_app->error("No ONE instance returned");
         return 0;
     }
+
+    # Check RPC endpoint and OpenNebula version
+    return 0 if !$self->is_supported_one_version($one);
 
     $self->stop_and_remove_one_vms($one,$fqdn);
 
@@ -353,9 +478,9 @@ sub remove
         $self->remove_and_create_vm_images($one, 1, \%images, $rmimage);
     }
 
-    my %leases = $self->get_vnetleases($config);
-    if (%leases) {
-    $self->remove_and_create_vn_leases($one, \%leases, 1);
+    my %ars = $self->get_vnetars($config);
+    if (%ars) {
+        $self->remove_and_create_vn_ars($one, \%ars, 1);
     }
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);

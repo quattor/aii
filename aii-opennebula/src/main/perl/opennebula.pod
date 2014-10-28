@@ -1,3 +1,103 @@
+# ${license-info}
+# ${developer-info
+# ${author-info}
+# ${build-info}
+
+=pod
+
+=head1 OpenNebula
+
+This document describes AII's OpenNebula hook. It must be called from aii-shellfe 2 or higher.
+
 =head1 SYNOPSIS
 
-OpenNebula module for AII
+This AII hook generates the required resources and templates to instantiate/create/remove VMs within an OpenNebula infrastructure.
+
+=head2 RESOURCES
+
+
+=head3 install
+
+Modify your machine template to:
+
+=over 4
+
+=item * Rename hdx/sdx device disks by vdx to use virtio module
+
+=item * Create or include a new pan file to:
+
+=over 5
+
+=item * Include 'metaconfig/opennebula/schema'
+
+=item * Set the OpenNebula opennebula/datastore name for each vdx
+      
+=item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
+
+=back
+        
+=item * enable acpid service
+
+=back
+
+The next paths are relative to /system/aii/hooks/install
+
+=over 4
+
+=item * image : boolean
+
+Create VM images
+
+=item * vm : boolean
+
+The new VM is instantiated after resources creation
+
+=item * template : boolean
+
+Create VM template
+
+=item * onhold : boolean
+
+The VM is instantiated but onhold status instead of running
+
+=back
+
+=head3 remove
+
+All these paths are relative to /system/aii/hooks/remove
+
+=over 4
+
+=item * image : boolean
+
+Remove image/s
+
+=item * vmtemplate : boolean
+
+Remove VM template
+
+=back
+
+=head2 DEPENDENCIES
+
+The AII was tested with OpenNebula version 4.8 and 4.10
+
+Following package dependencies should be installed to run the AII:
+
+=over
+
+=item * perl-Config-Tiny
+
+=item * perl-CAF
+
+=item * perl-Set-Scalar
+
+=item * perl-Net-OpenNebula >= 0.2.2 !
+
+=back
+
+=head2 AUTHOR
+
+${author-info}
+
+=cut
