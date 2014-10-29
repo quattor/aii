@@ -424,10 +424,10 @@ sub install
             # If something wrong happens set a timeout
             my $imagestate = $t->wait_for_state("READY", %opts);
 
-            if ($imagestate ne "READY") {
-                $main::this_app->error("TIMEOUT! Image status: ${imagestate} is not ready yet...");
+            if ($imagestate) {
+                $main::this_app->info("VM Image status: READY ,OK");
             } else {
-                $main::this_app->info("VM Image status: ${imagestate} ,OK");
+                $main::this_app->error("TIMEOUT! Image status is not ready yet...");
             };
         }
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
