@@ -116,9 +116,8 @@ EOF
 
     #Extract cert, key and ca files from nssdb if use_nss.
     if ( $tree->{extract_x509} ) {
-        $self->extract_x509($config,$hostname,$domainname);
+        $self->extract_x509($config, $hostname, $domainname);
     }
-
 
 }
 
@@ -127,7 +126,7 @@ EOF
 #
 sub extract_x509 
 {
-    my ($self, $config,$hostname,$domainname) = @_;
+    my ($self, $config, $hostname, $domainname) = @_;
     my $ccm = $config->getElement('/software/components/ccm')->getTree;
     my $ccm_cert_file = $ccm->{cert_file};
     my $ccm_key_file = $ccm->{key_file};
