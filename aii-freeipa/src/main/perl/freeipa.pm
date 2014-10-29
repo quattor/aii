@@ -106,36 +106,48 @@ sub post_reboot
 yum -c /tmp/aii/yum/yum.conf -y install ipa-client
 
 /usr/sbin/ipa-client-install $dns \\
---domain=$tree->{domain} \\
---password=$passwd \\
---unattended \\
---realm=$tree->{realm} \\
---server=$tree->{server} \\
-|| fail "ipa-client-install failed"
+    --domain=$tree->{domain} \\
+    --password=$passwd \\
+    --unattended \\
+    --realm=$tree->{realm} \\
+    --server=$tree->{server} \\
+    || fail "ipa-client-install failed"
 EOF
 
-     my $ccm_use_ssl = $config->getElement('/software/components/ccm/use_ssl')->getValue;
-    
-    if ( $ccm_use_ssl ) {
-        my $ccm_cert_file = $config->elementExists('/software/components/ccm/cert_file') ? $config->getElement('/software/components/ccm/cert_file')->getValue : '';
-        my $ccm_key_file = $config->elementExists('/software/components/ccm/key_file') ? $config->getElement('/software/components/ccm/key_file')->getValue : '';
-        my $ccm_ca_file = $config->elementExists('/software/components/ccm/ca_file') ? $config->getElement('/software/components/ccm/ca_file')->getValue : '';
-        unless ( $ccm_cert_file =~ /^\// && $ccm_key_file =~ /^\// && $ccm_ca_file =~ /^\// ) {
-            $main::this_app->error ("At least one of the paths for cert and/or key and/or ca is not a valid absolute path.");
-        }
-        print <<EOF;
-mkdir -p `dirname $ccm_cert_file`
-mkdir -p `dirname $ccm_key_file`
-mkdir -p `dirname $ccm_ca_file`
+    #Extract cert, key and ca files from nssdb if use_nss.
+    if ( $tree->{extract_x509} ) {
+        $self->extract_x509($config,$hostname,$domainname);
+    }
+
+
+}
+
+#
+# Extract x509 certificates from nssdb
+#
+sub extract_x509 
+{
+    my ($self, $config,$hostname,$domainname) = @_;
+    my $ccm = $config->getElement('/software/components/ccm')->getTree;
+    my $ccm_cert_file = $ccm->{cert_file};
+    my $ccm_key_file = $ccm->{key_file};
+    my $ccm_ca_file = $ccm->{ca_file};
+    unless ( $ccm_cert_file =~ /^\// && $ccm_key_file =~ /^\// && $ccm_ca_file =~ /^\// ) {
+        $main::this_app->error ("At least one of the paths for cert and/or key and/or ca is not a valid absolute path.");
+        return;
+    }
+    print <<EOF;
+mkdir -p `dirname $ccm_cert_file` `dirname $ccm_key_file` `dirname $ccm_ca_file`
 certutil -L -d /etc/pki/nssdb -a -n "IPA CA" > $ccm_ca_file
 certutil -L -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname" > $ccm_cert_file
 certutil -K -d /etc/pki/nssdb -a -n "IPA Machine Certificate - $hostname.$domainname"
-pk12util -o /tmp/keys.p12 -n "IPA Machine Certificate - $hostname.$domainname" -d /etc/pki/nssdb -W ""
-openssl pkcs12 -in /tmp/keys.p12 -out $ccm_key_file -nodes -password pass:''
+mkdir /tmp/p12keys
+chmod 700 /tmp/p12keys
+pk12util -o /tmp/p12keys/keys.p12 -n "IPA Machine Certificate - $hostname.$domainname" -d /etc/pki/nssdb -W ""
+openssl pkcs12 -in /tmp/p12keys/keys.p12 -out $ccm_key_file -nodes -password pass:''
 chmod 600 $ccm_key_file
-rm -f /tmp/keys.p12
+rm -rf /tmp/p12keys
 EOF
-    }
 
 }
 
