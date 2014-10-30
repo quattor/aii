@@ -66,5 +66,6 @@ type structure_aii_freeipa = {
 
     "dns" : boolean = false # DNS is controlled by FreeIPA (to register the host ip)
     "disable" : boolean = true # disable the host on AII removal
+    "extract_x509" : boolean = false # if true, will extract cert, key and ca files from nssdb
 };
 
