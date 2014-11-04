@@ -73,16 +73,17 @@ sub mock_rpc {
     push(@rpc_history, $method);
     push(@rpc_history_full, [$method, @params]);
     # we need to reset the loop for some reason
-    keys %rpcdata::cmds;
-    while (my ($short, $data) = each %rpcdata::cmds) {
+    foreach my $short (sort keys %rpcdata::cmds) {
+        my $data = $rpcdata::cmds{$short};
+
         my $sameparams = join(" _ ", @params_values) eq join(" _ ", @{$data->{params}});
         my $samemethod = $method eq $data->{method};
-        note("This is my shortname:", $short);
-        note("rpc internal params: ", join(" _ ", @params_values));
-        note("rpc dictionary params: ", join(" _ ", @{$data->{params}})); 
-        note("rpc method: ", $method);
-
         if ($samemethod && $sameparams && defined($data->{out})) {
+            note("This is my shortname:", $short);
+            note("rpc internal params: ", join(" _ ", @params_values));
+            note("rpc dictionary params: ", join(" _ ", @{$data->{params}}));
+            note("rpc method: ", $method);
+
             if ($data->{out} =~ m/^\d+$/) {
                 note("is id ", $data->{out});
                 return $data->{out};
