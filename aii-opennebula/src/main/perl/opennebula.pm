@@ -171,7 +171,8 @@ sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
     my (@rimages, @nimages, @qimages);
-    while ( my ($imagename, $imagedata) = each %{$imagesref}) {
+    foreach my $imagename (sort keys %{$imagesref}) {
+        my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
         my @existimage = $one->get_images(qr{^$imagename$});
@@ -231,7 +232,8 @@ sub remove_and_create_vn_ars
 {
     my ($self, $one, $arsref, $remove) = @_;
     my $arid;
-    while ( my ($vnet, $ardata) = each %{$arsref}) {
+    foreach my $vnet (sort keys %{$arsref}) {
+        my $ardata = $arsref->{$vnet};
         $main::this_app->info ("Testing ONE vnet network AR: $vnet");
 
         my %ar_opts = ('template' => $ardata->{ar});
