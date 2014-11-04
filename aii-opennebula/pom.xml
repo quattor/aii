@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.35</version>
+    <version>1.38</version>
     <relativePath/>
   </parent>
   <licenses>
@@ -34,6 +34,9 @@
     </developer>
   </developers>
   <contributors></contributors>
+  <properties>
+    <unittest />
+  </properties>
   <profiles>
     <profile>
       <id>cfg-module-dist</id>
@@ -136,7 +139,7 @@
                     <argument>src/test/perl</argument>
                     <argument>-I</argument>
                     <argument>target/dependency/build-scripts/</argument>
-                    <argument>src/test/perl</argument>
+                    <argument>src/test/perl/${unittest}</argument>
                   </arguments>
 '		</configuration>
               </execution>
