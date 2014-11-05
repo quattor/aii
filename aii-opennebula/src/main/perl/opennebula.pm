@@ -255,7 +255,8 @@ sub remove_and_create_vn_ars
                     $main::this_app->error("Quattor flag not found within AR. ", 
                                         "ONE AII is not allowed to remove this AR.");
                 } else {
-                    $main::this_app->debug(1, "AR template was not found within $vnet: ", $ardata->{ar});
+                    $main::this_app->debug(1, "Unable to remove AR. ",
+                                        "AR template is not available from vnet: $vnet: ", $ardata->{ar});
                 }
             } elsif (!$remove and $arinfo) {
                 # Update the AR info
@@ -345,36 +346,6 @@ sub remove_and_create_vm_template
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
         return $templ;
-    }
-}
-
-# Detects if the resource
-# is already there and if quattor flag is present
-# return undef: resource is not available
-# return 1: resource is available but without Quattor flag
-# return -1: resource is availabe and Quattor flag is set
-sub is_one_resource_available
-{
-    my ($self, $one, $type, $name) = @_;
-    my $quattor;
-    my $gmethod = "get_${type}s";
-    my @existres = $one->$gmethod(qr{^$name$});
-    if (scalar @existres > 0) {
-        $quattor = $self->check_quattor_tag($existres[0]);
-    }
-    if (!$quattor) {
-        $self->verbose("Name: $name is already used by a $type resource. ",
-                    "The Quattor flag is not set. ",
-                    "We can't modify this resource.");
-        return 1;
-    } elsif ($quattor) {
-        $self->verbose("Name : $name is already used by a $type resource. ",
-                    "Quattor flag is set. ",
-                    "We can modify and update this resource.");
-        return -1;
-    } else {
-        $self->verbose("Name: $name is not used by $type resource yet.");
-        return;
     }
 }
 
