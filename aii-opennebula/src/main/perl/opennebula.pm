@@ -242,7 +242,7 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
                 # Detect Quattor and id first
-                $arid = $self->detect_vn_ar_quattor($arinfo);
+                $arid = $self->detect_vn_ar_quattor($arinfo) if $arinfo;
                 if (defined($arid)) {
                     $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
                     my $rmid = $t->rmar($arid);
@@ -251,9 +251,11 @@ sub remove_and_create_vn_ars
                     } else {
                         $main::this_app->error("Unable to remove AR id: $arid from vnet: $vnet");
                     }
-                } else {
+                } elsif ($arinfo) {
                     $main::this_app->error("Quattor flag not found within AR. ", 
                                         "ONE AII is not allowed to remove this AR.");
+                } else {
+                    $main::this_app->debug(1, "AR template was not found within $vnet: ", $ardata->{ar});
                 }
             } elsif (!$remove and $arinfo) {
                 # Update the AR info
@@ -343,6 +345,36 @@ sub remove_and_create_vm_template
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
         return $templ;
+    }
+}
+
+# Detects if the resource
+# is already there and if quattor flag is present
+# return undef: resource is not available
+# return 1: resource is available but without Quattor flag
+# return -1: resource is availabe and Quattor flag is set
+sub is_one_resource_available
+{
+    my ($self, $one, $type, $name) = @_;
+    my $quattor;
+    my $gmethod = "get_${type}s";
+    my @existres = $one->$gmethod(qr{^$name$});
+    if (scalar @existres > 0) {
+        $quattor = $self->check_quattor_tag($existres[0]);
+    }
+    if (!$quattor) {
+        $self->verbose("Name: $name is already used by a $type resource. ",
+                    "The Quattor flag is not set. ",
+                    "We can't modify this resource.");
+        return 1;
+    } elsif ($quattor) {
+        $self->verbose("Name : $name is already used by a $type resource. ",
+                    "Quattor flag is set. ",
+                    "We can modify and update this resource.");
+        return -1;
+    } else {
+        $self->verbose("Name: $name is not used by $type resource yet.");
+        return;
     }
 }
 
