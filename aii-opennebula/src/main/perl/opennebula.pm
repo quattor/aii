@@ -170,7 +170,7 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-    my (@rimages, @nimages, @qimages, $newimage);
+    my (@rimages, @nimages, @qimages, $newimage, %opts);
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
@@ -181,6 +181,7 @@ sub remove_and_create_vm_images
                 # It's safe, we can remove the image
                 $main::this_app->info("Removing VM image: $imagename");
                 my $id = $t->delete();
+                sleep(3);
                 if ($id) {
                     push(@rimages, $imagename);
                 } else {
