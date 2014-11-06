@@ -170,7 +170,7 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-    my (@rimages, @nimages, @qimages);
+    my (@rimages, @nimages, @qimages, $newimage);
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
@@ -192,7 +192,12 @@ sub remove_and_create_vm_images
         }
     	# And create the new image with the image data
         if (!$remove) {
-            my $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
+            if ($self->is_one_resource_available($one, "image", $imagename)) {
+                $main::this_app->error("Image: $imagename is already used and AII hook: image is not set. ",
+                                        "Please remove this image first.");
+            } else {
+                $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
+            }
             if ($newimage) {
                 $main::this_app->info("Created new VM image ID: ", $newimage->id);
                 push(@nimages, $imagename);
@@ -372,6 +377,22 @@ sub is_supported_one_version
     }
     return $res;
 }
+
+# Detects if the resource is already there
+# return undef: resource not used yet
+# return 1: resource already used
+sub is_one_resource_available
+{
+    my ($self, $one, $type, $name) = @_;
+    my $gmethod = "get_${type}s";
+    my @existres = $one->$gmethod(qr{^$name$});
+    if (@existres) {
+        $main::this_app->info("Name: $name is already used by a $type resource.");
+        return 1;
+    }
+    return;
+}
+
 
 # Based on Quattor template this function:
 # creates new VM templates
