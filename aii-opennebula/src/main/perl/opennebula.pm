@@ -20,6 +20,7 @@ use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
+use constant TIMEOUT => 10;
 use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 
 # a config file in .ini style with minmal 
@@ -170,7 +171,7 @@ sub new
 sub remove_and_create_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
-    my (@rimages, @nimages, @qimages, $newimage, %opts);
+    my (@rimages, @nimages, @qimages, $newimage, $count);
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
@@ -181,7 +182,19 @@ sub remove_and_create_vm_images
                 # It's safe, we can remove the image
                 $main::this_app->info("Removing VM image: $imagename");
                 my $id = $t->delete();
-                sleep(3);
+                eval {
+                    local $SIG{ALRM} = sub { die "alarm\n" };
+                    alarm TIMEOUT;
+                    do {
+                        sleep(2);
+                    } while($self->is_one_resource_available($one, "image", $imagename));
+                    alarm 0;
+                };
+                if ($@) {
+                    die unless $@ eq "alarm\n";
+                    $main::this_app->error("VM image deletion: $imagename. TIMEOUT"); 
+                }
+
                 if ($id) {
                     push(@rimages, $imagename);
                 } else {
