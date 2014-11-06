@@ -46,7 +46,7 @@ The next paths are relative to /system/aii/hooks/install
 
 =item * image : boolean
 
-Create VM images
+Create VM images. Note: if this hook is set the current VM images will be overwritten
 
 =item * vm : boolean
 
