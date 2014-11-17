@@ -36,7 +36,8 @@ is($networks{$networkb}{network}, "altaria.vsc", "vnetb name is altaria.vsc");
 
 my $one = $aii->make_one();
 
-# Check AR creation
+diag("Check AR creation");
+
 rpc_history_reset;
 $aii->remove_and_create_vn_ars($one, \%networks, 0);
 #diag_rpc_history;
@@ -48,7 +49,7 @@ ok(rpc_history_ok(["one.vnpool.info",
                    "one.vn.add_ar"]),
                    "remove_and_create_vn_ars install rpc history ok");
 
-# Check AR remove
+diag("Check AR remove");
 rpc_history_reset;
 $aii->remove_and_create_vn_ars($one, \%networks, 1);
 ok(rpc_history_ok(["one.vnpool.info",
