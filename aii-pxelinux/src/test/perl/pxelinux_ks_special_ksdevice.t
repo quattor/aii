@@ -18,7 +18,7 @@ $CAF::Object::NoAction = 1;
 
 my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
 
-my ($fp, $ks, $cfg, $fh, $search, $regtxt);
+my ($fp, $ks, $cfg, $bond, $fh, $search, $regtxt);
 foreach my $type (("bootif", "link", "mac")) {
     # mock filepath, it has this_app->option
     $fp = "target/test/pxelinux_$type";
@@ -26,13 +26,17 @@ foreach my $type (("bootif", "link", "mac")) {
     
     $ks = NCM::Component::pxelinux->new('pxelinux_ks');
     $cfg = get_config_for_profile("pxelinux_ks_ksdevice_$type");
+
+    $search = $type;
+    $search = "AA:BB:CC:DD:EE:FF" if ($type eq "mac"); 
+    
+    $bond = NCM::Component::pxelinux::pxe_network_bonding($cfg, {}, $search);
+    ok(! defined($bond), "Bonding for unsupported device $search returns undef");
     
     NCM::Component::pxelinux::pxeprint($cfg);
     
     $fh = get_file($fp);
     
-    $search = $type;
-    $search = "AA:BB:CC:DD:EE:FF" if ($type eq "mac"); 
     $regtxt = '^\s{4}append\s.*?\sksdevice='.$search.'(\s|$)';
     like($fh, qr{$regtxt}m, "ksdevice=$search for ksdevice $type");
     if ($type eq "bootif") {
