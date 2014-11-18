@@ -171,7 +171,7 @@ sub ksnetwork_get_dev_net
     my $version = get_anaconda_version($tree);
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
-    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i) {
+    if ($dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i) {
         $this_app->error("Invalid ksdevice $dev for static ks configuration.");
         return;
     }
