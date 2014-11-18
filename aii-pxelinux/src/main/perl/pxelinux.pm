@@ -168,7 +168,7 @@ sub pxe_ks_static_network
 sub pxe_network_bonding {
     my ($config, $tree, $dev) = @_;
 
-    if ($dev =~ m!(?:[0-9a-f][0-9a-f](?::[0-9][0-9]){5})|bootif|link!i && 
+    if ($dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i && 
         ! $config->elementExists("/system/network/interfaces/$dev")) {
         $this_app->error("Invalid ksdevice $dev for bonding network configuration.");
         return;
