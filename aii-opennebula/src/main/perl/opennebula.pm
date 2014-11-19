@@ -20,7 +20,7 @@ use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
-use constant TIMEOUT => 10;
+use constant TIMEOUT => 30;
 use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 
 # a config file in .ini style with minmal 
