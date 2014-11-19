@@ -10,16 +10,16 @@ use warnings;
 use Test::More;
 use AII::opennebula;
 use Test::MockModule;
-use Test::Quattor qw(vmtemplate);
+use Test::Quattor qw(aii_vmtemplate);
 use OpennebulaMock;
 
-my $cfg = get_config_for_profile('vmtemplate');
+my $cfg = get_config_for_profile('aii_vmtemplate');
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
-my $ttout = $aii->process_template($cfg, "vmtemplate");
+my $ttout = $aii->process_template($cfg, "aii_vmtemplate");
 
 like($ttout, qr{^NAME\s+=\s+}m, "Found template NAME");
 

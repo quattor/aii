@@ -10,16 +10,16 @@ use warnings;
 use Test::More;
 use AII::opennebula;
 use Test::MockModule;
-use Test::Quattor qw(images);
+use Test::Quattor qw(aii_images);
 use OpennebulaMock;
 
-my $cfg = get_config_for_profile('images');
+my $cfg = get_config_for_profile('aii_images');
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
-my $ttout = $aii->process_template($cfg, "imagetemplate");
+my $ttout = $aii->process_template($cfg, "aii_imagetemplate");
 
 like($ttout, qr{^DATASTORE\s+=\s+}m, "Found DATASTORE");
 

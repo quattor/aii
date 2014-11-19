@@ -94,7 +94,7 @@ sub get_fqdn
 sub get_images
 {
     my ($self, $config) = @_;
-    my $all_images = $self->process_template($config, "imagetemplate");
+    my $all_images = $self->process_template($config, "aii_imagetemplate");
     my %res;
 
     my @tmp = split(qr{^DATASTORE\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_images);
@@ -146,7 +146,7 @@ sub get_vmtemplate
     my ($self, $config) = @_;
     my ($vmtemplatename, $quattor);
 
-    my $vm_template = $self->process_template($config, "vmtemplate");
+    my $vm_template = $self->process_template($config, "aii_vmtemplate");
     $vmtemplatename = $1 if ($vm_template =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
     $quattor = $1 if ($vm_template =~ m/^QUATTOR\s+=\s+(.*?)\s*$/m);
 
