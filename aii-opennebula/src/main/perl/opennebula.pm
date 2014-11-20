@@ -176,51 +176,11 @@ sub remove_and_create_vm_images
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
-        my @existimage = $one->get_images(qr{^$imagename$});
-        foreach my $t (@existimage) {
-            if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
-                # It's safe, we can remove the image
-                $main::this_app->info("Removing VM image: $imagename");
-                my $id = $t->delete();
-                eval {
-                    local $SIG{ALRM} = sub { die "alarm\n" };
-                    alarm TIMEOUT;
-                    do {
-                        sleep(2);
-                    } while($self->is_one_resource_available($one, "image", $imagename));
-                    alarm 0;
-                };
-                if ($@) {
-                    die unless $@ eq "alarm\n";
-                    $main::this_app->error("VM image deletion: $imagename. TIMEOUT"); 
-                }
-
-                if ($id) {
-                    push(@rimages, $imagename);
-                } else {
-                    $main::this_app->error("VM image: $imagename was not removed");
-                }
-            } else {
-                $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
-            }
-        }
-    	# And create the new image with the image data
-        if (!$remove) {
-            if ($self->is_one_resource_available($one, "image", $imagename)) {
-                $main::this_app->error("Image: $imagename is already used and AII hook: image is not set. ",
-                                        "Please remove this image first.");
-            } else {
-                $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-            }
-            if ($newimage) {
-                $main::this_app->info("Created new VM image ID: ", $newimage->id);
-                push(@nimages, $imagename);
-            } else {
-                $main::this_app->error("VM image: $imagename is not available");
-            }
-    	}
+        @rimages = $self->remove_vm_images($one, $forcecreateimage, $imagename, @rimages);
+        # And create the new image with the image data
+        @nimages = $self->create_vm_images($one, $imagename, $imagedata, $remove, @nimages);
     }
-
+    # Check created/removed image lists
     if ($remove) {
         my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
         if ($diff) { 
@@ -232,6 +192,66 @@ sub remove_and_create_vm_images
             $main::this_app->error("Creating these VM images: ", join(',', @qimages));
         }
     }
+}
+
+# Create new VM images
+# Returns new images array
+sub create_vm_images
+{
+    my ($self, $one, $imagename, $imagedata, $remove, @nimages) = @_;
+    my $newimage;
+    if (!$remove) {
+        if ($self->is_one_resource_available($one, "image", $imagename)) {
+            $main::this_app->error("Image: $imagename is already used and AII hook: image is not set. ",
+                                    "Please remove this image first.");
+        } else {
+            $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
+        }
+        if ($newimage) {
+            $main::this_app->info("Created new VM image ID: ", $newimage->id);
+            push(@nimages, $imagename);
+        } else {
+            $main::this_app->error("VM image: $imagename is not available");
+        }
+    }
+    return @nimages;
+}
+
+# Removes current VM images
+# Returns removed images array
+sub remove_vm_images
+{
+    my ($self, $one, $forcecreateimage, $imagename, @rimages) = @_;
+
+    my @existimage = $one->get_images(qr{^$imagename$});
+    foreach my $t (@existimage) {
+        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+            # It's safe, we can remove the image
+            $main::this_app->info("Removing VM image: $imagename");
+            my $id = $t->delete();
+            eval {
+                local $SIG{ALRM} = sub { die "alarm\n" };
+                alarm TIMEOUT;
+                do {
+                    sleep(2);
+                } while($self->is_one_resource_available($one, "image", $imagename));
+                alarm 0;
+            };
+            if ($@) {
+                die unless $@ eq "alarm\n";
+                $main::this_app->error("VM image deletion: $imagename. TIMEOUT");
+            }
+
+            if ($id) {
+                push(@rimages, $imagename);
+            } else {
+                $main::this_app->error("VM image: $imagename was not removed");
+            }
+        } else {
+            $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
+        }
+    }
+    return @rimages;
 }
 
 # This function checks the difference between two image lists
@@ -260,43 +280,67 @@ sub remove_and_create_vn_ars
         foreach my $t (@exisvnet) {
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
-                # Detect Quattor and id first
-                $arid = $self->detect_vn_ar_quattor($arinfo) if $arinfo;
-                if (defined($arid)) {
-                    $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
-                    my $rmid = $t->rmar($arid);
-                    if (defined($rmid)) {
-                        $main::this_app->info("Removed from vnet: $vnet AR id: $arid");
-                    } else {
-                        $main::this_app->error("Unable to remove AR id: $arid from vnet: $vnet");
-                    }
-                } elsif ($arinfo) {
-                    $main::this_app->error("Quattor flag not found within AR. ", 
-                                        "ONE AII is not allowed to remove this AR.");
-                } else {
-                    $main::this_app->debug(1, "Unable to remove AR. ",
-                                        "AR template is not available from vnet: $vnet: ", $ardata->{ar});
-                }
+                $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
             } elsif (!$remove and $arinfo) {
-                # Update the AR info
-                $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
-                $arid = $t->updatear($ardata->{ar});
-                if (defined($arid)) {
-                    $main::this_app->info("Updated $vnet AR id: ", $arid);
-                } else {
-                    $main::this_app->error("Unable to update AR from vnet: $vnet");
-                }
+                $self->update_vn_ars($one, $vnet, $ardata, $t);
             } else { 
-                # Create a new network AR
-                $main::this_app->debug(1, "New AR template in $vnet: ", $ardata->{ar});
-                $arid = $t->addar($ardata->{ar});
-                if (defined($arid)) {
-                    $main::this_app->info("Created new $vnet AR id: ", $arid);
-                } else {
-                    $main::this_app->error("Unable to create new AR within vnet: $vnet");
-                }
+                $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
        }
+    }
+}
+
+# Create VN AR leases
+sub create_vn_ars
+{
+    my ($self, $one, $vnet, $ardata, $ar) = @_;
+    my $arid;
+    # Create a new network AR
+    $main::this_app->debug(1, "New AR template in $vnet: ", $ardata->{ar});
+    $arid = $ar->addar($ardata->{ar});
+    if (defined($arid)) {
+        $main::this_app->info("Created new $vnet AR id: ", $arid);
+    } else {
+        $main::this_app->error("Unable to create new AR within vnet: $vnet");
+    }
+}
+
+# Remove VN AR leases
+sub remove_vn_ars
+{
+    my ($self, $one, $arinfo, $vnet, $ardata, $ar) = @_;
+    my $arid;
+    # Detect Quattor and id first
+    $arid = $self->detect_vn_ar_quattor($arinfo) if $arinfo;
+    if (defined($arid)) {
+        $main::this_app->debug(1, "AR template to remove from $vnet: ", $ardata->{ar});
+        my $rmid = $ar->rmar($arid);
+        if (defined($rmid)) {
+            $main::this_app->info("Removed from vnet: $vnet AR id: $arid");
+        } else {
+             $main::this_app->error("Unable to remove AR id: $arid from vnet: $vnet");
+        }
+    } elsif ($arinfo) {
+        $main::this_app->error("Quattor flag not found within AR. ",
+                             "ONE AII is not allowed to remove this AR.");
+    } else {
+        $main::this_app->debug(1, "Unable to remove AR. ",
+                             "AR template is not available from vnet: $vnet: ", $ardata->{ar});
+    }
+}
+
+# Update VN AR leases
+sub update_vn_ars
+{
+    my ($self, $one, $vnet, $ardata, $ar) = @_;
+    my $arid;
+    # Update the AR info
+    $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
+    $arid = $ar->updatear($ardata->{ar});
+    if (defined($arid)) {
+        $main::this_app->info("Updated $vnet AR id: ", $arid);
+    } else {
+        $main::this_app->error("Unable to update AR from vnet: $vnet");
     }
 }
 
