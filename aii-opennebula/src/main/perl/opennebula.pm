@@ -229,18 +229,7 @@ sub remove_vm_images
             # It's safe, we can remove the image
             $main::this_app->info("Removing VM image: $imagename");
             my $id = $t->delete();
-            eval {
-                local $SIG{ALRM} = sub { die "alarm\n" };
-                alarm TIMEOUT;
-                do {
-                    sleep(2);
-                } while($self->is_one_resource_available($one, "image", $imagename));
-                alarm 0;
-            };
-            if ($@) {
-                die unless $@ eq "alarm\n";
-                $main::this_app->error("VM image deletion: $imagename. TIMEOUT");
-            }
+            $self->is_timeout($one, "image", $imagename);
 
             if ($id) {
                 push(@rimages, $imagename);
@@ -252,6 +241,25 @@ sub remove_vm_images
         }
     }
     return @rimages;
+}
+
+# Check if the service is removed
+# before our TIMEOUT
+sub is_timeout
+{
+    my ($self, $one, $resource, $name) = @_;
+    eval {
+        local $SIG{ALRM} = sub { die "alarm\n" };
+        alarm TIMEOUT;
+        do {
+            sleep(2);
+        } while($self->is_one_resource_available($one, $resource, $name));
+        alarm 0;
+    };
+    if ($@) {
+        die unless $@ eq "alarm\n";
+        $main::this_app->error("VM image deletion: $name. TIMEOUT");
+    }
 }
 
 # This function checks the difference between two image lists
