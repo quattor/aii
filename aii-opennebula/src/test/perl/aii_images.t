@@ -16,6 +16,7 @@ use OpennebulaMock;
 my $cfg = get_config_for_profile('aii_images');
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
+$opennebulaaii->mock('is_timeout', undef);
 
 my $aii = AII::opennebula->new();
 
