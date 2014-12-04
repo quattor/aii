@@ -181,14 +181,16 @@ sub pxe_network_bonding {
         $this_app->$logerror($bonding_disabled_msg);
     }
     
-    if ($dev_invalid && ! $dev_exists) {
-        $this_app->$logerror("Invalid ksdevice $dev for bonding network configuration. $bonding_disabled_msg");
-        return;
-    } elsif (! $dev_exists) {
-        $this_app->$logerror("ksdevice $dev for bonding network configuration has matching no interface. $bonding_disabled_msg");
-        return;
-    }
-
+    if (! $dev_exists) {
+        if ($dev_invalid) {
+            $this_app->$logerror("Invalid ksdevice $dev for bonding network configuration. $bonding_disabled_msg");
+            return;
+        } else {
+            $this_app->$logerror("ksdevice $dev for bonding network configuration has matching no interface. $bonding_disabled_msg");
+            return;
+        }
+    };
+    
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
