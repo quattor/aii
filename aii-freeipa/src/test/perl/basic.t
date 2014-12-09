@@ -9,6 +9,7 @@ use strict;
 use warnings;
 use Test::More;
 use AII::freeipa;
+use NCM::Component::ks
 use CAF::Object;
 #use NCM::Component;
 use Test::Quattor qw(basic);
@@ -53,5 +54,7 @@ like($fh, qr(--enable-dns-updates)m, "IPA dns enabled");
 
 like($fh, qr(^yum -c /tmp/aii/yum/yum.conf -y install ipa-client)m, "install ipa-client in post_reboot");
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

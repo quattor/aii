@@ -42,5 +42,7 @@ like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n}m, 'packages present');
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

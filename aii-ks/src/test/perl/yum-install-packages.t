@@ -27,4 +27,7 @@ $ks->yum_install_packages($cfg);
 like($fh, qr{\bkernel-firmware\b}, "Kernel firmware preserved");
 unlike($fh, qr{\bkernel-module-foo\b}, "Kernel module subsumed by glob");
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
 done_testing();

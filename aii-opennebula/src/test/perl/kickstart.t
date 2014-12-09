@@ -13,6 +13,7 @@ use Test::More;
 use Test::MockModule;
 use Test::Quattor qw(kickstart);
 use AII::opennebula;
+use NCM::Component::ks;
 use CAF::FileWriter;
 use CAF::Object;
 
@@ -38,5 +39,8 @@ $aii->post_reboot($cfg, $path);
 
 like($fh, qr{^yum\s-c\s/tmp/aii/yum/yum.conf\s-y\sinstall\sacpid}m, 'yum install acpid present');
 like($fh, qr{^service\sacpid\sstart}m, 'service acpid restart present');
+
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

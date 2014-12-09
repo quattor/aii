@@ -39,4 +39,7 @@ unlike($logaction, qr{/dev/console}, 'no /dev/console at all');
 unlike($logaction, qr{^\(tail\s-f\smylogfile.*?usleep.*\)\s&$}m, 'no logsending');
 unlike($logaction, qr{usleep}, 'no usleep at all');
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
 done_testing();

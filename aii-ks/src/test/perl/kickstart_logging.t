@@ -39,6 +39,7 @@ like($logaction, qr{^wait_for_network\slogserver}m, 'Insert sleep to make sure n
 like($logaction, qr{^\(tail\s-f\smylogfile.*?usleep.*?\snc\s-u\slogserver\s514\)\s&$}m, 'netcat udp logsending');
 like($logaction, qr{^sleep\s\d+$}m, 'sleep inserted to allow start');
 
-
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

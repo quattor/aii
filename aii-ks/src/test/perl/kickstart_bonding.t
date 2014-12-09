@@ -27,4 +27,8 @@ NCM::Component::ks::kscommands($cfg);
 
 like($fh, qr{^network\s--bootproto=static\s--bondslaves=eth0,eth1\s--bondopts=(opt1=val1,opt2=val2|opt2=val2,opt1=val1)\s--device=bond0\s--hostname=x.y\s--nameserver=nm1\s--ip=1.2.3.0\s--netmask=255.255.255.0\s--gateway=1.2.3.4}m, ' present');
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
 done_testing();
+
