@@ -259,7 +259,7 @@ sub pxe_ks_append
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
             ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
-            $this_app->warning("Using deprecated legacy behaviour. Please look into the configuration.");
+            $this_app->warn("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";  
         }
