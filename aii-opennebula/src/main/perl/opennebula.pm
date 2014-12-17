@@ -71,14 +71,15 @@ sub process_template
 {
     my ($self, $config, $tt_name) = @_;
     
-    my $type_rel = "opennebula/$tt_name.tt";
     my $tree = $config->getElement('/')->getTree();
-    my $tpl = CAF::TextRender->new($type_rel,
-                                  $tree,
-                                  log => $self,
-                                  );
+    my $tpl = CAF::TextRender->new(
+        $tt_name,
+        $tree,
+        relpath => 'aii-opennebula',
+        log => $self,
+        );
     if (!$tpl) {
-        $main::this_app->error("TT processing of $type_rel failed.", $tpl->{fail});
+        $main::this_app->error("TT processing of $tt_name failed.", $tpl->{fail});
         return;
     }
     return $tpl;
@@ -99,7 +100,7 @@ sub get_fqdn
 sub get_images
 {
     my ($self, $config) = @_;
-    my $all_images = $self->process_template($config, "aii_imagetemplate");
+    my $all_images = $self->process_template($config, "imagetemplate");
     my %res;
 
     my @tmp = split(qr{^DATASTORE\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_images);
@@ -125,7 +126,7 @@ sub get_images
 sub get_vnetars
 {
     my ($self, $config) = @_;
-    my $all_ars = $self->process_template($config, "aii_network_ar");
+    my $all_ars = $self->process_template($config, "network_ar");
     my %res;
 
     my @tmp = split(qr{^NETWORK\s+=\s+(?:"|')(\S+)(?:"|')\s*$}m, $all_ars);
@@ -151,7 +152,7 @@ sub get_vmtemplate
     my ($self, $config) = @_;
     my ($vmtemplatename, $quattor);
 
-    my $vm_template = $self->process_template($config, "aii_vmtemplate");
+    my $vm_template = $self->process_template($config, "vmtemplate");
     $vmtemplatename = $1 if ($vm_template =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
     $quattor = $1 if ($vm_template =~ m/^QUATTOR\s+=\s+(.*?)\s*$/m);
 

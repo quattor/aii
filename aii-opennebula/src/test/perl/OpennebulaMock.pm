@@ -5,6 +5,7 @@ use Test::More;
 use Data::Dumper;
 use base 'Exporter';
 use XML::Simple;
+use Cwd;
 
 use rpcdata;
 
@@ -103,8 +104,7 @@ my $mock = Test::MockModule->new('CAF::TextRender');
 $mock->mock('new', sub {
     my $init = $mock->original("new");
     my $trd = &$init(@_);
-    my $inclpath = $ENV{QUATTOR_TEST_TEMPLATE_INCLUDE_PATH};
-    $trd->{includepath} = $inclpath if $inclpath;
+    $trd->{includepath} = getcwd()."/target/share/templates/quattor";
     return $trd;
 });
 
