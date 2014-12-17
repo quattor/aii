@@ -13,5 +13,5 @@ multiline
 ^TARGET\s?=\s?"vdb"$
 ^SIZE\s?=\s?10480$
 ^DESCRIPTION\s?=\s?"QUATTOR image for node630.cubone.os: vdb"$
-^DATASTORE\s?=\s?"default"$
 ^QUATTOR\s?=\s?1$
+^DATASTORE\s?=\s?"default"$
