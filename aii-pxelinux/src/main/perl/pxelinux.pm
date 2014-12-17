@@ -168,23 +168,39 @@ sub pxe_ks_static_network
 sub pxe_network_bonding {
     my ($config, $tree, $dev) = @_;
 
-    if ($dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i && 
-        ! $config->elementExists("/system/network/interfaces/$dev")) {
-        $this_app->error("Invalid ksdevice $dev for bonding network configuration.");
-        return;
-    }
+    my $dev_exists = $config->elementExists("/system/network/interfaces/$dev");
+    my $dev_invalid = $dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i;
+    # should not be disabled, generate detailed logging instead of immediately returning
+    my $bonding_disabled = exists($tree->{bonding}) && (! $tree->{bonding});
 
+    my $logerror = "error";
+    my $bonding_disabled_msg = "";
+    if ($bonding_disabled) {
+        $bonding_disabled_msg = "Bonding config generation explicitly disabled";
+        $logerror = "verbose";
+        $this_app->$logerror($bonding_disabled_msg);
+    }
+    
+    if (! $dev_exists) {
+        if ($dev_invalid) {
+            $this_app->$logerror("Invalid ksdevice $dev for bonding network configuration. $bonding_disabled_msg");
+            return;
+        } else {
+            $this_app->$logerror("ksdevice $dev for bonding network configuration has matching no interface. $bonding_disabled_msg");
+            return;
+        }
+    };
+    
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
     # if bonding not defined, assume it's allowed
     my $bonddev = $net->{master};
+
     # check the existence to deal with older profiles
-    if (exists($tree->{bonding}) && (! $tree->{bonding})) {
-        my $msg = "Bonding config generation explicitly disabled";
-        $this_app->debug (5, $msg);
+    if ($bonding_disabled) {
         # lets hope you know what you are doing
-        $this_app->warn ("$msg for dev $dev, with master $bonddev set.") if ($bonddev);
+        $this_app->warn ("$bonding_disabled_msg for dev $dev, with master $bonddev set.") if ($bonddev);
         return;
    } elsif ($bonddev) {
         # this is the dhcp code logic; adding extra error here. 
@@ -243,7 +259,7 @@ sub pxe_ks_append
 
         if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
             ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
-            $this_app->warning("Using deprecated legacy behaviour. Please look into the configuration.");
+            $this_app->warn("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";  
         }

@@ -46,5 +46,7 @@ like($fh, qr{^eula --agreed$}m, 'eula agreed');
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^EENNDD\n}m, 'installtype present');
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

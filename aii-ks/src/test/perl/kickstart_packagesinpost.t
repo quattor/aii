@@ -32,5 +32,7 @@ $ks->yum_install_packages($cfg, $packref);
 like($fh, qr{\spackage2}, "package2 added"); # one of the packages
 like($fh, qr{\sbind-utils}, "bind-utils added"); # one of the auto-added packages
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
 
 done_testing();

@@ -162,7 +162,9 @@ EOF
 
 # Determine the network device name, and return the 
 # device ip configuration and any additional network 
-# options (e.g. to handle with bonding)  
+# options (e.g. to handle with bonding)
+# This method is called when setting up 
+# static network configuration.
 sub ksnetwork_get_dev_net
 {
     my ($tree, $config) = @_; 
@@ -171,11 +173,17 @@ sub ksnetwork_get_dev_net
     my $version = get_anaconda_version($tree);
 
     my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+
     if ($dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i) {
         $this_app->error("Invalid ksdevice $dev for static ks configuration.");
         return;
     }
-
+    
+    if (! $config->elementExists("/system/network/interfaces/$dev")) {
+        $this_app->error("ksdevice $dev missing network details for static ks configuration.");
+        return;
+    }
+    
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
     # check for bonding 
