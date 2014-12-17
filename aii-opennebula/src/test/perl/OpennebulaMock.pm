@@ -99,4 +99,13 @@ sub mock_rpc {
 our $opennebula = new Test::MockModule('Net::OpenNebula');
 $opennebula->mock( '_rpc',  \&mock_rpc);
 
+my $mock = Test::MockModule->new('CAF::TextRender');
+$mock->mock('new', sub {
+    my $init = $mock->original("new");
+    my $trd = &$init(@_);
+    my $inclpath = $ENV{QUATTOR_TEST_TEMPLATE_INCLUDE_PATH};
+    $trd->{includepath} = $inclpath if $inclpath;
+    return $trd;
+});
+
 1;

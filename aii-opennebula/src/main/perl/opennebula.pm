@@ -8,6 +8,7 @@ use strict;
 use warnings;
 use version;
 use CAF::Process;
+use CAF::TextRender;
 use Set::Scalar;
 use Template;
 
@@ -65,18 +66,22 @@ sub make_one
     return $one;
 }
 
-sub process_template 
+# Detect and process ONE templates
+sub process_template
 {
     my ($self, $config, $tt_name) = @_;
-    my $res;
-    my $tt_rel = "metaconfig/opennebula/$tt_name.tt";
+    
+    my $type_rel = "opennebula/$tt_name.tt";
     my $tree = $config->getElement('/')->getTree();
-    my $tpl = Template->new(INCLUDE_PATH => TEMPLATEPATH);
-    if (! $tpl->process($tt_rel, $tree, \$res)) {
-        $main::this_app->error("TT processing of $tt_rel failed: ", $tpl->error());
+    my $tpl = CAF::TextRender->new($type_rel,
+                                  $tree,
+                                  log => $self,
+                                  );
+    if (!$tpl) {
+        $main::this_app->error("TT processing of $type_rel failed.", $tpl->{fail});
         return;
     }
-    return $res;
+    return $tpl;
 }
 
 # Return fqdn of the node
@@ -176,20 +181,20 @@ sub remove_and_create_vm_images
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
-        @rimages = $self->remove_vm_images($one, $forcecreateimage, $imagename, @rimages);
+        $self->remove_vm_images($one, $forcecreateimage, $imagename, \@rimages);
         # And create the new image with the image data
-        @nimages = $self->create_vm_images($one, $imagename, $imagedata, $remove, @nimages);
+        $self->create_vm_images($one, $imagename, $imagedata, $remove, \@nimages);
     }
     # Check created/removed image lists
     if ($remove) {
         my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
         if ($diff) { 
-            $main::this_app->error("Removing these VM images: ", join(',', @qimages));
+            $main::this_app->error("Removing these VM images: ", join(', ', @qimages));
         }
     } else {
         my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
         if ($diff) { 
-            $main::this_app->error("Creating these VM images: ", join(',', @qimages));
+            $main::this_app->error("Creating these VM images: ", join(', ', @qimages));
         }
     }
 }
@@ -198,7 +203,7 @@ sub remove_and_create_vm_images
 # Returns new images array
 sub create_vm_images
 {
-    my ($self, $one, $imagename, $imagedata, $remove, @nimages) = @_;
+    my ($self, $one, $imagename, $imagedata, $remove, $ref_nimages) = @_;
     my $newimage;
     if (!$remove) {
         if ($self->is_one_resource_available($one, "image", $imagename)) {
@@ -209,19 +214,18 @@ sub create_vm_images
         }
         if ($newimage) {
             $main::this_app->info("Created new VM image ID: ", $newimage->id);
-            push(@nimages, $imagename);
+            push(@{$ref_nimages}, $imagename);
         } else {
             $main::this_app->error("VM image: $imagename is not available");
         }
     }
-    return @nimages;
 }
 
 # Removes current VM images
 # Returns removed images array
 sub remove_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagename, @rimages) = @_;
+    my ($self, $one, $forcecreateimage, $imagename, $ref_rimages) = @_;
 
     my @existimage = $one->get_images(qr{^$imagename$});
     foreach my $t (@existimage) {
@@ -232,7 +236,7 @@ sub remove_vm_images
             $self->is_timeout($one, "image", $imagename);
 
             if ($id) {
-                push(@rimages, $imagename);
+                push(@{$ref_rimages}, $imagename);
             } else {
                 $main::this_app->error("VM image: $imagename was not removed");
             }
@@ -240,7 +244,6 @@ sub remove_vm_images
             $main::this_app->info("No QUATTOR flag found for VM image: $imagename");
         }
     }
-    return @rimages;
 }
 
 # Check if the service is removed
