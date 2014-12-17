@@ -1,0 +1,22 @@
+OpenNebula network aii address range template full test
+---
+multiline
+---
+^AR\s?=\s?\[$
+^\s{4}TYPE\s{1}=\s{1}"IP4",$
+^\s{4}IP\s{1}=\s{1}"10.141.8.30",$
+^\s{4}MAC\s{1}=\s{1}"AA:00:00:80:01:00",$
+^\s{4}QUATTOR\s{1}=\s{1}"1",$
+^\s{4}HOSTNAME\s{1}=\s{1}"node630.cubone.os",$
+^\s{4}SIZE\s{1}=\s{1}"1"$
+^\]$
+^NETWORK\s?=\s?"br100"$
+^AR\s?=\s?\[$
+^\s{4}TYPE\s{1}=\s{1}"IP4",$
+^\s{4}IP\s{1}=\s{1}"172.24.8.30",$
+^\s{4}MAC\s{1}=\s{1}"AA:00:00:80:01:01",$
+^\s{4}QUATTOR\s{1}=\s{1}"1",$
+^\s{4}HOSTNAME\s{1}=\s{1}"node630.cubone.os",$
+^\s{4}SIZE\s{1}=\s{1}"1"$
+^\]$
+^NETWORK\s?=\s?"br101"$
