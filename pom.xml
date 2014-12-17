@@ -32,6 +32,7 @@
     <module>aii-dhcp</module>
     <module>aii-ks</module>
     <module>aii-pxelinux</module>
+    <module>aii-opennebula</module>
   </modules>
   <build>
     <pluginManagement>
