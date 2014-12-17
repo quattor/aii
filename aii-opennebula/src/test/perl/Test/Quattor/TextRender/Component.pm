@@ -164,7 +164,7 @@ our $mock = Test::MockModule->new('CAF::TextRender');
 $mock->mock('new', sub {
     my $init = $mock->original("new");
     my $trd = &$init(@_);
-    $trd->{relpath} = "resources"; # no relpath??
+    $trd->{relpath} = "resources"; # no relpath is possible??
     return $trd;
 });
 
