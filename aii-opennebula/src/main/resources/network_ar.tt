@@ -1,0 +1,17 @@
+[%- tmphost = [ system.network.hostname, system.network.domainname ]; 
+    fqdn = tmphost.join('.') -%]
+[%- FOR pair IN system.network.interfaces.pairs %]
+AR = [
+[%      FILTER indent -%]
+TYPE = "IP4",
+IP = "[% system.network.interfaces.${pair.key}.ip %]",
+MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
+QUATTOR = "1",
+HOSTNAME = "[% fqdn %]",
+SIZE = "1"
+[%-     END %]
+]
+[% # If we have several leases we have to split address range in several files
+   # Using NETWORK line. THIS MUST BE THE LAST TT FILE LINE-%]
+NETWORK = "[% system.opennebula.vnet.${pair.key} %]"
+[%- END %]
