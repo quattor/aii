@@ -19,7 +19,7 @@ $opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
-my $ttout = $aii->process_template($cfg, "aii_network_ar");
+my $ttout = $aii->process_template($cfg, "network_ar");
 
 like($ttout, qr{^NETWORK\s+=\s+}m, "Found vnet NETWORK name");
 

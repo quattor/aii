@@ -1,0 +1,13 @@
+OpenNebula simple aii address range template test
+---
+multiline
+---
+^AR\s?=\s*\[\s*$
+^\s*TYPE\s?=\s*".+",\s*$
+^\s*IP\s?=\s*".+",\s*$
+^\s*MAC\s?=\s*".+",\s*$
+^\s*QUATTOR\s?=\s*".+",\s*$
+^\s*HOSTNAME\s?=\s*".+",\s*$
+^\s*SIZE\s?=\s*".+"\s*$
+^\]$
+^NETWORK\s?=\s*".+"\s*$

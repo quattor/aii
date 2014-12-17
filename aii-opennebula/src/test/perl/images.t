@@ -20,7 +20,7 @@ $opennebulaaii->mock('is_timeout', undef);
 
 my $aii = AII::opennebula->new();
 
-my $ttout = $aii->process_template($cfg, "aii_imagetemplate");
+my $ttout = $aii->process_template($cfg, "imagetemplate");
 
 like($ttout, qr{^DATASTORE\s+=\s+}m, "Found DATASTORE");
 
