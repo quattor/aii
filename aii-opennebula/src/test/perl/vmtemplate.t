@@ -19,7 +19,7 @@ $opennebulaaii->mock('make_one', Net::OpenNebula->new());
 
 my $aii = AII::opennebula->new();
 
-my $ttout = $aii->process_template($cfg, "aii_vmtemplate");
+my $ttout = $aii->process_template($cfg, "vmtemplate");
 
 like($ttout, qr{^NAME\s+=\s+}m, "Found template NAME");
 
