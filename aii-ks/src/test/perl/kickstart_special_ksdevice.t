@@ -22,6 +22,9 @@ foreach my $type (("bootif", "link", "mac")) {
 
     NCM::Component::ks::kscommands($cfg);
     like($fh, qr{^network\s--bootproto=dhcp$}m, "special ksdevice $type implies dhcp ks");
+
+    # close the selected FH and reset STDOUT
+    NCM::Component::ks::ksclose;
 }
 
 done_testing();
