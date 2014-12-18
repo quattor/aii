@@ -189,7 +189,7 @@ sub pxe_network_bonding {
             $this_app->$logerror("ksdevice $dev for bonding network configuration has matching no interface. $bonding_disabled_msg");
             return;
         }
-    };
+    }
     
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
