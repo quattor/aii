@@ -722,6 +722,24 @@ end_of_fdisk
     fi
 }
 
+disksize_MiB () {
+    local path BYTES MB RET
+    RET=0
+    path="$1"
+    BYTES=`blockdev --getsize64 "$path" 2>/dev/null`
+    if [ -z $BYTES ]; then
+        BYTES=`fdisk -l "$path" 2>/dev/null |sed -n "s#^Disk\s$path.*\s\([0-9]\+\)\s*bytes.*#\1#p"`
+        if [ -z $BYTES ]; then
+            BYTES=0
+            RET=1
+        fi
+    fi
+    # use MiB
+    let MB=$BYTES/1048576
+    echo $MB
+    return $RET
+}
+
 wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
