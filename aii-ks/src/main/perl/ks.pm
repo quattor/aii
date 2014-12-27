@@ -743,23 +743,28 @@ disksize_MiB () {
 wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
-	ENDSEEK_OFFSET=20
+    # wipe 4 MiB at begin and end
+	ENDSEEK_OFFSET=4
     # try to get the size with fdisk
-    SIZE=`fdisk -lu "$path" |grep total|grep sectors|awk -F ' ' '{print $8}'`
+    SIZE=`disksize_MiB "$path"`
+
     # if empty, assume we failed and try with parted
-    if [ -z $SIZE ]; then
-        SIZE=`parted "$path" -s -- u s p | grep "Disk $path" |awk '{print substr($3, 0, length($3)-1)}'`
-        # if at this point the SIZE has not been determined, 
+    if [ $SIZE -eq 0 ]; then
+        # the SIZE has not been determined, 
         # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped. 
-        if [ -z $SIZE ]; then
-            SIZE=$ENDSEEK_OFFSET
-            echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
-        fi
+        SIZE=$ENDSEEK_OFFSET
+        echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
     fi
+
     let ENDSEEK=$SIZE-$ENDSEEK_OFFSET
+    if [ $ENDSEEK -lt 0 ]; then
+        ENDSEEK=0
+    fi
     echo "[INFO] wipe path $path with SIZE $SIZE and ENDSEEK $ENDSEEK"
-    dd if=/dev/zero of="$path" bs=512 count=10 2>/dev/null
-    dd if=/dev/zero of="$path" bs=512 seek=$ENDSEEK 2>/dev/null
+    # dd with 1 MiB blocksize (unit used by disksize_MiB and faster then e.g. bs=512)
+    dd if=/dev/zero of="$path" bs=1048576 count=$ENDSEEK_OFFSET 2>/dev/null
+    dd if=/dev/zero of="$path" bs=1048576 seek=$ENDSEEK 2>/dev/null
+    sync
 }
 
 EOF
