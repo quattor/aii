@@ -740,6 +740,30 @@ disksize_MiB () {
     return $RET
 }
 
+correct_disksize_MiB () {
+    # takes 3 args: device path, minimum size and maximum size
+    # uses exitcode for result (e.g. if [ $? -eq 0] to test for success)
+    local path min max SIZE RET
+    msg="ERROR"
+    RET=1
+    path="$1"
+    min="$2"
+    if [ -z $min ]; then
+        min=0
+    fi
+    max="$3"
+    if [ -z $max ]; then
+        max=$min
+    fi
+    SIZE=`disksize_MiB "$path"`
+    if [ $SIZE -ge $min -a $SIZE -le $max ]; then
+        msg="INFO"
+        RET=0
+    fi
+    echo "[$msg] Found path $path size $SIZE min $min max $max"
+    return $RET
+}
+
 wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
