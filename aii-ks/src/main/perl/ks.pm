@@ -742,7 +742,7 @@ disksize_MiB () {
 
 correct_disksize_MiB () {
     # takes 3 args: device path, minimum size and maximum size
-    # uses exitcode for result (e.g. if [ $? -eq 0] to test for success)
+    # uses exitcode for result (e.g. if [ $? -ne 0 ] to test for failure)
     local path min max SIZE RET
     msg="ERROR"
     RET=1
@@ -768,7 +768,7 @@ wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
     # wipe 4 MiB at begin and end
-	ENDSEEK_OFFSET=4
+    ENDSEEK_OFFSET=4
     # try to get the size with fdisk
     SIZE=`disksize_MiB "$path"`
 

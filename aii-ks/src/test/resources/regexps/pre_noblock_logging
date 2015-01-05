@@ -1,0 +1,16 @@
+Test the logging in the pre section
+---
+---
+^exec >/tmp/pre-log.log 2>&1$
+^\# Make sure messages show up on the serial console$
+^tail -f /tmp/pre-log.log > /dev/console &$
+^drainsleep=0$
+^$
+^echo 'Begin of pre section'$
+^set -x$
+^echo 'End of pre section'$
+^$
+^\# Drain remote logger \(0 if not relevant\)$
+^sleep \$drainsleep$
+^$
+^EENNDD$
