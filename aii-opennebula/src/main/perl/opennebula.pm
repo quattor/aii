@@ -303,6 +303,7 @@ sub remove_and_create_vn_ars
 }
 
 # Create VN AR leases
+# Virtual Network Address Ranges
 sub create_vn_ars
 {
     my ($self, $one, $vnet, $ardata, $ar) = @_;
