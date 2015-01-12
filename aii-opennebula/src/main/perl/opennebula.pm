@@ -183,7 +183,6 @@ sub remove_and_create_vm_images
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
         $self->remove_vm_images($one, $forcecreateimage, $imagename, \@rimages);
-        # And create the new image with the image data
         $self->create_vm_images($one, $imagename, $imagedata, $remove, \@nimages);
     }
     # Check created/removed image lists
@@ -201,10 +200,10 @@ sub remove_and_create_vm_images
 }
 
 # Create new VM images
-# Returns new images array
 sub create_vm_images
 {
     my ($self, $one, $imagename, $imagedata, $remove, $ref_nimages) = @_;
+
     my $newimage;
     if (!$remove) {
         if ($self->is_one_resource_available($one, "image", $imagename)) {
@@ -223,7 +222,6 @@ sub create_vm_images
 }
 
 # Removes current VM images
-# Returns removed images array
 sub remove_vm_images
 {
     my ($self, $one, $forcecreateimage, $imagename, $ref_rimages) = @_;
