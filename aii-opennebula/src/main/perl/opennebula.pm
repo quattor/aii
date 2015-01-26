@@ -82,7 +82,7 @@ sub process_template
         $main::this_app->error("TT processing of $tt_name failed.", $tpl->{fail});
         return;
     }
-    return $tpl;
+    return "$tpl";
 }
 
 # Return fqdn of the node
