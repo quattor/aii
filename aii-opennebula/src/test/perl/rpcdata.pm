@@ -381,7 +381,6 @@ CONTEXT = [
     TOKEN = "YES"
 ]
 CPU = "4"
-VCPU = "4"
 DESCRIPTION = "KVM Virtual Machine node630.cubone.os"
 DISK = [
     IMAGE = "node630.cubone.os_vda",
@@ -404,7 +403,7 @@ OS = [
     BOOT = "network,hd"
 ]
 RAW = [
-    DATA = "<cpu mode='host-passthrough'/>",
+    DATA = "<vcpu>4</vcpu><cpu mode='host-passthrough'><topology sockets='2' cores='2' threads='1'/></cpu>",
     TYPE = "kvm"
 ]
 QUATTOR = 1

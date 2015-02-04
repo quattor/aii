@@ -15,7 +15,6 @@ multiline
 ^\s*HOSTNAME\s?=\s*".+",\s*$
 ^\s*TOKEN\s?=\s*".+"\s*$
 ^CPU\s?=\s*"\d+"\s*$
-^VCPU\s?=\s*"\d+"\s*$
 ^DESCRIPTION\s?=\s?".+"\s*$
 ^DISK\s?=\s?\[$
 ^\s*IMAGE\s?=\s*".+",\s*$

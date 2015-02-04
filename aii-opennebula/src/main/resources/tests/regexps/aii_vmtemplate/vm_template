@@ -23,7 +23,6 @@ multiline
 ^\s{4}TOKEN\s?=\s?"YES"$
 ^\]$
 ^CPU\s?=\s?"4"$
-^VCPU\s?=\s?"4"$
 ^DESCRIPTION\s?=\s?"KVM Virtual Machine node630.cubone.os"$
 ^DISK\s?=\s?\[$
 ^\s{4}IMAGE\s?=\s?"node630.cubone.os_vda",$
@@ -45,7 +44,7 @@ multiline
 ^\s{4}BOOT\s?=\s?"network,hd"$
 ^\]$
 ^RAW\s?=\s?\[$
-^\s{4}DATA\s?=\s?"\<cpu\s{1}mode\=\'host-passthrough\'\/\>",$
+^\s{4}DATA\s?=\s?"\<vcpu\>4\<\/vcpu\>\<cpu\s{1}mode\=\'host-passthrough\'\>\<topology\s{1}sockets\=\'2\'\s{1}cores\=\'2\'\s{1}threads\=\'1\'\/\>\<\/cpu\>",$
 ^\s{4}TYPE\s?=\s?"kvm"$
 ^\]$
 ^QUATTOR\s?=\s?1$
