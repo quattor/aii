@@ -109,6 +109,7 @@ type structure_ks_ks_info = {
     'eula' ? boolean # agree with EULA (EL7+)
     'packagesinpost' ? boolean
     'bonding' : boolean = true # support network bonding
+    'lvmforce' ? boolean
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
