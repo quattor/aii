@@ -76,7 +76,7 @@ sub process_template
         $tt_name,
         $tree,
         relpath => 'aii-opennebula',
-        log => $self,
+        log => $main::this_app,
         );
     if (!$tpl) {
         $main::this_app->error("TT processing of $tt_name failed.", $tpl->{fail});
