@@ -13,10 +13,15 @@
 [%- # size is the element, not the VMethod
     memory = memory + item.size -%]
 [%- END -%]
-[%- FOR pair IN system.network.interfaces.pairs %]
+[%- FOR pair IN system.opennebula.vnet.pairs %]
 NIC = [
-[%	FILTER indent -%]
+[%  FILTER indent -%]
+[%         IF system.network.interfaces.${pair.key}.bridge.defined -%]
+[%             tmpbridge = system.network.interfaces.${pair.key}.bridge -%]
+IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
+[%         ELSE -%]
 IP = "[% system.network.interfaces.${pair.key}.ip %]",
+[%         END -%]
 MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
 MODEL = "virtio",
 NETWORK = "[% system.opennebula.vnet.${pair.key} %]",

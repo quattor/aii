@@ -58,17 +58,35 @@ prefix "/system/network";
 "domainname" = "cubone.os";
 "hostname" = "node630";
 "interfaces" = nlist(
-    "eth0", nlist(
+    "br100", nlist(
         "broadcast", "10.141.10.255",
-        "driver", "bnx2",
+        "delay", 0,
         "ip", "10.141.8.30",
-        "netmask", "255.255.0.0"
+        "linkdelay", 5,
+        "netmask", "255.255.0.0",
+        "stp", true,
+        "type", "Bridge"
+    ),
+    "br101", nlist(
+        "broadcast", "172.24.255.255",
+        "delay", 0,
+        "ip", "172.24.8.30",
+        "linkdelay", 5,
+        "netmask", "255.255.0.0",
+        "stp", true,
+        "type", "Bridge"
+    ),
+    "eth0", nlist(
+        "bridge", "br100",
+        "driver", "bnx2",
+        "device", "eth0"
     ),
     "eth1", nlist(
         "broadcast", "172.24.255.255",
         "device", "eth1",
         "ip", "172.24.8.30",
         "netmask", "255.255.0.0",
+        "driver", "bnx2"
     ),
 );
 

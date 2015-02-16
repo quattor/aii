@@ -1,10 +1,16 @@
 [%- tmphost = [ system.network.hostname, system.network.domainname ]; 
     fqdn = tmphost.join('.') -%]
-[%- FOR pair IN system.network.interfaces.pairs %]
+[% # We only include net interfaces that are mapped to VNETs-%]
+[%- FOR pair IN system.opennebula.vnet.pairs %]
 AR = [
 [%      FILTER indent -%]
 TYPE = "IP4",
+[%         IF system.network.interfaces.${pair.key}.bridge.defined -%]
+[%             tmpbridge = system.network.interfaces.${pair.key}.bridge -%]
+IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
+[%         ELSE -%]
 IP = "[% system.network.interfaces.${pair.key}.ip %]",
+[%         END -%]
 MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
 QUATTOR = "1",
 HOSTNAME = "[% fqdn %]",

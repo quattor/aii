@@ -172,7 +172,11 @@ type opennebula_vmtemplate_vnet = string{} with {
     };
     # check if all interfaces have an entry in the map
     foreach (k;v;value("/system/network/interfaces")) {
-        if (! exists(SELF[k])) {
+        if ((! exists(SELF[k])) && 
+            (! exists(v['type']) || # if type is missing, it's a regular ethernet interface
+             (! match('^(Bridge)$', v['type'])) # these special types are OK
+             )
+            ) {
             return(false);
         };
     };
