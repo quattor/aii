@@ -60,6 +60,7 @@ type structure_ks_ks_info = {
     "auth"		: string[] = list ("enableshadow", "enablemd5")
     "bootloader_location" : string = "mbr"
     "bootloader_append" ? string
+    "bootloader_password" ? string
     "bootdisk_order" ? string[] # From DESYs template
     "clearmbr"	: boolean = true
     "enable_service" ? string[]

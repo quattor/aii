@@ -422,6 +422,8 @@ EOF
         if $tree->{bootdisk_order} && @{$tree->{bootdisk_order}};
     print " --append=\"$tree->{bootloader_append}\""
         if $tree->{bootloader_append};
+    print " --password=\"$tree->{bootloader_password}\" --iscrypted"
+        if $tree->{bootloader_password};
     print "\n";
 
     if ($tree->{xwindows}) {
