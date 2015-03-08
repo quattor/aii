@@ -9,10 +9,13 @@
 # is missing the node will boot from the hard disk
 my $boothd = "default";
 
-# Quattor XML profiles
+# Quattor profiles
 my $web_root = "/var/www/html";
 my $profiles_path="profiles";
 my $profiles_dir = $web_root.'/'.$profiles_path;
+
+# PXE Linux directory
+my $pxelinux_dir = "/osinstall/nbp/pxelinux.cfg";
 
 # Number of different boot types
 my %boot_type;
@@ -26,7 +29,7 @@ my %nodes_cfg;
 # Hostname and domainname
 my ($server_name,$server_domain);
 
-# Profiles .xml available
+# Profiles .xml or .json available
 my (@profiles);
 
 # whether or not to auto-configure nodes (set by form)
@@ -79,9 +82,14 @@ sub Initialize {
   # find all profiles in directory
   my $d;
 
-
-  push @profiles,map { s/\.xml$//; $_.=".".$server_domain; } sort(grep(/\.xml$/, readdir(DIR)));    
-
+  # read GET and read profiles by extension (GET ?json)
+  if ($ENV{'REQUEST_METHOD'} eq "GET" and $ENV{'QUERY_STRING'}=='json') {
+    push @profiles,map { s/\.json$//; $_.=".".$server_domain; } sort(grep(/\.json$/, readdir(DIR)));
+  }
+  else {
+    push @profiles,map { s/\.xml$//; $_.=".".$server_domain; } sort(grep(/\.xml$/, readdir(DIR)));    
+  }
+  
   for my $profile (@profiles) {
     $profile=~s/profile\_//;
     if ($profile=~/\.$server_domain\.$server_domain/ ) {
@@ -122,7 +130,7 @@ sub CollectHtmlDetails{
     
     
     ($hexaddr,$dotaddr) = GetHexAddr($hostname);
-    $existing_cfg = "";
+    my $existing_cfg = "";
     $existing_cfg = readlink($pxelinux_dir . "/" . $hexaddr);
     # If the link does not exist we create a link to the default boot mode via HD
     if ($existing_cfg eq "") {
@@ -191,7 +199,7 @@ sub UpdateSymlinks {
        $error_str.="Config file \"$nodes_cfg{$node}\" not found<br>";
       next;
     }
-    # Check if the hostname is one of the XML profiles
+    # Check if the hostname is one of the profiles
     @found=grep(/^$node$/,@profiles);
     if ($#found < 0) {
        $error_str.="Profile for hostname \"$node\" does not exist<br>";
@@ -260,7 +268,7 @@ sub PrintHtml($) {
 <title>AII server status</title></head>\
 <body><h3>AII server summary<hr></h3><center>\
 <table width=\"50%\" cellpadding=\"2\" cellspacing=\"0\" border =\"1\">\
-<tr><td><b>XML Profiles</b>\
+<tr><td><b>Profiles</b>\
     <td><a href=\"http://$server_name/$profiles_path\">\
            http://$server_name/$profiles_path/</a></tr>\
 <tr><td><b>Total nodes</b><td>". ($#profiles+1) . "</tr>\
@@ -295,7 +303,7 @@ sub PrintHtml($) {
 #########################################################################
 
 my ($do_reload,$output_details,$error);
-# Load the directory entries (*.xml and *.cfg)
+# Load the directory entries (*.xml or *.json and *.cfg)
 &Initialize;
 
 # If there are changes, update the symlinks
