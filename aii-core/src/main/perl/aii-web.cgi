@@ -11,11 +11,14 @@ my $boothd = "default";
 
 # Quattor profiles
 my $web_root = "/var/www/html";
-my $profiles_path="profiles";
+my $profiles_path = "profiles";
 my $profiles_dir = $web_root.'/'.$profiles_path;
 
 # PXE Linux directory
 my $pxelinux_dir = "/osinstall/nbp/pxelinux.cfg";
+
+# Profile prefix
+my $profile_prefix = "_profile";
 
 # Number of different boot types
 my %boot_type;
@@ -82,16 +85,19 @@ sub Initialize {
   # find all profiles in directory
   my $d;
 
-  # read GET and read profiles by extension (GET ?json)
-  if ($ENV{'REQUEST_METHOD'} eq "GET" and $ENV{'QUERY_STRING'}=='json') {
-    push @profiles,map { s/\.json$//; $_.=".".$server_domain; } sort(grep(/\.json$/, readdir(DIR)));
+  # read GET and read profiles by extension (GET ?json or ?json.gz)
+  my $extension = "xml";
+
+  if ($ENV{'REQUEST_METHOD'} and $ENV{'REQUEST_METHOD'} eq "GET" and $ENV{'QUERY_STRING'} and $ENV{'QUERY_STRING'}) {
+    if ($ENV{'QUERY_STRING'} eq 'json' or $ENV{'QUERY_STRING'} eq 'json.gz') {
+      $extension = $ENV{'QUERY_STRING'};
+    }
   }
-  else {
-    push @profiles,map { s/\.xml$//; $_.=".".$server_domain; } sort(grep(/\.xml$/, readdir(DIR)));    
-  }
-  
+
+  push @profiles,map { s/\.$extension$//; $_.=".".$server_domain; } sort(grep(/\.$extension$/, readdir(DIR)));
+
   for my $profile (@profiles) {
-    $profile=~s/profile\_//;
+    $profile=~s/$profile_prefix//;
     if ($profile=~/\.$server_domain\.$server_domain/ ) {
 	$profile=~s/\.$server_domain$//;
     }
