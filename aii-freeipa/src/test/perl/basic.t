@@ -9,7 +9,7 @@ use strict;
 use warnings;
 use Test::More;
 use AII::freeipa;
-use NCM::Component::ks
+use NCM::Component::ks;
 use CAF::Object;
 #use NCM::Component;
 use Test::Quattor qw(basic);
