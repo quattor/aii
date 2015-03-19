@@ -1,0 +1,17 @@
+OpenNebula image template full test
+---
+multiline
+---
+^TYPE\s?=\s?"DATABLOCK"$
+^DEV_PREFIX\s?=\s?"vd"$
+^NAME\s?=\s?"node630.cubone.os_vda"$
+^TARGET\s?=\s?"vda"$
+^SIZE\s?=\s?20480$
+^DESCRIPTION\s?=\s?"QUATTOR image for node630.cubone.os: vda"$
+^DATASTORE\s?=\s?"ceph"$
+^NAME\s?=\s?"node630.cubone.os_vdb"$
+^TARGET\s?=\s?"vdb"$
+^SIZE\s?=\s?10480$
+^DESCRIPTION\s?=\s?"QUATTOR image for node630.cubone.os: vdb"$
+^QUATTOR\s?=\s?1$
+^DATASTORE\s?=\s?"default"$

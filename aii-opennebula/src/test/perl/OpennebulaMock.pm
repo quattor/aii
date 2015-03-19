@@ -5,6 +5,7 @@ use Test::More;
 use Data::Dumper;
 use base 'Exporter';
 use XML::Simple;
+use Cwd;
 
 use rpcdata;
 
@@ -98,5 +99,13 @@ sub mock_rpc {
 
 our $opennebula = new Test::MockModule('Net::OpenNebula');
 $opennebula->mock( '_rpc',  \&mock_rpc);
+
+my $mock = Test::MockModule->new('CAF::TextRender');
+$mock->mock('new', sub {
+    my $init = $mock->original("new");
+    my $trd = &$init(@_);
+    $trd->{includepath} = getcwd()."/target/share/templates/quattor";
+    return $trd;
+});
 
 1;

@@ -10,12 +10,13 @@ use warnings;
 use Test::More;
 use AII::opennebula;
 use Test::MockModule;
-use Test::Quattor qw(images);
+use Test::Quattor qw(aii_images);
 use OpennebulaMock;
 
-my $cfg = get_config_for_profile('images');
+my $cfg = get_config_for_profile('aii_images');
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
 $opennebulaaii->mock('make_one', Net::OpenNebula->new());
+$opennebulaaii->mock('is_timeout', undef);
 
 my $aii = AII::opennebula->new();
 
@@ -45,15 +46,11 @@ $aii->remove_and_create_vm_images($one, 1, \%images);
 ok(rpc_history_ok(["one.imagepool.info",
                    "one.image.info",
                    "one.image.delete",
+                   "one.imagepool.info",
                    "one.datastorepool.info",
                    "one.datastore.info",
                    "one.image.allocate",
-                   "one.image.info",
-                   "one.imagepool.info",
-                   "one.image.delete",
-                   "one.datastorepool.info",
-                   "one.datastore.info",
-                   "one.image.allocate"]),
+                   "one.image.info"]),
                    "remove_and_create_vm_images install rpc history ok");
 
 # Check image remove
@@ -64,8 +61,7 @@ ok(rpc_history_ok(["one.imagepool.info",
                    "one.image.info",
                    "one.image.delete",
                    "one.imagepool.info",
-                   "one.image.info",
-                   "one.image.delete"]),
+                   "one.image.info"]),
                    "remove_and_create_vm_images remove rpc history ok");
 
 done_testing();

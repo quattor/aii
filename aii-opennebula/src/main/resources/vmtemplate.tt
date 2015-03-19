@@ -1,0 +1,70 @@
+[%- tmphost = [ system.network.hostname, system.network.domainname ]; 
+    fqdn = tmphost.join('.') -%]
+[%- vcpus = 0 -%]
+[%- sockets = 0 -%]
+[%- cores = 0 -%]
+[%- FOREACH item IN hardware.cpu -%]
+[%-     vcpus = vcpus + item.cores -%]
+[%-     cores = item.cores -%]
+[%-     sockets = sockets + 1 -%]
+[%- END -%]
+[%- memory = 0 -%]
+[%- FOREACH item IN hardware.ram -%]
+[%- # size is the element, not the VMethod
+    memory = memory + item.size -%]
+[%- END -%]
+[%- FOR pair IN system.opennebula.vnet.pairs %]
+NIC = [
+[%  FILTER indent -%]
+[%         IF system.network.interfaces.${pair.key}.bridge.defined -%]
+[%             tmpbridge = system.network.interfaces.${pair.key}.bridge -%]
+IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
+[%         ELSE -%]
+IP = "[% system.network.interfaces.${pair.key}.ip %]",
+[%         END -%]
+MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
+MODEL = "virtio",
+NETWORK = "[% system.opennebula.vnet.${pair.key} %]",
+NETWORK_UNAME = "oneadmin"
+[%-     END %]
+]
+[%- END %]
+NAME = "[%- fqdn -%]"
+CONTEXT = [
+[%     FILTER indent -%]
+NETWORK = "YES",
+HOSTNAME = "[%- fqdn %]",
+TOKEN = "YES"
+[%-    END %]
+]
+CPU = "[% vcpus %]"
+DESCRIPTION = "[% hardware.model %] [% fqdn %]"
+[%-    FOR pair IN hardware.harddisks.pairs %]
+DISK = [
+[%     FILTER indent -%]
+IMAGE = "[%- fqdn %]_[% pair.key %]",
+TARGET = "[% pair.key %]",
+DEV_PREFIX = "vd",
+IMAGE_UNAME = "oneadmin"
+[%-    END %]
+]
+[%- END %]
+GRAPHICS = [
+[%     FILTER indent -%]
+LISTEN = "0.0.0.0",
+TYPE = "VNC"
+[%-    END %]
+]
+MEMORY = "[% memory %]"
+OS = [
+[%     FILTER indent -%]
+BOOT = "network,hd"
+[%-    END %]
+]
+RAW = [
+[%     FILTER indent -%]
+DATA = "<vcpu>[% vcpus %]</vcpu><cpu mode='host-passthrough'><topology sockets='[% sockets %]' cores='[% cores %]' threads='1'/></cpu>",
+TYPE = "kvm"
+[%-    END %]
+]
+QUATTOR = 1
