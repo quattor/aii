@@ -90,7 +90,7 @@ prefix "/system/network";
     ),
 );
 
-include 'metaconfig/opennebula/schema';
+include 'quattor/aii/opennebula/schema';
 
 bind "/system/opennebula" = opennebula_vmtemplate;
 
