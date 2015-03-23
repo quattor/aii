@@ -35,6 +35,7 @@ prefix "/system/aii/osinstall/ks";
 "auth" = list ("enableshadow", "enablemd5");
 "bootloader_location" = "mbr";
 "bootloader_append" = 'append something';
+"bootloader_password" = "$1$ZAOkBwVp$Cs5cO5cfaqzH5AdZ/jpjP/"; # "Quattor"
 "clearmbr" = true;
 "enable_sshd" = false;
 "email_success" = false;
