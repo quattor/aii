@@ -1064,7 +1064,14 @@ sub kspostreboot_tail
       $config->getElement (EMAIL_SUCCESS)->getTree;
 
     print <<EOF;
-rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
+if [ -x /usr/bin/systemctl ]; then
+    /usr/bin/systemctl mask ks-post-reboot.service
+    # is the reload needed with mask command?
+    /usr/bin/systemctl daemon-reload
+else
+    rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
+fi
+
 echo 'End of ks-post-reboot'
 
 # Drain remote logger (0 if not relevant)
@@ -1408,10 +1415,41 @@ EOF
         };
     };
 
+    # Systemd unit file
+    #   Targets
+    #     basic.target is default dependency
+    #     we need network.target
+    #       and ks-post-reboot needs to be started after it (not in parallel)
+    #     syslog/rsyslog and sshd are a nice-to-have
+    #   Type oneshot disables timeout and is blocking
+    #     other services/targets can be started in parallel 
+
     print <<EOF;
 
 chmod +x /etc/rc.d/init.d/ks-post-reboot
-ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
+
+if [ -x /usr/bin/systemctl ]; then
+    cat <<EOF_reboot_unit > /usr/lib/systemd/system/ks-post-reboot.service
+[Unit]
+Description=Quattor AII Post reboot
+After=network.target syslog.target syslog.socket rsyslog.service sshd.service
+Requires=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/etc/rc.d/init.d/ks-post-reboot
+
+[Install]
+WantedBy=multi-user.target
+
+EOF_reboot_unit
+
+    /usr/bin/systemctl daemon-reload
+    /usr/bin/systemctl enable ks-post-reboot.service
+else
+    ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
+fi
+
 EOF
 
     my @acklist;
