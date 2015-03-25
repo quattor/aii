@@ -1,0 +1,13 @@
+OpenNebula simple image template test
+---
+multiline
+---
+^NAME\s?=\s*".+"\s*$
+^TYPE\s?=\s*".+"\s*$
+^PERSISTENT\s?=\s*".+"\s*$
+^DEV_PREFIX\s?=\s*".+"\s*$
+^TARGET\s?=\s*".+"\s*$
+^SIZE\s?=\s*\d+\s*$
+^DESCRIPTION\s?=\s*".+"\s*$
+^QUATTOR\s?=\s?\d?\s*$
+^DATASTORE\s?=\s*".+"\s*$

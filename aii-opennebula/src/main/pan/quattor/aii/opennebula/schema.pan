@@ -1,4 +1,4 @@
-unique template quattor/aii/opennebula/schema;
+declaration template quattor/aii/opennebula/schema;
 
 variable OPENNEBULA_AII_MODULE_NAME = 'opennebula';
 
@@ -50,3 +50,43 @@ type structure_aii_opennebula = {
     "remove" : boolean = true # remove all VM resources
 };
 
+type opennebula_vmtemplate_vnet = string{} with {
+    # check if all entries in the map have a network interface
+    foreach (k;v;SELF) {
+        if (! exists("/system/network/interfaces/"+k)) {
+            return(false);
+        };
+    };
+    # check if all interfaces have an entry in the map
+    foreach (k;v;value("/system/network/interfaces")) {
+        if ((! exists(SELF[k])) && 
+            (! exists(v['type']) || # if type is missing, it's a regular ethernet interface
+             (! match('^(Bridge|OVSBridge)$', v['type'])) # these special types are OK 
+             )
+            ) {
+            return(false);
+        };
+    };
+    return(true);
+};
+
+type opennebula_vmtemplate_datastore = string{} with {
+    # check is all entries in the map have a hardrive
+    foreach (k;v;SELF) {
+        if (! exists("/hardware/harddisks/"+k)) {
+            return(false);
+        };
+    };
+    # check if all interfaces have an entry in the map
+    foreach (k;v;value("/hardware/harddisks")) {
+        if (! exists(SELF[k])) {
+            return(false);
+        };
+    };
+    return(true);
+};
+
+type opennebula_vmtemplate = {
+    "vnet" : opennebula_vmtemplate_vnet
+    "datastore" : opennebula_vmtemplate_datastore
+};
