@@ -3,13 +3,13 @@
   <groupId>org.quattor.maven</groupId>
   <artifactId>dhcp</artifactId>
   <packaging>pom</packaging>
-  <version>14.10.1-SNAPSHOT</version>
+  <version>15.2.0-rc5-SNAPSHOT</version>
   <name>AII DHCP config generator</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.40</version>
+    <version>1.42</version>
   </parent>
   <developers>
     <developer>
