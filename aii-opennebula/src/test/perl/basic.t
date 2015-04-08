@@ -56,4 +56,17 @@ ok(rpc_history_ok(["one.vmpool.info",
                    "one.template.info",
                    "one.template.instantiate"]),
                    "install rpc history ok");
+
+## test configure
+#rpc_history_reset;
+
+#$path = "/system/aii/hooks/configure/0";
+#$aii->configure($cfg, $path);
+
+##diag_rpc_history;
+#ok(rpc_history_ok(["one.imagepool.info",
+#                   "one.templatepool.info",
+#                   "one.template.allocate",
+#                   "one.template.info"]),
+#                   "install rpc history ok");
 done_testing();

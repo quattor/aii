@@ -462,6 +462,28 @@ sub is_one_resource_available
     return;
 }
 
+# Based on Quattor template this function:
+# creates/updates VM templates
+# creates new VM image for each $harddisks
+sub configure
+{
+    my ($self, $config, $path) = @_;
+    my $tree = $config->getElement($path)->getTree();
+
+    my $createvmtemplate = $tree->{template};
+    $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
+
+    # Set one endpoint RPC connector
+    my $one = make_one();
+    if (!$one) {
+        error("No ONE instance returned");
+        return 0;
+    }
+
+    # Check RPC endpoint and OpenNebula version
+    return 0 if !$self->is_supported_one_version($one);
+
+}
 
 # Based on Quattor template this function:
 # creates new VM templates
