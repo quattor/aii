@@ -33,9 +33,7 @@ my $one = $aii->make_one();
 
 # Check VM template creation
 rpc_history_reset;
-diag("HERE IS vmtemplate install history1:");
 $aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate);
-diag("HERE IS vmtemplate install history2:");
 #diag_rpc_history;
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.info",
@@ -46,9 +44,7 @@ ok(rpc_history_ok(["one.templatepool.info",
 
 # Check VM template update
 rpc_history_reset;
-diag("HERE IS vmtemplate update history1:");
 $aii->remove_and_create_vm_template($one, $templatename, 0, $vmtemplate);
-diag("HERE IS vmtemplate update history2:");
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.info",
                    "one.template.update"]),
@@ -56,9 +52,7 @@ ok(rpc_history_ok(["one.templatepool.info",
 
 # Check VM template remove
 rpc_history_reset;
-diag("HERE IS vmtemplate remove history1:");
 $aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, 1);
-diag("HERE IS vmtemplate remove history2:");
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.info",
                    "one.template.delete"]),

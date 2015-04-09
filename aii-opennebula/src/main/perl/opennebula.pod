@@ -46,15 +46,11 @@ The next paths are relative to /system/aii/hooks/configure
 
 =item * image : boolean
 
-Create VM images. Note: if this hook is set the current VM images will be overwritten
+Create VM images. Note: if this hook is set the current VM images will be overwritten (also stop/delete VM)
 
 =item * template : boolean
 
-Create VM template
-
-=item * stopvm : boolean
-
-Stop current running VM
+Create VM template.
 
 =back
 

@@ -12,7 +12,6 @@ variable OPENNEBULA_AII_ONHOLD ?= undef;
 
         "image", OPENNEBULA_AII_FORCE,
         "template", OPENNEBULA_AII_FORCE,
-        "stopvm", OPENNEBULA_AII_FORCE,
         ));
 
     SELF;

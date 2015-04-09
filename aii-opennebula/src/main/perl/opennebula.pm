@@ -463,6 +463,7 @@ sub is_one_resource_available
 }
 
 # Based on Quattor template this function:
+# Stop running VM if necessary
 # creates/updates VM templates
 # creates new VM image for each $harddisks
 # creates new vnet ars if required
@@ -472,8 +473,6 @@ sub configure
     my $tree = $config->getElement($path)->getTree();
     my $forcecreateimage = $tree->{image};
     $main::this_app->info("Forcecreate image flag is set to: $forcecreateimage");
-    my $stopvm = $tree->{stopvm};
-    $main::this_app->info("Stop running VM flag is set to: $stopvm");
     my $createvmtemplate = $tree->{template};
     $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
 
@@ -489,7 +488,9 @@ sub configure
     # Check RPC endpoint and OpenNebula version
     return 0 if !$self->is_supported_one_version($one);
 
-    $self->stop_and_remove_one_vms($one, $fqdn) if $stopvm;
+    if ($forcecreateimage || $createvmtemplate) {
+        $self->stop_and_remove_one_vms($one, $fqdn);
+    }
 
     my %images = $self->get_images($config);
     $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
