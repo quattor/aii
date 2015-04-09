@@ -6,12 +6,11 @@ prefix "/system/aii/hooks";
 "configure/0" = nlist(
     "image", true,
     "template", true,
+    "stopvm", true,
 );
 
 "install/0" = nlist(
-    "image", true,
     "vm", true,
-    "template", true,
     "onhold", true,
 );
 

@@ -52,6 +52,10 @@ Create VM images. Note: if this hook is set the current VM images will be overwr
 
 Create VM template
 
+=item * stopvm : boolean
+
+Stop current running VM
+
 =back
 
 =head3 install
@@ -60,17 +64,9 @@ The next paths are relative to /system/aii/hooks/install
 
 =over 4
 
-=item * image : boolean
-
-Create VM images. Note: if this hook is set the current VM images will be overwritten
-
 =item * vm : boolean
 
 The new VM is instantiated after resources creation
-
-=item * template : boolean
-
-Create VM template
 
 =item * onhold : boolean
 

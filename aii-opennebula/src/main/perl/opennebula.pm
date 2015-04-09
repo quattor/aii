@@ -465,60 +465,31 @@ sub is_one_resource_available
 # Based on Quattor template this function:
 # creates/updates VM templates
 # creates new VM image for each $harddisks
+# creates new vnet ars if required
 sub configure
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
-
-    my $createvmtemplate = $tree->{template};
-    $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
-
-    # Set one endpoint RPC connector
-    my $one = make_one();
-    if (!$one) {
-        error("No ONE instance returned");
-        return 0;
-    }
-
-    # Check RPC endpoint and OpenNebula version
-    return 0 if !$self->is_supported_one_version($one);
-
-}
-
-# Based on Quattor template this function:
-# creates new VM templates
-# creates new VM image for each $harddisks
-# creates new vnet ars if required
-# instantiates the new VM
-sub install
-{
-    my ($self, $config, $path) = @_;
-
-    my $tree = $config->getElement($path)->getTree();
-
     my $forcecreateimage = $tree->{image};
     $main::this_app->info("Forcecreate image flag is set to: $forcecreateimage");
-    my $instantiatevm = $tree->{vm};
-    $main::this_app->info("Instantiate VM flag is set to: $instantiatevm");
+    my $stopvm = $tree->{stopvm};
+    $main::this_app->info("Stop running VM flag is set to: $stopvm");
     my $createvmtemplate = $tree->{template};
     $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
-    my $onhold = $tree->{onhold};
-    $main::this_app->info("Start VM onhold flag is set to: $onhold");
-        
+
     my $fqdn = $self->get_fqdn($config);
-    my %opts;
-    
+
     # Set one endpoint RPC connector
     my $one = make_one();
     if (!$one) {
-        error("No ONE instance returned");
+        $main::this_app->error("No ONE instance returned");
         return 0;
     }
 
     # Check RPC endpoint and OpenNebula version
     return 0 if !$self->is_supported_one_version($one);
 
-    $self->stop_and_remove_one_vms($one, $fqdn);
+    $self->stop_and_remove_one_vms($one, $fqdn) if $stopvm;
 
     my %images = $self->get_images($config);
     $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
@@ -528,10 +499,50 @@ sub install
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
+}
+
+# Based on Quattor template this function:
+# stop current running VM
+# instantiates the new VM
+sub install
+{
+    my ($self, $config, $path) = @_;
+    my (%opts, $vmtemplate);
+
+    my $tree = $config->getElement($path)->getTree();
+
+    my $instantiatevm = $tree->{vm};
+    $main::this_app->info("Instantiate VM flag is set to: $instantiatevm");
+    my $onhold = $tree->{onhold};
+    $main::this_app->info("Start VM onhold flag is set to: $onhold");
+        
+    my $fqdn = $self->get_fqdn($config);
+
+    # Set one endpoint RPC connector
+    my $one = make_one();
+    if (!$one) {
+        $main::this_app->error("No ONE instance returned");
+        return 0;
+    }
+
+    # Check RPC endpoint and OpenNebula version
+    return 0 if !$self->is_supported_one_version($one);
+
+    $self->stop_and_remove_one_vms($one, $fqdn);
+
+    my @vmtpl = $one->get_templates(qr{^$fqdn$});
+
+    if (@vmtpl) {
+        $vmtemplate = $vmtpl[0];
+        $main::this_app->info("Found VM template from ONE database: ", $vmtemplate->name);
+    } else {
+        $main::this_app->error("VM template is not available to be instantiated: ", $vmtemplate->name);
+        return 0;
+    }
 
     if ($instantiatevm) {
-    	$main::this_app->debug(1, "Instantiate vm with name $fqdn with template ", $vmtemplate->name);
-    	
+        $main::this_app->debug(1, "Instantiate vm with name $fqdn with template ", $vmtemplate->name);
+
         # Check that image is in READY state.
         my @myimages = $one->get_images(qr{^${fqdn}\_vd[a-z]$});
         $opts{max_iter} = MAXITER;

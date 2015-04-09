@@ -12,6 +12,7 @@ variable OPENNEBULA_AII_ONHOLD ?= undef;
 
         "image", OPENNEBULA_AII_FORCE,
         "template", OPENNEBULA_AII_FORCE,
+        "stopvm", OPENNEBULA_AII_FORCE,
         ));
 
     SELF;
@@ -23,8 +24,6 @@ bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('configure')
     append(nlist(
         'module', OPENNEBULA_AII_MODULE_NAME,
 
-        "image", OPENNEBULA_AII_FORCE,
-        "template", OPENNEBULA_AII_FORCE,
         "vm", OPENNEBULA_AII_FORCE,
         "onhold", OPENNEBULA_AII_ONHOLD,
         ));
