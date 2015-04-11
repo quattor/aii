@@ -2,6 +2,7 @@ package OpennebulaMock;
 
 use Test::MockModule;
 use Test::More;
+use Test::Quattor::TextRender::Base;
 use Data::Dumper;
 use base 'Exporter';
 use XML::Simple;
@@ -11,6 +12,7 @@ use rpcdata;
 
 our @EXPORT = qw(rpc_history_reset rpc_history_ok diag_rpc_history);
 
+my $caf_trd = mock();
 
 my @rpc_history = ();
 my @rpc_history_full = ();
@@ -99,14 +101,5 @@ sub mock_rpc {
 
 our $opennebula = new Test::MockModule('Net::OpenNebula');
 $opennebula->mock( '_rpc',  \&mock_rpc);
-
-# Test TT in regular component usage
-my $mock = Test::MockModule->new('CAF::TextRender');
-$mock->mock('new', sub {
-    my $init = $mock->original("new");
-    my $trd = &$init(@_);
-    $trd->{includepath} = getcwd()."/target/share/templates/quattor";
-    return $trd;
-});
 
 1;
