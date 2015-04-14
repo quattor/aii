@@ -35,6 +35,7 @@ use constant LIVECD => 'livecd';
 use constant RESCUE_HOOK_PATH => '/system/aii/hooks/rescue';
 use constant INSTALL_HOOK_PATH => '/system/aii/hooks/install';
 use constant REMOVE_HOOK_PATH => '/system/aii/hooks/remove';
+use constant CONFIGURE_HOOK_PATH => '/system/aii/hooks/configure';
 use constant BOOT_HOOK_PATH => '/system/aii/hooks/boot';
 use constant FIRMWARE_HOOK_PATH => '/system/aii/hooks/firmware';
 use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
@@ -557,6 +558,8 @@ sub Configure
 
     pxeprint ($cfg);
     pxelink ($cfg);
+
+    ksuserhooks ($cfg, CONFIGURE_HOOK_PATH);
 
     return 1;
 }
