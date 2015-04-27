@@ -16,7 +16,7 @@ This AII hook generates the required resources and templates to instantiate/crea
 =head2 RESOURCES
 
 
-=head3 install
+=head3 configure
 
 Modify your machine template to:
 
@@ -40,21 +40,29 @@ Modify your machine template to:
 
 =back
 
-The next paths are relative to /system/aii/hooks/install
+The next paths are relative to /system/aii/hooks/configure
 
 =over 4
 
 =item * image : boolean
 
-Create VM images. Note: if this hook is set the current VM images will be overwritten
+Create VM images. Note: if this hook is set the current VM images will be overwritten (also stop/delete VM)
+
+=item * template : boolean
+
+Create VM template.
+
+=back
+
+=head3 install
+
+The next paths are relative to /system/aii/hooks/install
+
+=over 4
 
 =item * vm : boolean
 
 The new VM is instantiated after resources creation
-
-=item * template : boolean
-
-Create VM template
 
 =item * onhold : boolean
 

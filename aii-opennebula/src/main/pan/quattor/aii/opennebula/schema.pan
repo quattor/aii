@@ -44,7 +44,7 @@ function validate_aii_opennebula_hooks = {
 type structure_aii_opennebula = {
     "module" : string with SELF == OPENNEBULA_AII_MODULE_NAME
     "image" : boolean = false # force create image [implies on remove remove image (also stop/delete vm) ]
-    "template" : boolean = false # force (re)create template [implies on remove remove template (also stop/delete vm) ]
+    "template" : boolean = false # force (re)create template [implies on remove template (also stop/delete vm) ]
     "vm" : boolean = false # instantiate template (i.e. make vm)
     "onhold" : boolean = true # when template is instantiated, then vm is placed onhold [if false, will start the VM asap]
     "remove" : boolean = true # remove all VM resources

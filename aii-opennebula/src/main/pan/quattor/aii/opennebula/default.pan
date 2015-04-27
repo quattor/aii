@@ -6,14 +6,25 @@ include 'quattor/aii/opennebula/schema';
 variable OPENNEBULA_AII_FORCE ?= undef; 
 variable OPENNEBULA_AII_ONHOLD ?= undef;
 
-"/system/aii/hooks/install/" = {
+"/system/aii/hooks/configure/" = {
     append(nlist(
         'module', OPENNEBULA_AII_MODULE_NAME,
 
         "image", OPENNEBULA_AII_FORCE,
         "template", OPENNEBULA_AII_FORCE,
+        ));
+
+    SELF;
+};
+
+bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('configure');
+
+"/system/aii/hooks/install/" = {
+    append(nlist(
+        'module', OPENNEBULA_AII_MODULE_NAME,
+
         "vm", OPENNEBULA_AII_FORCE,
-        "onhold", OPENNEBULA_AII_ONHOLD
+        "onhold", OPENNEBULA_AII_ONHOLD,
         ));
 
     SELF;
