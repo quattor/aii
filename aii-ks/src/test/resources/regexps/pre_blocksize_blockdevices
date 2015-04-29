@@ -3,7 +3,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ---
 ^correct_disksize_MiB /dev/sdb 3996 4004$
 ^if \[ \$\? -ne 0 \]; then$
-^\s{4}echo "\[ERROR\] Incorrect size. Exiting pre with exitcode 1."$
+^\s{4}echo "\[ERROR\] Incorrect size for /dev/sdb. Exiting pre with exitcode 1."$
 ^\s{4}exit 1$
 ^fi$
 ^if ! grep -q 'sdb1\$' /proc/partitions$
@@ -30,7 +30,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^fi$
 ^correct_disksize_MiB /dev/sdb 3996 4004$
 ^if \[ \$\? -ne 0 \]; then$
-^\s{4}echo "\[ERROR\] Incorrect size. Exiting pre with exitcode 1."$
+^\s{4}echo "\[ERROR\] Incorrect size for /dev/sdb. Exiting pre with exitcode 1."$
 ^\s{4}exit 1$
 ^fi$
 ^if ! grep -q 'sdb2\$' /proc/partitions$
@@ -57,7 +57,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^fi$
 ^correct_disksize_MiB /dev/sdb 3996 4004$
 ^if \[ \$\? -ne 0 \]; then$
-^\s{4}echo "\[ERROR\] Incorrect size. Exiting pre with exitcode 1."$
+^\s{4}echo "\[ERROR\] Incorrect size for /dev/sdb. Exiting pre with exitcode 1."$
 ^\s{4}exit 1$
 ^fi$
 ^if ! grep -q 'sdb3\$' /proc/partitions$
@@ -84,7 +84,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^fi$
 ^correct_disksize_MiB /dev/sdb 3996 4004$
 ^if \[ \$\? -ne 0 \]; then$
-^\s{4}echo "\[ERROR\] Incorrect size. Exiting pre with exitcode 1."$
+^\s{4}echo "\[ERROR\] Incorrect size for /dev/sdb. Exiting pre with exitcode 1."$
 ^\s{4}exit 1$
 ^fi$
 ^if ! grep -q 'sdb4\$' /proc/partitions$
@@ -113,7 +113,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^lvm vgchange -ay$
 ^correct_disksize_MiB /dev/sdb 3996 4004$
 ^if \[ \$\? -ne 0 \]; then$
-^\s{4}echo "\[ERROR\] Incorrect size. Exiting pre with exitcode 1."$
+^\s{4}echo "\[ERROR\] Incorrect size for /dev/sdb. Exiting pre with exitcode 1."$
 ^\s{4}exit 1$
 ^fi$
 ^grep -q '/dev/sdb1\$' /tmp/created_partitions && mkfs.ext3 /dev/sdb1$
