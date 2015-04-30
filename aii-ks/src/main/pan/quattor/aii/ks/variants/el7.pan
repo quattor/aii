@@ -11,6 +11,7 @@ prefix "/system/aii/osinstall/ks";
 "end_script" = "%end";
 "part_label" = true;
 "volgroup_required" = false;
+"lvmforce" = true;
 
 # el7
 "version" = "19.31";
