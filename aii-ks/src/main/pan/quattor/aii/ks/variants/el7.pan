@@ -1,6 +1,6 @@
 # Template containing OS configuration and default values.
 
-template quattor/aii/ks/variants/rhel7rc;
+template quattor/aii/ks/variants/el7;
 
 # Remove deprecated options 
 prefix "/system/aii/osinstall/ks";
