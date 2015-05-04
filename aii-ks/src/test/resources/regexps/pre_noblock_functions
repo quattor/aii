@@ -1,0 +1,116 @@
+Test the functions in the pre section
+---
+---
+^echo 'Begin of pre section'$
+^set -x$
+^$
+^$
+^\# Hack for RHEL 6: force re-reading the partition table$
+^\#$
+^\# fdisk often fails to re-read the partition table on RHEL 6, so we have to do$
+^\# it explicitely. We also have to make sure that udev had enough time to create$
+^\# the device nodes.$
+^rereadpt \(\) \{$
+^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
+^\s{4}\# hdparm can still fail with EBUSY without the wait...$
+^\s{4}sleep 2$
+^\s{4}hdparm -q -z "\$1"$
+^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
+^\s{4}\# Just in case...$
+^\s{4}sleep 2$
+^\}$
+^$
+^\# Align the start of a partition$
+^align \(\) \{$
+^\s{4}local disk path n align_sect START ALIGNED$
+^\s{4}\# By passing disk/path/n separately, we don't have to worry about part_prefix$
+^\s{4}disk="\$1"$
+^\s{4}path="\$2"$
+^\s{4}n="\$3"$
+^\s{4}align_sect="\$4"$
+^$
+^\s{4}START=`fdisk -ul \$disk \| awk '\{if \(\$1 == "'\$path'"\) print \$2 == "\*" \? \$3: \$2\}'`$
+^\s{4}ALIGNED=\$\(\(\(\$START \+ \$align_sect - 1\) / \$align_sect \* \$align_sect\)\)$
+^\s{4}if \[ \$START != \$ALIGNED \]; then$
+^\s{8}echo "-----------------------------------"$
+^\s{8}echo "Aligning \$path: old start sector: \$START, new: \$ALIGNED"$
+^\s{8}fdisk \$disk <<end_of_fdisk$
+^x$
+^b$
+^\$n$
+^\$ALIGNED$
+^w$
+^end_of_fdisk$
+^$
+^\s{8}rereadpt \$disk$
+^\s{4}fi$
+^\}$
+^$
+^disksize_MiB \(\) \{$
+^\s{4}local path BYTES MB RET$
+^\s{4}RET=0$
+^\s{4}path="\$1"$
+^\s{4}BYTES=`blockdev --getsize64 "\$path" 2>/dev/null`$
+^\s{4}if \[ -z \$BYTES \]; then$
+^\s{8}BYTES=`fdisk -l "\$path" 2>/dev/null \|sed -n "s\#\^Disk\\s\$path\.\*\\s\\\(\[0-9\]\\\+\\\)\\s\*bytes\.\*\#\\1\#p"`$
+^\s{8}if \[ -z \$BYTES \]; then$
+^\s{12}BYTES=0$
+^\s{12}RET=1$
+^\s{8}fi$
+^\s{4}fi$
+^\s{4}\# use MiB$
+^\s{4}let MB=\$BYTES/1048576$
+^\s{4}echo \$MB$
+^\s{4}return \$RET$
+^\}$
+^$
+^correct_disksize_MiB \(\) \{$
+^\s{4}\# takes 3 args: device path, minimum size and maximum size$
+^\s{4}\# uses exitcode for result \(e.g. if \[ \$\? -ne 0 \] to test for failure\)$
+^\s{4}local path min max SIZE RET$
+^\s{4}msg="ERROR"$
+^\s{4}RET=1$
+^\s{4}path="\$1"$
+^\s{4}min="\$2"$
+^\s{4}if \[ -z \$min \]; then$
+^\s{8}min=0$
+^\s{4}fi$
+^\s{4}max="\$3"$
+^\s{4}if \[ -z \$max \]; then$
+^\s{8}max=\$min$
+^\s{4}fi$
+^\s{4}SIZE=`disksize_MiB "\$path"`$
+^\s{4}if \[ \$SIZE -ge \$min -a \$SIZE -le \$max \]; then$
+^\s{8}msg="INFO"$
+^\s{8}RET=0$
+^\s{4}fi$
+^\s{4}echo "\[\$msg\] Found path \$path size \$SIZE min \$min max \$max"$
+^\s{4}return \$RET$
+^\}$
+^$
+^wipe_metadata \(\) \{$
+^\s{4}local path clear SIZE ENDSEEK ENDSEEK_OFFSET$
+^\s{4}path="\$1"$
+^\s{4}\# wipe 4 MiB at begin and end$
+^\s{4}ENDSEEK_OFFSET=4$
+^\s{4}\# try to get the size with fdisk$
+^\s{4}SIZE=`disksize_MiB "\$path"`$
+^$
+^\s{4}\# if empty, assume we failed and try with parted$
+^\s{4}if \[ \$SIZE -eq 0 \]; then$
+^\s{8}\# the SIZE has not been determined, $
+^\s{8}\# set it equal to ENDSEEK_OFFSET, the entire disk gets wiped. $
+^\s{8}SIZE=\$ENDSEEK_OFFSET$
+^\s{8}echo "\[WARN\] Could not determine the size of device \$path with both fdisk and parted. Wiping whole drive instead"$
+^\s{4}fi$
+^$
+^\s{4}let ENDSEEK=\$SIZE-\$ENDSEEK_OFFSET$
+^\s{4}if \[ \$ENDSEEK -lt 0 \]; then$
+^\s{8}ENDSEEK=0$
+^\s{4}fi$
+^\s{4}echo "\[INFO\] wipe path \$path with SIZE \$SIZE and ENDSEEK \$ENDSEEK"$
+^\s{4}\# dd with 1 MiB blocksize \(unit used by disksize_MiB and faster then e.g. bs=512\)$
+^\s{4}dd if=/dev/zero of="\$path" bs=1048576 count=\$ENDSEEK_OFFSET 2>/dev/null$
+^\s{4}dd if=/dev/zero of="\$path" bs=1048576 seek=\$ENDSEEK 2>/dev/null$
+^\s{4}sync$
+^\}$

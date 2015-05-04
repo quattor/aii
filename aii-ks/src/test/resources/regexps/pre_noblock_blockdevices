@@ -1,0 +1,5 @@
+Test the blockdevice generation in the pre section with nothing defined
+---
+---
+^lvm vgchange -an$
+^echo 'End of pre section'$
