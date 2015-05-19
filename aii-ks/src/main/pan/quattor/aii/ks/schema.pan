@@ -1,5 +1,5 @@
 # ${license-info}
-# ${developer-info
+# ${developer-info}
 # ${author-info}
 # ${build-info}
 # Structure for the component generating kickstart files.
