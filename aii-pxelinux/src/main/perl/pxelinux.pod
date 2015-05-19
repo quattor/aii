@@ -96,5 +96,41 @@ Exact name of the initrd file. Defaults to "initrd.img".
 
 =back
 
+=head2 HOOKS
+
+Hooks available from pxelinux aii:
+
+=over
+
+=item * rescue:
+
+Sets the node's status to rescue.
+
+=item * install:
+
+Sets the node's status to install.
+
+=item * remove:
+
+Sets the node's status to remove.
+
+=item * configure:
+
+Sets the node's hardware configuration (VMs).
+
+=item * boot:
+
+Sets the node's status to boot from local.
+
+=item * firmware:
+
+Sets the node's status to boot from firmware.
+
+=item * livecd:
+
+Sets the node's status to boot from livecd.
+
+=back
+
 =cut
 
