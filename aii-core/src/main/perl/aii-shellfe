@@ -320,6 +320,7 @@ use CAF::Process;
 use LWP::UserAgent;
 use XML::Simple;
 use EDG::WP4::CCM::Fetch;
+use EDG::WP4::CCM::CCfg;
 use File::Path qw(mkpath rmtree);
 use DB_File;
 
@@ -883,6 +884,14 @@ sub fetch_profiles
         return ();
     }
 
+    # Read the config of the current host
+    # Certain parameters (e.g. json_typed) can have an influence on the behaviour
+    # and functioning of AII (e.g. json_typed support for rendering).
+    EDG::WP4::CCM::CCfg::initCfg();
+    my $json_typed = EDG::WP4::CCM::CCfg::getCfgValue('json_typed');
+    # Reset to the CCM::CCfg defaults, we will use an isolated config file
+    # for each foreign profile
+    EDG::WP4::CCM::CCfg::resetCfg();
 
     foreach my $node (@nl) {
         next if exists $h{$node};
