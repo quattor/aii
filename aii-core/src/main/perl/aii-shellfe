@@ -748,11 +748,6 @@ sub dhcp
     }
     $self->debug(4,"Output: $output");
     $self->debug(4,"End output");
-    if ($?) {
-       $self->error("Error when configuring $node: $output");
-    }
-    $self->debug(4,"Output: $output");
-    $self->debug(4,"End output");
 }
 
 
