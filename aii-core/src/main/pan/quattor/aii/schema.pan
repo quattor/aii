@@ -1,6 +1,6 @@
 ################################################################################
 # ${license-info}
-# ${developer-info
+# ${developer-info}
 # ${author-info}
 # ${build-info}
 unique template quattor/aii/schema;

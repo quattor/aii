@@ -1,6 +1,6 @@
 #!/usr/bin/perl -w
 # ${license-info}
-# ${developer-info
+# ${developer-info}
 # ${author-info}
 # ${build-info}
 ################################################################################
