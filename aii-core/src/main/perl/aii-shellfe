@@ -51,7 +51,7 @@ installer. It instantiates
 and configures NCM components for configuring these systems.
 
 aii-shellfe can be used locally, or remotely called with
-aii-installfe.  
+aii-installfe.
 
 Input data can be specified via the command line (for just one host)
 or via a text file (for more than one host). Perl regular expressions
@@ -312,6 +312,7 @@ use strict;
 use warnings;
 
 use CAF::Application;
+use CAF::FileWriter;
 use CAF::Reporter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
@@ -368,6 +369,8 @@ use constant MAC       => '--mac';
 
 
 our @ISA = qw (CAF::Application CAF::Reporter);
+
+our $ec = LC::Exception::Context->new->will_store_errors;
 
 # List of options for this application.
 sub app_options
@@ -904,12 +907,20 @@ sub fetch_profiles
                 next;
         }
         my $config = "$ccmdir/ccm.conf";
-        if (!open(FILE, ">$config")) {
-                $self->error("failed to create config file $config: $!");
-                next;
-        }
-        print FILE "cache_root $ccmdir\n";
-        close(FILE);
+
+        my $fh = CAF::FileWriter->new($file, log => $self);
+        my $err = $ec->error();
+        if(defined($err)) {
+            $self->error("failed to create config file $config: ".$err->reason());
+            next;
+        } else {
+            print $fh "cache_root $ccmdir\n";
+            print $fh "json_typed $json_typed\n";
+
+            my $changed = $fh->close() ? "" : "not";
+            $self->debug(1, "config file $config $changed changed.");
+        };
+
         # we use CDB_File, since it's the fastest
         my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE_URL => $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
         unless ($fh) {
