@@ -913,7 +913,7 @@ sub fetch_profiles
             $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
             next;
         }
-        my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT});
+        my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT}, $config);
         if ($cm) {
             my $cfg = $cm->getLockedConfiguration (0);
             $h{$node} = { fetch        => $fh,
