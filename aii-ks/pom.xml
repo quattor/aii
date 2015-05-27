@@ -3,7 +3,7 @@
   <groupId>org.quattor.maven</groupId>
   <artifactId>ks</artifactId>
   <packaging>pom</packaging>
-  <version>15.4.0-rc5-SNAPSHOT</version>
+  <version>15.4.0-rc5</version>
   <name>AII Kickstart generator</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
