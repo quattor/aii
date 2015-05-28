@@ -558,7 +558,11 @@ sub install
             };
         }
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
-        $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+        if (defined($vmid)) {
+            $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+        } else {
+            $main::this_app->error("Unable to instantiate VM ${fqdn}");
+        }
     }
 }
 
