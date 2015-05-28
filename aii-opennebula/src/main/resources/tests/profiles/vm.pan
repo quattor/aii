@@ -10,6 +10,7 @@ prefix "/hardware";
     "nic", nlist(
         "eth0", nlist("boot", "true", "hwaddr", "AA:00:00:80:01:00", "pxe", "true"),
         "eth1", nlist("boot", "false", "hwaddr", "AA:00:00:80:01:01", "pxe", "true"),
+        "eth2", nlist("boot", "false", "pxe", "true"),
     ),
 );
 
@@ -88,6 +89,13 @@ prefix "/system/network";
         "netmask", "255.255.0.0",
         "driver", "bnx2"
     ),
+    "eth2", nlist(
+        "broadcast", "172.24.255.255",
+        "device", "eth2",
+        "ip", "172.24.8.31",
+        "netmask", "255.255.0.0",
+        "driver", "bnx2"
+    ),
 );
 
 include 'quattor/aii/opennebula/schema';
@@ -97,7 +105,8 @@ bind "/system/opennebula" = opennebula_vmtemplate;
 prefix "/system/opennebula";
 "vnet" = nlist(
     "eth0", "br100",
-    "eth1", "br101");
+    "eth1", "br101",
+    "eth2", "br101");
 
 "datastore" = nlist(
     "vda", "ceph",

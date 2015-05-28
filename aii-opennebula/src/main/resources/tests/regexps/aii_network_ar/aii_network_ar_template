@@ -20,3 +20,11 @@ multiline
 ^\s{4}SIZE\s{1}=\s{1}"1"$
 ^\]$
 ^NETWORK\s?=\s?"br101"$
+^AR\s?=\s?\[$
+^\s{4}TYPE\s{1}=\s{1}"IP4",$
+^\s{4}IP\s{1}=\s{1}"172.24.8.31",$
+^\s{4}QUATTOR\s{1}=\s{1}"1",$
+^\s{4}HOSTNAME\s{1}=\s{1}"node630.cubone.os",$
+^\s{4}SIZE\s{1}=\s{1}"1"$
+^\]$
+^NETWORK\s?=\s?"br101"$
