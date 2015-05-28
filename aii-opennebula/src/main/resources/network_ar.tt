@@ -11,7 +11,9 @@ IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
 [%         ELSE -%]
 IP = "[% system.network.interfaces.${pair.key}.ip %]",
 [%         END -%]
+[%         IF hardware.cards.nic.${pair.key}.hwaddr.defined -%]
 MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
+[%         END -%]
 QUATTOR = "1",
 HOSTNAME = "[% fqdn %]",
 SIZE = "1"
