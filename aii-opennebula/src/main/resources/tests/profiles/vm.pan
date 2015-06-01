@@ -10,7 +10,7 @@ prefix "/hardware";
     "nic", dict(
         "eth0", dict("boot", "true", "hwaddr", "AA:00:00:80:01:00", "pxe", "true"),
         "eth1", dict("boot", "false", "hwaddr", "AA:00:00:80:01:01", "pxe", "true"),
-        "eth2", dict("boot", "false", "pxe", "true"),
+        "eth2", dict("boot", "false", "hwaddr", "AA:00:00:80:01:02", "pxe", "true"),
     ),
 );
 
