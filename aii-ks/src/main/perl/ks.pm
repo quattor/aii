@@ -71,6 +71,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
+               INIT_SPMA_IGN_DEPS   => "/system/aii/osinstall/ks/init_spma_ignore_deps",
            };
 
 # Base package path for user hooks.
@@ -1095,8 +1096,13 @@ rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
 EOF
     }
 
+    my $init_spma_ign_deps = "";
+    $init_spma_ign_deps = "--ignore-errors-from-dependencies" if (
+        $config->elementExists(INIT_SPMA_IGN_DEPS) &&
+        $config->getElement (INIT_SPMA_IGN_DEPS)->getValue);
+
     print <<EOF;
-/usr/sbin/ncm-ncd --verbose --configure spma || fail "ncm-ncd --configure spma failed"
+/usr/sbin/ncm-ncd --verbose $init_spma_ign_deps --configure spma || fail "ncm-ncd --configure spma failed"
 /usr/sbin/ncm-ncd --verbose --configure --all
 
 EOF
