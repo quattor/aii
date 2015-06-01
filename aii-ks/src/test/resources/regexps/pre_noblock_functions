@@ -98,8 +98,8 @@ Test the functions in the pre section
 ^$
 ^\s{4}\# if empty, assume we failed and try with parted$
 ^\s{4}if \[ \$SIZE -eq 0 \]; then$
-^\s{8}\# the SIZE has not been determined, $
-^\s{8}\# set it equal to ENDSEEK_OFFSET, the entire disk gets wiped. $
+^\s{8}\# the SIZE has not been determined,$
+^\s{8}\# set it equal to ENDSEEK_OFFSET, the entire disk gets wiped.$
 ^\s{8}SIZE=\$ENDSEEK_OFFSET$
 ^\s{8}echo "\[WARN\] Could not determine the size of device \$path with both fdisk and parted. Wiping whole drive instead"$
 ^\s{4}fi$
