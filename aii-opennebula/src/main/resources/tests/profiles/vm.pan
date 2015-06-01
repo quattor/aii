@@ -1,21 +1,21 @@
 unique template vm;
 
 prefix "/hardware";
-"bios" = nlist(
+"bios" = dict(
     "releasedate", "01/01/2007",
     "version", "0.5.1",
 );
-"cards" = nlist(
-    "bmc", list(nlist("console", "ttyS0,115200")),
-    "nic", nlist(
-        "eth0", nlist("boot", "true", "hwaddr", "AA:00:00:80:01:00", "pxe", "true"),
-        "eth1", nlist("boot", "false", "hwaddr", "AA:00:00:80:01:01", "pxe", "true"),
-        "eth2", nlist("boot", "false", "pxe", "true"),
+"cards" = dict(
+    "bmc", list(dict("console", "ttyS0,115200")),
+    "nic", dict(
+        "eth0", dict("boot", "true", "hwaddr", "AA:00:00:80:01:00", "pxe", "true"),
+        "eth1", dict("boot", "false", "hwaddr", "AA:00:00:80:01:01", "pxe", "true"),
+        "eth2", dict("boot", "false", "pxe", "true"),
     ),
 );
 
 "cpu" = list(
-    nlist(
+    dict(
         "arch", "x86_64",
         "cores", 2,
         "manufacturer", "Intel",
@@ -23,7 +23,7 @@ prefix "/hardware";
         "speed", 2260,
         "vendor", "Intel",
     ),
-    nlist(
+    dict(
         "arch", "x86_64",
         "cores", 2,
         "manufacturer", "Intel",
@@ -32,14 +32,14 @@ prefix "/hardware";
         "vendor", "Intel",
     )
 );
-"harddisks" = nlist(
-    "vda", nlist(
+"harddisks" = dict(
+    "vda", dict(
         "capacity", 20480,
         "interface", "sas",
         "model", "Generic SAS disk",
         "part_prefix", ""
     ),
-    "vdb", nlist(
+    "vdb", dict(
         "capacity", 10480,
         "interface", "sas",
         "model", "Generic SAS disk",
@@ -49,8 +49,8 @@ prefix "/hardware";
 "location" = "cubone hyp";
 "model" = "KVM Virtual Machine";
 "ram" = list (
-    nlist ("size", 2048,),
-    nlist ("size", 2048,),
+    dict ("size", 2048,),
+    dict ("size", 2048,),
 );
 "serialnumber" = "kvm/QUATTOR_IMAGE001";
 
@@ -58,8 +58,8 @@ prefix "/system/network";
 "default_gateway" = "10.141.10.250";
 "domainname" = "cubone.os";
 "hostname" = "node630";
-"interfaces" = nlist(
-    "br100", nlist(
+"interfaces" = dict(
+    "br100", dict(
         "broadcast", "10.141.10.255",
         "delay", 0,
         "ip", "10.141.8.30",
@@ -68,7 +68,7 @@ prefix "/system/network";
         "stp", true,
         "type", "Bridge"
     ),
-    "br101", nlist(
+    "br101", dict(
         "broadcast", "172.24.255.255",
         "delay", 0,
         "ip", "172.24.8.30",
@@ -77,19 +77,19 @@ prefix "/system/network";
         "stp", true,
         "type", "Bridge"
     ),
-    "eth0", nlist(
+    "eth0", dict(
         "bridge", "br100",
         "driver", "bnx2",
         "device", "eth0"
     ),
-    "eth1", nlist(
+    "eth1", dict(
         "broadcast", "172.24.255.255",
         "device", "eth1",
         "ip", "172.24.8.30",
         "netmask", "255.255.0.0",
         "driver", "bnx2"
     ),
-    "eth2", nlist(
+    "eth2", dict(
         "broadcast", "172.24.255.255",
         "device", "eth2",
         "ip", "172.24.8.31",
@@ -103,11 +103,15 @@ include 'quattor/aii/opennebula/schema';
 bind "/system/opennebula" = opennebula_vmtemplate;
 
 prefix "/system/opennebula";
-"vnet" = nlist(
+"vnet" = dict(
     "eth0", "br100",
     "eth1", "br101",
     "eth2", "br101");
 
-"datastore" = nlist(
+"datastore" = dict(
     "vda", "ceph",
     "vdb", "default");
+
+"ignoremac" = list (
+    "eth2",
+);

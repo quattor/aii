@@ -89,3 +89,7 @@ prefix "/system/opennebula";
 "datastore" = nlist(
     "vda", "ceph.altaria",
     "vdb", "ceph.altaria");
+
+"ignoremac" = list (
+    "eth2",
+);

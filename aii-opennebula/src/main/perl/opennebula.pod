@@ -34,6 +34,8 @@ Modify your machine template to:
       
 =item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
 
+=item * (Optional) Set ignoremac for a specific network interface to avoid MAC values within AR template
+
 =back
         
 =item * enable acpid service

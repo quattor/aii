@@ -89,4 +89,5 @@ type opennebula_vmtemplate_datastore = string{} with {
 type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
+    "ignoremac" ? string[] # MAC address will be ignored for these network interfaces
 };
