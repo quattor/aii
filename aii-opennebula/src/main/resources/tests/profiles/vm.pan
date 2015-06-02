@@ -11,6 +11,7 @@ prefix "/hardware";
         "eth0", dict("boot", "true", "hwaddr", "AA:00:00:80:01:00", "pxe", "true"),
         "eth1", dict("boot", "false", "hwaddr", "AA:00:00:80:01:01", "pxe", "true"),
         "eth2", dict("boot", "false", "hwaddr", "AA:00:00:80:01:02", "pxe", "true"),
+        "eth3", dict("boot", "false", "hwaddr", "AA:00:00:80:01:03", "pxe", "true"),
     ),
 );
 
@@ -96,6 +97,13 @@ prefix "/system/network";
         "netmask", "255.255.0.0",
         "driver", "bnx2"
     ),
+    "eth3", dict(
+        "broadcast", "172.24.255.255",
+        "device", "eth3",
+        "ip", "172.24.8.32",
+        "netmask", "255.255.0.0",
+        "driver", "bnx2"
+    ),
 );
 
 include 'quattor/aii/opennebula/schema';
@@ -106,12 +114,17 @@ prefix "/system/opennebula";
 "vnet" = dict(
     "eth0", "br100",
     "eth1", "br101",
-    "eth2", "br101");
+    "eth2", "br101",
+    "eth3", "br101");
 
 "datastore" = dict(
     "vda", "ceph",
     "vdb", "default");
 
-"ignoremac" = list (
+"ignoremacinterface" = list (
     "eth2",
+);
+
+"ignoremacaddr" = list (
+    "AA:00:00:80:01:03",
 );

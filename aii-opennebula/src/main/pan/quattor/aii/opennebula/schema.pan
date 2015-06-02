@@ -86,8 +86,22 @@ type opennebula_vmtemplate_datastore = string{} with {
     return(true);
 };
 
+@documentation{ 
+check if the network interface is available from the quattor tree
+}
+function is_valid_interface_ignoremac = {
+    foreach (idx; attr; SELF) {
+        if (! exists("/system/network/interfaces/"+attr)) {
+            error(format("ignoremacinterface: '%s' is not available from /system/network/interfaces tree", attr));
+            return(false);
+        };
+    };
+    return(true);
+};
+
 type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
-    "ignoremac" ? string[] # MAC address will be ignored for these network interfaces
+    "ignoremacaddr" ? string[] # MAC address will be ignored for these mac addr type_hwaddr
+    "ignoremacinterface" ? string[] with is_valid_interface_ignoremac(SELF) # MAC address will be ignored for these net interfaces
 };
