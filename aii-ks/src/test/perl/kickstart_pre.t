@@ -22,7 +22,7 @@ my $regexpdir= getcwd()."/src/test/resources/regexps";
 
 my @tests = qw(noblock blocksize);
 foreach my $test (@tests) {
-    my $fh = CAF::FileWriter->new("target/test/ks_pre_noblock");
+    my $fh = CAF::FileWriter->new("target/test/ks_pre_noblock_$test");
     # This module simply prints to the default filehandle.
     select($fh);
     

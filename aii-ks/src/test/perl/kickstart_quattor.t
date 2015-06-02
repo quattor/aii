@@ -16,7 +16,7 @@ Tests for the C<ksquattor_config> method with emphasis on logging.
 
 $CAF::Object::NoAction = 1;
 
-my $fh = CAF::FileWriter->new("target/test/ks");
+my $fh = CAF::FileWriter->new("target/test/ks_quattor");
 # This module simply prints to the default filehandle.
 select($fh);
 
@@ -36,6 +36,13 @@ like($fh, qr{^sleep 5}m, 'sleep after nscd restart');
 like($fh, qr{^/usr/sbin/ncm-ncd --verbose  --configure spma || fail "ncm-ncd --configure spma failed"$}m, 'initial ncm-ncd --co spma');
 like($fh, qr{^/usr/sbin/ncm-ncd --verbose --configure --all$}m, 'final ncm-ncd --configure -all');
 
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
+# reopen
+$fh = CAF::FileWriter->new("target/test/ks_quattor_initspma");
+# This module simply prints to the default filehandle.
+select($fh);
 
 $cfg = get_config_for_profile('kickstart_quattor_initspma');
 NCM::Component::ks::ksquattor_config($cfg);
