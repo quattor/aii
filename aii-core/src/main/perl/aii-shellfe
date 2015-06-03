@@ -908,16 +908,16 @@ sub fetch_profiles
         }
         my $config = "$ccmdir/ccm.conf";
 
-        my $fh = CAF::FileWriter->new($file, log => $self);
+        my $cfg_fh = CAF::FileWriter->new($config, log => $self);
         my $err = $ec->error();
         if(defined($err)) {
             $self->error("failed to create config file $config: ".$err->reason());
             next;
         } else {
-            print $fh "cache_root $ccmdir\n";
-            print $fh "json_typed $json_typed\n";
+            print $cfg_fh "cache_root $ccmdir\n";
+            print $cfg_fh "json_typed $json_typed\n";
 
-            my $changed = $fh->close() ? "" : "not";
+            my $changed = $cfg_fh->close() ? "" : "not";
             $self->debug(1, "config file $config $changed changed.");
         };
 
