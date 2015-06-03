@@ -114,6 +114,4 @@ type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
     "ignoremac" ? opennebula_ignoremac
-    #"ignoremacaddr" ? type_hwaddr[] # MAC address will be ignored for these mac addr type_hwaddr
-    #"ignoremacinterface" ? string[] with is_valid_interface_ignoremac(SELF) # MAC address will be ignored for these net interfaces
 };
