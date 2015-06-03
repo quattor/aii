@@ -101,10 +101,19 @@ function is_valid_interface_ignoremac = {
     return(true);
 };
 
+@documentation{ 
+Type that sets which net interfaces/MACs
+will not include MAC values within one templates
+}
+type opennebula_ignoremac = {
+    "macaddr" ? type_hwaddr[]
+    "interface" ? string[] with is_valid_interface_ignoremac(SELF)
+};
 
 type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
-    "ignoremacaddr" ? type_hwaddr[] # MAC address will be ignored for these mac addr type_hwaddr
-    "ignoremacinterface" ? string[] with is_valid_interface_ignoremac(SELF) # MAC address will be ignored for these net interfaces
+    "ignoremac" ? opennebula_ignoremac
+    #"ignoremacaddr" ? type_hwaddr[] # MAC address will be ignored for these mac addr type_hwaddr
+    #"ignoremacinterface" ? string[] with is_valid_interface_ignoremac(SELF) # MAC address will be ignored for these net interfaces
 };

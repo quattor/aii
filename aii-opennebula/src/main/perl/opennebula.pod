@@ -34,9 +34,7 @@ Modify your machine template to:
       
 =item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
 
-=item * (Optional) Set ignoremacinterface network interfaces list to avoid to include MAC values within AR/VM templates
-
-=item * (Optional) Set ignoremacaddr list to avoid to include MAC values within AR/VM templates for these MACs
+=item * (Optional) Set /system/opennebula/ignoremac tree to avoid to include MAC values within AR/VM templates
 
 =back
         

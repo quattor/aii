@@ -121,10 +121,10 @@ prefix "/system/opennebula";
     "vda", "ceph",
     "vdb", "default");
 
-"ignoremacinterface" = list (
+"ignoremac/interface" = list (
     "eth2",
 );
 
-"ignoremacaddr" = list (
+"ignoremac/macaddr" = list (
     "AA:00:00:80:01:03",
 );

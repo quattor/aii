@@ -98,10 +98,10 @@ prefix "/system/opennebula";
     "vda", "ceph.altaria",
     "vdb", "ceph.altaria");
 
-"ignoremacinterface" = list (
+"ignoremac/interface" = list (
     "eth2",
 );
 
-"ignoremacaddr" = list (
+"ignoremac/macaddr" = list (
     "AA:00:00:80:01:03",
 );
