@@ -89,14 +89,12 @@ type opennebula_vmtemplate_datastore = string{} with {
 };
 
 @documentation{ 
-check if the network interface is available from the quattor tree
+Type that checks if the network interface is available from the quattor tree
 }
-function is_valid_interface_ignoremac = {
-    foreach (idx; attr; SELF) {
-        if (! exists("/system/network/interfaces/"+attr)) {
-            error(format("ignoremacinterface: '%s' is not available from /system/network/interfaces tree", attr));
-            return(false);
-        };
+type valid_interface_ignoremac = string with {
+    if (! exists("/system/network/interfaces/"+SELF)) {
+         error(format("ignoremac.interface: '%s' is not available from /system/network/interfaces tree", SELF));
+         return(false);
     };
     return(true);
 };
@@ -107,7 +105,7 @@ will not include MAC values within one templates
 }
 type opennebula_ignoremac = {
     "macaddr" ? type_hwaddr[]
-    "interface" ? string[] with is_valid_interface_ignoremac(SELF)
+    "interface" ? valid_interface_ignoremac[]
 };
 
 type opennebula_vmtemplate = {
