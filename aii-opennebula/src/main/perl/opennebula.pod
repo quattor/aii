@@ -78,13 +78,19 @@ All these paths are relative to /system/aii/hooks/remove
 
 =over 4
 
+=item * vm : boolean
+
+Stop running VM
+
+=over 4
+
 =item * image : boolean
 
 Remove image/s
 
-=item * vmtemplate : boolean
+=item * template : boolean
 
-Remove VM template
+Remove VM templates
 
 =back
 
