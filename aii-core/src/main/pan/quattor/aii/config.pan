@@ -49,7 +49,7 @@ include { AII_NBP_GEN };
 # "/system/aii/dhcp/options/tftpserver" = "tftp.mydomain.org"
 #
 variable AII_DHCP_TFTPSERVER ?= null;
-"/system/aii/dhcp/options/addoptions" ?= AII_DHCP_TFTPSERVER;
+"/system/aii/dhcp/options/tftpserver" ?= AII_DHCP_TFTPSERVER;
 
 #
 # Additional DHCP options (optional).
