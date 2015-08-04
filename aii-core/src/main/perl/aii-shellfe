@@ -51,7 +51,7 @@ installer. It instantiates
 and configures NCM components for configuring these systems.
 
 aii-shellfe can be used locally, or remotely called with
-aii-installfe.  
+aii-installfe.
 
 Input data can be specified via the command line (for just one host)
 or via a text file (for more than one host). Perl regular expressions
@@ -312,6 +312,7 @@ use strict;
 use warnings;
 
 use CAF::Application;
+use CAF::FileWriter;
 use CAF::Reporter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
@@ -320,6 +321,7 @@ use CAF::Process;
 use LWP::UserAgent;
 use XML::Simple;
 use EDG::WP4::CCM::Fetch;
+use EDG::WP4::CCM::CCfg;
 use File::Path qw(mkpath rmtree);
 use DB_File;
 
@@ -367,6 +369,8 @@ use constant MAC       => '--mac';
 
 
 our @ISA = qw (CAF::Application CAF::Reporter);
+
+our $ec = LC::Exception::Context->new->will_store_errors;
 
 # List of options for this application.
 sub app_options
@@ -748,11 +752,6 @@ sub dhcp
     }
     $self->debug(4,"Output: $output");
     $self->debug(4,"End output");
-    if ($?) {
-       $self->error("Error when configuring $node: $output");
-    }
-    $self->debug(4,"Output: $output");
-    $self->debug(4,"End output");
 }
 
 
@@ -888,6 +887,14 @@ sub fetch_profiles
         return ();
     }
 
+    # Read the config of the current host
+    # Certain parameters (e.g. json_typed) can have an influence on the behaviour
+    # and functioning of AII (e.g. json_typed support for rendering).
+    EDG::WP4::CCM::CCfg::initCfg();
+    my $json_typed = EDG::WP4::CCM::CCfg::getCfgValue('json_typed');
+    # Reset to the CCM::CCfg defaults, we will use an isolated config file
+    # for each foreign profile
+    EDG::WP4::CCM::CCfg::resetCfg();
 
     foreach my $node (@nl) {
         next if exists $h{$node};
@@ -900,12 +907,20 @@ sub fetch_profiles
                 next;
         }
         my $config = "$ccmdir/ccm.conf";
-        if (!open(FILE, ">$config")) {
-                $self->error("failed to create config file $config: $!");
-                next;
-        }
-        print FILE "cache_root $ccmdir\n";
-        close(FILE);
+
+        my $cfg_fh = CAF::FileWriter->new($config, log => $self);
+        my $err = $ec->error();
+        if(defined($err)) {
+            $self->error("failed to create config file $config: ".$err->reason());
+            next;
+        } else {
+            print $cfg_fh "cache_root $ccmdir\n";
+            print $cfg_fh "json_typed $json_typed\n";
+
+            my $changed = $cfg_fh->close() ? "" : "not";
+            $self->debug(1, "config file $config $changed changed.");
+        };
+
         # we use CDB_File, since it's the fastest
         my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE_URL => $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
         unless ($fh) {
@@ -918,7 +933,7 @@ sub fetch_profiles
             $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
             next;
         }
-        my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT});
+        my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT}, $config);
         if ($cm) {
             my $cfg = $cm->getLockedConfiguration (0);
             $h{$node} = { fetch        => $fh,
