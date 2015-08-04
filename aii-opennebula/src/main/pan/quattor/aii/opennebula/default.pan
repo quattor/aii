@@ -1,11 +1,14 @@
 unique template quattor/aii/opennebula/default;
 
 include 'quattor/aii/opennebula/schema';
+include 'quattor/aii/opennebula/functions';
 
 #  undef are set via schema default
 variable OPENNEBULA_AII_FORCE ?= undef; 
 variable OPENNEBULA_AII_FORCE_REMOVE ?= undef;
 variable OPENNEBULA_AII_ONHOLD ?= undef;
+variable OPENNEBULA_AII_REPLACEMAC ?= undef;
+variable MAC_PREFIX ?= undef;
 
 "/system/aii/hooks/configure/" = {
     append(nlist(
