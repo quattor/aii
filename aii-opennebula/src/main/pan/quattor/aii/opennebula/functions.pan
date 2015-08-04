@@ -63,12 +63,18 @@ function opennebula_replace_vm_mac = {
                 eth = ethk;
                 foreach (interk;interv;value("/system/network/interfaces")) {
                     if ((exists(SELF[interk])) &&
-                        (exists(interv['ip'])) &&
-                        (OPENNEBULA_AII_REPLACEMAC) &&
                         (match(interk, eth))) {
-                            mac = ip2mac(MAC_PREFIX, interv['ip']);
-                            #"/hardware/cards/nic/"+eth+"/hwaddr" = mac;
-                            ethv['hwaddr'] = mac;
+                            if ((exists(interv['ip']))) {
+                                mac = ip2mac(MAC_PREFIX, interv['ip']);
+                                #"/hardware/cards/nic/"+eth+"/hwaddr" = mac;
+                                ethv['hwaddr'] = mac;
+                            }; 
+                            if ((exists(interv['bridge'])) &&
+                                    (exists("/system/network/interfaces/" + interv['bridge'] + "/ip"))) {
+                                    mac = ip2mac(MAC_PREFIX, 
+                                                 value("/system/network/interfaces"+ interv['bridge'] + "/ip"));
+                                    ethv['hwaddr'] = mac;
+                            };
                     };
                 };
         };
