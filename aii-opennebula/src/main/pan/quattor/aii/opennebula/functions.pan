@@ -27,13 +27,12 @@ function ip2mac = {
     if (!is_ipv4(ARGV[1])) {
         error("Invalid IPv4 format ("+ARGV[1]+")");
     };
-
     # Convert IP octets to Hex
+    ipoctets = list();
     foreach (i; octet; split('\.',ARGV[1])) {
-        array[i] = format("%02x", octet);
+        ipoctets[i] = format("%02x", to_long(octet));
     };
-    ip2hex = join(':', array);
-    return(join(':',merge(ARGV[0], ip2hex)));
+    return(format("%s:%s", ARGV[0], join(':', ipoctets)));
 };
 
 ########################################################################
