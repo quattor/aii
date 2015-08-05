@@ -56,22 +56,19 @@ function opennebula_replace_vm_mac = {
         error("Invalid MAC_PREFIX format ("+ARGV[0]+")");
     };
     foreach (ethk;ethv;value("/hardware/cards/nic")) {
-        if ((exists(SELF[ethk])) && 
-            (exists(ethv['hwaddr']))) {
+        if ((exists(ethv['hwaddr']))) {
                 hwaddr = ethv['hwaddr'];
                 eth = ethk;
                 foreach (interk;interv;value("/system/network/interfaces")) {
-                    if ((exists(SELF[interk])) &&
-                        (match(interk, eth))) {
+                    if ((match(interk, eth))) {
                             if ((exists(interv['ip']))) {
-                                mac = ip2mac(MAC_PREFIX, interv['ip']);
-                                #"/hardware/cards/nic/"+eth+"/hwaddr" = mac;
+                                mac = ip2mac(ARGV[0], interv['ip']);
                                 ethv['hwaddr'] = mac;
                             }; 
                             if ((exists(interv['bridge'])) &&
                                     (exists("/system/network/interfaces/" + interv['bridge'] + "/ip"))) {
-                                    mac = ip2mac(MAC_PREFIX, 
-                                                 value("/system/network/interfaces"+ interv['bridge'] + "/ip"));
+                                    mac = ip2mac(ARGV[0], 
+                                                 value("/system/network/interfaces/" + interv['bridge'] + "/ip"));
                                     ethv['hwaddr'] = mac;
                             };
                     };
