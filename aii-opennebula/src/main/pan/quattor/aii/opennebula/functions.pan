@@ -2,18 +2,18 @@ declaration template quattor/aii/opennebula/functions;
 
 include 'pan/types';
 
-########################################################################
-##=
-## @function ip2mac
-## @# generates OpenNebula MAC addresses from MAC_PREFIX + IPv4
-## Based on OpenNebula ip2mac function:
-## https://github.com/OpenNebula/one/blob/master/share/router/vmcontext.rb
-## @syntax mac_prefix:string ipv4:string
-## @param:mac_prefix hex:hex value used by oned.conf (02:00 by default)
-## @param:ipv4 IP used by the VM
-## @example
-##=
-############################################################
+@documentation{
+This function generates OpenNebula MAC addresses from MAC_PREFIX + IPv4
+Based on OpenNebula ip2mac function:
+
+https://github.com/OpenNebula/one/blob/master/share/router/vmcontext.rb
+
+Syntax: 
+mac_prefix:string ipv4:string
+
+mac_prefix hex:hex value used also by oned.conf (02:00 by default)
+ipv4 IP used by the VM
+}
 function ip2mac = {
     # Check arguments
     if (ARGC != 2) {
@@ -35,16 +35,18 @@ function ip2mac = {
     return(format("%s:%s", ARGV[0], join(':', ipoctets)));
 };
 
-########################################################################
-##=
-## @function opennebula_replace_vm_mac
-## @# replaces VM MAC addresses using OpenNebula function
-##+Use the same MAC_PREFIX for OpenNebula component (oned.conf) and AII
-## @syntax mac_prefix:string
-## @param:mac_prefix hex:hex value used by oned.conf (02:00 by default)
-## @example
-##=
-############################################################
+@documentation{
+This function replaces nic hwaddr using OpenNebula MAC function
+Use the same MAC_PREFIX for OpenNebula component (oned.conf) and AII
+
+Syntax: 
+mac_prefix:string
+
+mac_prefix hex:hex value used by oned.conf
+
+Example:
+"/hardware/cards/nic" = opennebula_replace_vm_mac(MAC_PREFIX);
+}
 function opennebula_replace_vm_mac = {
     # Check for arguments
     if (ARGC != 1) {
@@ -63,17 +65,17 @@ function opennebula_replace_vm_mac = {
                     if ((match(interk, eth))) {
                             if ((exists(interv['ip']))) {
                                 mac = ip2mac(ARGV[0], interv['ip']);
-                                ethv['hwaddr'] = mac;
+                                SELF[eth]['hwaddr'] = mac;
                             }; 
                             if ((exists(interv['bridge'])) &&
                                     (exists("/system/network/interfaces/" + interv['bridge'] + "/ip"))) {
                                     mac = ip2mac(ARGV[0], 
                                                  value("/system/network/interfaces/" + interv['bridge'] + "/ip"));
-                                    ethv['hwaddr'] = mac;
+                                    SELF[eth]['hwaddr'] = mac;
                             };
                     };
                 };
         };
     };
-    return(true);
+    return(SELF);
 };
