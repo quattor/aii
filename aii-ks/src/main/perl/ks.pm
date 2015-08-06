@@ -851,16 +851,21 @@ sub ksprint_filesystems
         $clear = $config->getElement ("/system/aii/osinstall/ks/clearpart")->getTree;
     }
 
-    foreach (@$clear) {
-        my $disk = build ($config, "physical_devs/".$self->escape($_));
-        $disk->clearpart_ks;
-    }
+    # cleanup/wipe partitions etc
     while ($fss->hasNextElement) {
         my $fs = $fss->getNextElement;
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
         $fstree->del_pre_ks;
         push (@filesystems, $fstree);
+    }
+
+    # only after cleaning up the partitions etc, perform the clearpart
+    # (clearpart_ks wipes disk and sets boot label, any parttion cleanup
+    # is useless after that)
+    foreach (@$clear) {
+        my $disk = build ($config, "physical_devs/".$self->escape($_));
+        $disk->clearpart_ks;
     }
 
     # Create what needs to be created.
