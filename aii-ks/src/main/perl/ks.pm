@@ -767,8 +767,16 @@ correct_disksize_MiB () {
 wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
-    # wipe 4 MiB at begin and end
+
+    # default to 1
+    clearmb="${2:-1}"
+
+    # wipe at least 4 MiB at begin and end
     ENDSEEK_OFFSET=4
+    if [ "$clearmb" -gt $ENDSEEK_OFFSET ]; then
+        ENDSEEK_OFFSET=$clearmb
+    fi
+
     # try to get the size with fdisk
     SIZE=`disksize_MiB "$path"`
 
