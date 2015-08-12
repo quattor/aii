@@ -101,7 +101,7 @@ type valid_interface_ignoremac = string with {
 
 @documentation{ 
 Type that sets which net interfaces/MACs
-will not include MAC values within one templates
+will not include MAC values within ONE templates
 }
 type opennebula_ignoremac = {
     "macaddr" ? type_hwaddr[]
