@@ -32,7 +32,7 @@ function opennebula_ipv42mac = {
     foreach (i; octet; split('\.',ARGV[1])) {
         ipoctets[i] = format("%02x", to_long(octet));
     };
-    return(format("%s:%s", ARGV[0], join(':', ipoctets)));
+    return(format("%s:%s:%s:%s:%s", ARGV[0], ipoctets[0], ipoctets[1], ipoctets[2], ipoctets[3]));
 };
 
 @documentation{
