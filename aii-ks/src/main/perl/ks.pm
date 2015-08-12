@@ -71,6 +71,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
+               INIT_SPMA_IGN_DEPS   => "/system/aii/osinstall/ks/init_spma_ignore_deps",
            };
 
 # Base package path for user hooks.
@@ -79,10 +80,10 @@ use constant   USEMODULE        => "use " . MODULEBASE;
 
 # use this syslogheader for remote AII scripts logging:
 #   190 = local7.info
-use constant LOG_ACTION_SYSLOGHEADER => '<190>AII: '; 
-# awk command to prefix LOG_ACTION_SYSLOGHEADER and 
+use constant LOG_ACTION_SYSLOGHEADER => '<190>AII: ';
+# awk command to prefix LOG_ACTION_SYSLOGHEADER and
 # to insert sleep (usleep by initscripts), throtlles to max 1000 lines per sec
-use constant LOG_ACTION_AWK => 
+use constant LOG_ACTION_AWK =>
     "awk '{print \"".LOG_ACTION_SYSLOGHEADER."\"\$0; fflush(); system(\"usleep 1000 >& /dev/null\");}'";
 
 
@@ -92,17 +93,17 @@ use constant   KSDIROPT         => 'osinstalldir';
 # Lowest supported version is 5.0
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
 use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
-use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 
 # Return the fqdn of the node
-sub get_fqdn 
+sub get_fqdn
 {
     my $cfg = shift;
     my $h = $cfg->getElement (HOSTNAME)->getValue;
     my $d = $cfg->getElement (DOMAINNAME)->getValue;
-    return "$h.$d";    
+    return "$h.$d";
 }
 
 # return the version instance as specified in the kickstart (if at all)
@@ -116,9 +117,9 @@ sub get_anaconda_version
             # TODO is this ok, or should we stop?
             $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
             $version = ANACONDA_VERSION_LOWEST;
-        }        
+        }
     };
-    return $version;    
+    return $version;
 }
 
 
@@ -126,14 +127,14 @@ sub get_anaconda_version
 sub ksopen
 {
     my ($self, $cfg) = @_;
-    
+
     my $fqdn = get_fqdn($cfg);
 
     my $ksdir = $this_app->option (KSDIROPT);
     $self->debug(3,"Kickstart file directory = $ksdir");
 
     my $ks = CAF::FileWriter->open ("$ksdir/$fqdn.ks",
-                                    mode => 0664, 
+                                    mode => 0664,
                                     log => $this_app
                                     );
     select ($ks);
@@ -160,15 +161,15 @@ End_Of_Post_Reboot
 EOF
 }
 
-# Determine the network device name, and return the 
-# device ip configuration and any additional network 
+# Determine the network device name, and return the
+# device ip configuration and any additional network
 # options (e.g. to handle with bonding)
-# This method is called when setting up 
+# This method is called when setting up
 # static network configuration.
 sub ksnetwork_get_dev_net
 {
-    my ($tree, $config) = @_; 
-    
+    my ($tree, $config) = @_;
+
     my @networkopts = ();
     my $version = get_anaconda_version($tree);
 
@@ -178,15 +179,15 @@ sub ksnetwork_get_dev_net
         $this_app->error("Invalid ksdevice $dev for static ks configuration.");
         return;
     }
-    
+
     if (! $config->elementExists("/system/network/interfaces/$dev")) {
         $this_app->error("ksdevice $dev missing network details for static ks configuration.");
         return;
     }
-    
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
-    # check for bonding 
+    # check for bonding
     my $bonddev = $net->{master};
     # check the existence to deal with older profiles
     if (exists($tree->{bonding}) && (! $tree->{bonding})) {
@@ -195,7 +196,7 @@ sub ksnetwork_get_dev_net
         # lets hope you know what you are doing
         $this_app->warn ("$msg for dev $dev, with master $bonddev set.") if ($bonddev);
     } elsif ($version >= ANACONDA_VERSION_EL_6_0 && $bonddev ) {
-        # this is the dhcp code logic; adding extra error here. 
+        # this is the dhcp code logic; adding extra error here.
         if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
             $this_app->warn("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
                              "But bootproto=none is missing, so ncm-network will not treat it as one.");
@@ -205,12 +206,12 @@ sub ksnetwork_get_dev_net
         # network settings are part of the bond master
         my $intfs = $config->getElement("/system/network/interfaces")->getTree;
         $net = $intfs->{$bonddev};
-        
-        # gather the slaves, the ksdevice is put first 
+
+        # gather the slaves, the ksdevice is put first
         my @slaves;
         push(@slaves, $dev);
         foreach my $intf (sort keys %$intfs) {
-            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} &&
                                       $intfs->{$intf}->{master} eq $bonddev &&
                                       !(grep { $_ eq $intf } @slaves));
         };
@@ -225,15 +226,15 @@ sub ksnetwork_get_dev_net
             }
             push(@networkopts, "--bondopts=".join(',', @opts));
         }
-        
+
         # continue with the bond device as network device
         $dev = $bonddev;
-        
+
     }
-    
+
     return ($dev, $net, @networkopts);
 
-}    
+}
 
 
 # Configures the network, allowing both DHCP and static boots.
@@ -245,7 +246,7 @@ sub ksnetwork
 
     if ($tree->{bootproto} eq 'dhcp') {
         # TODO: no boot device selection with dhcp (e.g. needed for bonding)
-        # Although fully supported in ks and easy to add, 
+        # Although fully supported in ks and easy to add,
         # the issue here is backwards compatibilty (a.k.a. very old behaviour)
         $this_app->debug (5, "Node configures its network via DHCP");
         push(@network, "--bootproto=dhcp");
@@ -259,7 +260,7 @@ sub ksnetwork
 
     $this_app->debug (5, "Node will boot from $dev");
     push(@network, "--device=$dev");
-    
+
     my $fqdn = get_fqdn($config);
     push(@network, "--hostname=$fqdn");
 
@@ -267,21 +268,21 @@ sub ksnetwork
     push(@network, "--nameserver=$ns");
 
     # from now on, only IP related settings
-    
-    # check for bridge: if $dev is a bridge interface, 
+
+    # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
     # (do this here, i.e. after --device is set)
     if ($net->{bridge}) {
-        my $brdev = $net->{bridge}; 
+        my $brdev = $net->{bridge};
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
-        # warning: $dev is changed here to the bridge device to create correct log 
-        # messages in remainder of this method. as there is not bridge device 
+        # warning: $dev is changed here to the bridge device to create correct log
+        # messages in remainder of this method. as there is not bridge device
         # in anaconda phase, the new value of $dev is not an actual network device!
         $dev = $brdev;
     }
-    
+
     unless ($net->{ip}) {
             $this_app->error ("Static boot protocol specified ",
                               "but no IP given to the interface $dev");
@@ -364,10 +365,10 @@ sub kscommands
 
     my $tree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($tree);
-    
+
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
-    
+
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
@@ -380,7 +381,7 @@ sub kscommands
             }
         }
     }
-    
+
     print <<EOF;
 install
 $installtype
@@ -468,17 +469,17 @@ EOF
         print "ignoredisk --drives=",
             join (',', @{$tree->{ignoredisk}}), "\n";
     }
-    
+
     ## disable and enable services, if any
     my @services;
-    push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if 
+    push(@services, "--disabled=".join(',', @{$tree->{disable_service}})) if
         ($tree->{disable_service} && @{$tree->{disable_service}});
-    push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if 
+    push(@services, "--enabled=".join(',', @{$tree->{enable_service}})) if
         ($tree->{enable_service} && @{$tree->{enable_service}});
 
     print "services ", join (' ', @services), "\n" if (@services);
 
-    # packages are dealt last. This returns the reference to the list of unprocessed packages 
+    # packages are dealt last. This returns the reference to the list of unprocessed packages
     # by default, all packages are processed
     my $unprocessed_packages = [];
 
@@ -491,9 +492,9 @@ EOF
         print " ", join(" ",@{$tree->{packages_args}}), "\n",
             join ("\n", @packages), "\n";
     }
-    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '', 
+    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '',
           "\n";
-    return $unprocessed_packages;    
+    return $unprocessed_packages;
 
 }
 
@@ -535,12 +536,12 @@ EOF
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 
         # EL7+ anaconda does not allow a preformatted / filesystem
-        if ($version >= ANACONDA_VERSION_EL_7_0 && 
-                $fstree->{mountpoint} eq '/' && 
+        if ($version >= ANACONDA_VERSION_EL_7_0 &&
+                $fstree->{mountpoint} eq '/' &&
                 ! $fstree->{ksfsformat}) {
             $fstree->{ksfsformat}=1;
         }
-        
+
         $fstree->print_ks;
     }
 }
@@ -586,7 +587,7 @@ EOF
     ksuserhooks ($config, ANACONDAHOOK);
 
     my $packages = kscommands ($config);
-    
+
     return $packages;
 }
 
@@ -598,23 +599,23 @@ sub log_action {
     my $tree = $config->getElement(KS)->getTree;
     my @logactions;
     my $drainsleep = 0;
-    
-    push(@logactions, "exec >$logfile 2>&1"); 
 
-    # when changing any of the behaviour    
+    push(@logactions, "exec >$logfile 2>&1");
+
+    # when changing any of the behaviour
     my $consolelogging = 1; # default behaviour
     if ($tree->{logging}) {
         # although mandatory in the schema (for now?), if it is missing, it should be 1
         # adding the if(defined()) here for that reason
         $consolelogging = $tree->{logging}->{console} if (defined($tree->{logging}->{console}));
-        
+
         if ($tree->{logging}->{send_aiilogs}) {
-            # network must be functional 
+            # network must be functional
             # (not needed in %pre and %post; we can rely on anaconda for that)
-            push(@logactions, "wait_for_network $tree->{logging}->{host}") 
+            push(@logactions, "wait_for_network $tree->{logging}->{host}")
                 if ($wait_for_network);
 
-            my $method = $tree->{logging}->{method}; 
+            my $method = $tree->{logging}->{method};
             my $protocol = $tree->{logging}->{protocol};
 
             my $actioncmd;
@@ -631,13 +632,13 @@ sub log_action {
                 # this assumes that the %pre, %post and post-reboot are bash
                 $actioncmd = "> /dev/$protocol/$tree->{logging}->{host}/$tree->{logging}->{port}";
             }
-            
+
             my $action = "(tail -f $logfile | ".LOG_ACTION_AWK." $actioncmd) &";
             push(@logactions, $action);
 
             # insert extra sleep to get all started before any output is send
             push(@logactions, 'sleep 1');
-            
+
             # fix drain sleep to 10 seconds
             $drainsleep = 10;
         }
@@ -647,9 +648,9 @@ sub log_action {
         push(@logactions, '# Make sure messages show up on the serial console',
                           "tail -f $logfile > /dev/console &");
     }
-    
-    push(@logactions,"drainsleep=$drainsleep"); # add trailing newline 
-    push(@logactions,''); # add trailing newline 
+
+    push(@logactions,"drainsleep=$drainsleep"); # add trailing newline
+    push(@logactions,''); # add trailing newline
     return join("\n", @logactions)
 }
 
@@ -660,7 +661,7 @@ sub pre_install_script
 
     my $logfile = '/tmp/pre-log.log';
     my $logaction = log_action($config, $logfile);
-    
+
     print <<EOF;
 %pre
 
@@ -774,8 +775,8 @@ wipe_metadata () {
 
     # if empty, assume we failed and try with parted
     if [ $SIZE -eq 0 ]; then
-        # the SIZE has not been determined, 
-        # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped. 
+        # the SIZE has not been determined,
+        # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped.
         SIZE=$ENDSEEK_OFFSET
         echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
     fi
@@ -864,8 +865,8 @@ sub ksprint_filesystems
                                       $config);
 
         # EL7+ parted doesn't seem to understand/like logical partitions
-        # without clear offset         
-        if ($version >= ANACONDA_VERSION_EL_7_0 && 
+        # without clear offset
+        if ($version >= ANACONDA_VERSION_EL_7_0 &&
                 ! exists $pt->{offset} &&
                 $pt->{holding_dev}->{label} &&
                 $pt->{holding_dev}->{label} eq 'msdos' &&
@@ -901,7 +902,7 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
-    # DISABLED_REPOS doesn't exist in 13.1 
+    # DISABLED_REPOS doesn't exist in 13.1
     my $disabled = [];
     if ( $config->elementExists(DISABLED_REPOS) ) {
         $disabled = $config->getElement(DISABLED_REPOS)->getTree();
@@ -950,9 +951,9 @@ sub kspostreboot_header
 
 	# TODO is it ok to rename this logfile?
     my $logfile = '/root/ks-post-reboot.log';
-    my $logaction = log_action($config, $logfile, 1); 
+    my $logaction = log_action($config, $logfile, 1);
     $logaction =~ s/\$/\\\$/g;
-    
+
     my $fqdn = get_fqdn($config);
 
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
@@ -1095,8 +1096,13 @@ rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
 EOF
     }
 
+    my $init_spma_ign_deps = "";
+    $init_spma_ign_deps = "--ignore-errors-from-dependencies" if (
+        $config->elementExists(INIT_SPMA_IGN_DEPS) &&
+        $config->getElement (INIT_SPMA_IGN_DEPS)->getValue);
+
     print <<EOF;
-/usr/sbin/ncm-ncd --verbose --configure spma || fail "ncm-ncd --configure spma failed"
+/usr/sbin/ncm-ncd --verbose $init_spma_ign_deps --configure spma || fail "ncm-ncd --configure spma failed"
 /usr/sbin/ncm-ncd --verbose --configure --all
 
 EOF
@@ -1229,7 +1235,7 @@ sub yum_setup
     unless ( $config->elementExists(REPO) ) {
       $this_app->error(REPO." not defined in configuration");
       return
-    } 
+    }
     $repos = $config->getElement (REPO)->getTree();
 
     print <<EOF;
@@ -1311,14 +1317,14 @@ sub process_pkgs
 }
 
 # C<simple_version_glob> will select all version-locked packages, if any.
-# Then, all non-locked packages that match the locked non-versioned 
-# packages glob are removed. Finally, all remaining non-locked 
+# Then, all non-locked packages that match the locked non-versioned
+# packages glob are removed. Finally, all remaining non-locked
 # packages are added.
 #
 # E.g. "yum install kernel*-X.Y.Z kernel-firmware" will try to install
 # the latest kernel-firmware with a set of fixed kernel rpms,
 # probably not matching with latest kernel-firmware version
-# Ideally, kernel*-X.Y.Z is defined in the profile, and no other 
+# Ideally, kernel*-X.Y.Z is defined in the profile, and no other
 # kernel packages are version locked.
 sub simple_version_glob {
     my ($self, @pkglist) = @_;
@@ -1332,7 +1338,7 @@ sub simple_version_glob {
 
         # test if certain pkg is version locked
         # (specifying arch is also considered locking)
-        # it's sufficient to the test first element 
+        # it's sufficient to the test first element
         # (you can't mix locked and unlocked)
         push(@locked, $pkgst) if ($processed[0] !~ m/^$pkgst$/);
     };
@@ -1354,7 +1360,7 @@ sub simple_version_glob {
     foreach my $ref (values %pkgs) {
         push (@res, @$ref) ;
     };
-    return @res;    
+    return @res;
 }
 
 
@@ -1366,7 +1372,7 @@ sub yum_install_packages
 
     my @pkgs;
     my $t = $config->getElement (PKG)->getTree();
-    
+
     my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
 
     print <<EOF;
@@ -1386,9 +1392,9 @@ EOF
 
     my @yumpkgs;
     if ($packages) {
-        # packages are installed unconditionally, 
+        # packages are installed unconditionally,
         # not checked like basepackages
-        push(@yumpkgs, @$packages);    
+        push(@yumpkgs, @$packages);
     }
     push(@yumpkgs, $self->simple_version_glob(@pkgs));
     $self->debug(5,"    Adding YUM commands to install ".join(",",@pkgs));
@@ -1469,7 +1475,7 @@ EOF
     #       and ks-post-reboot needs to be started after it (not in parallel)
     #     syslog/rsyslog and sshd are a nice-to-have
     #   Type oneshot disables timeout and is blocking
-    #     other services/targets can be started in parallel 
+    #     other services/targets can be started in parallel
 
     print <<EOF;
 

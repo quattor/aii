@@ -204,6 +204,10 @@ Install with cmdline instead of text mode.
 
 Agree with EULA. (EL7.0+)
 
+=item * init_spma_ignore_deps ? boolean
+
+Ignore errors from dependencies during initial spma run.
+
 =item * firewall
 
 See below

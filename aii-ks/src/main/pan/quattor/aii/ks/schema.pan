@@ -110,6 +110,7 @@ type structure_ks_ks_info = {
     'packagesinpost' ? boolean
     'bonding' : boolean = true # support network bonding
     'lvmforce' ? boolean
+    'init_spma_ignore_deps' ? boolean
 };
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
