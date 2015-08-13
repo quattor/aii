@@ -29,10 +29,11 @@ function opennebula_ipv42mac = {
     };
     # Convert IP octets to Hex
     ipoctets = list();
+    macaddr = ARGV[0];
     foreach (i; octet; split('\.',ARGV[1])) {
-        ipoctets[i] = format("%02x", to_long(octet));
+        macaddr = format("%s:%02x", macaddr, to_long(octet));
     };
-    return(format("%s:%s:%s:%s:%s", ARGV[0], ipoctets[0], ipoctets[1], ipoctets[2], ipoctets[3]));
+    return(macaddr);
 };
 
 @documentation{

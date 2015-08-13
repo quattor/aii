@@ -62,8 +62,10 @@ bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('remove');
 bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('post_reboot');
 
 # If required replace VM hwaddr using OpenNebula fashion
-"/hardware/cards/nic" = if (exists(OPENNEBULA_AII_REPLACE_MAC) && exists(MAC_PREFIX)) {
-                            opennebula_replace_vm_mac(MAC_PREFIX);
-                        } else {
-                            SELF;
-                        };
+"/hardware/cards/nic" = {
+    if (exists(OPENNEBULA_AII_REPLACE_MAC) && exists(MAC_PREFIX)) {
+        opennebula_replace_vm_mac(MAC_PREFIX);
+    } else {
+        SELF;
+    };
+};
