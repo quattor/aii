@@ -16,13 +16,8 @@
 [%- FOR pair IN system.opennebula.vnet.pairs %]
 NIC = [
 [%  FILTER indent -%]
-[%         IF system.network.interfaces.${pair.key}.bridge.defined -%]
-[%             tmpbridge = system.network.interfaces.${pair.key}.bridge -%]
-IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
-[%         ELSE -%]
-IP = "[% system.network.interfaces.${pair.key}.ip %]",
-[%         END -%]
-MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
+[%    INCLUDE 'aii-opennebula/network_level1.tt' 
+               data=pair -%]
 MODEL = "virtio",
 NETWORK = "[% system.opennebula.vnet.${pair.key} %]",
 NETWORK_UNAME = "oneadmin"

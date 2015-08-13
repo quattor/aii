@@ -170,6 +170,50 @@ $cmds{rpc_remove_vnet_ar2}{params} = [0, 0];
 $cmds{rpc_remove_vnet_ar2}{method} = "one.vn.rm_ar";
 $cmds{rpc_remove_vnet_ar2}{out} = 0;
 
+$data = <<'EOF';
+
+AR = [
+    TYPE = "IP4",
+    IP = "10.141.8.31",
+    QUATTOR = "1",
+    HOSTNAME = "node630.cubone.os",
+    SIZE = "1"
+]
+EOF
+$cmds{rpc_create_vnet_ar3}{params} = [0, $data];
+$cmds{rpc_create_vnet_ar3}{method} = "one.vn.add_ar";
+$cmds{rpc_create_vnet_ar3}{out} = 0;
+
+$cmds{rpc_update_vnet_ar3}{params} = [0, $data];
+$cmds{rpc_update_vnet_ar3}{method} = "one.vn.update_ar";
+$cmds{rpc_update_vnet_ar3}{out} = 0;
+
+$cmds{rpc_remove_vnet_ar3}{params} = [0, 0];
+$cmds{rpc_remove_vnet_ar3}{method} = "one.vn.rm_ar";
+$cmds{rpc_remove_vnet_ar3}{out} = 0;
+
+$data = <<'EOF';
+
+AR = [
+    TYPE = "IP4",
+    IP = "10.141.8.32",
+    QUATTOR = "1",
+    HOSTNAME = "node630.cubone.os",
+    SIZE = "1"
+]
+EOF
+$cmds{rpc_create_vnet_ar4}{params} = [0, $data];
+$cmds{rpc_create_vnet_ar4}{method} = "one.vn.add_ar";
+$cmds{rpc_create_vnet_ar4}{out} = 0;
+
+$cmds{rpc_update_vnet_ar4}{params} = [0, $data];
+$cmds{rpc_update_vnet_ar4}{method} = "one.vn.update_ar";
+$cmds{rpc_update_vnet_ar4}{out} = 0;
+
+$cmds{rpc_remove_vnet_ar4}{params} = [0, 0];
+$cmds{rpc_remove_vnet_ar4}{method} = "one.vn.rm_ar";
+$cmds{rpc_remove_vnet_ar4}{out} = 0;
+
 # Manage Datastores
 
 $data = <<'EOF';
@@ -370,6 +414,18 @@ NIC = [
 NIC = [
     IP = "172.24.8.30",
     MAC = "AA:00:00:80:01:01",
+    MODEL = "virtio",
+    NETWORK = "altaria.vsc",
+    NETWORK_UNAME = "oneadmin"
+]
+NIC = [
+    IP = "172.24.8.31",
+    MODEL = "virtio",
+    NETWORK = "altaria.vsc",
+    NETWORK_UNAME = "oneadmin"
+]
+NIC = [
+    IP = "172.24.8.32",
     MODEL = "virtio",
     NETWORK = "altaria.vsc",
     NETWORK_UNAME = "oneadmin"

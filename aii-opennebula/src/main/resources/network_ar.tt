@@ -5,13 +5,8 @@
 AR = [
 [%      FILTER indent -%]
 TYPE = "IP4",
-[%         IF system.network.interfaces.${pair.key}.bridge.defined -%]
-[%             tmpbridge = system.network.interfaces.${pair.key}.bridge -%]
-IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
-[%         ELSE -%]
-IP = "[% system.network.interfaces.${pair.key}.ip %]",
-[%         END -%]
-MAC = "[% hardware.cards.nic.${pair.key}.hwaddr %]",
+[%    INCLUDE 'aii-opennebula/network_level1.tt' 
+               data=pair -%]
 QUATTOR = "1",
 HOSTNAME = "[% fqdn %]",
 SIZE = "1"

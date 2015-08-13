@@ -1,5 +1,7 @@
 declaration template quattor/aii/opennebula/schema;
 
+include 'pan/types';
+
 variable OPENNEBULA_AII_MODULE_NAME = 'opennebula';
 
 ## a function to validate all aii_opennebula hooks
@@ -86,7 +88,28 @@ type opennebula_vmtemplate_datastore = string{} with {
     return(true);
 };
 
+@documentation{ 
+Type that checks if the network interface is available from the quattor tree
+}
+type valid_interface_ignoremac = string with {
+    if (! exists("/system/network/interfaces/"+SELF)) {
+         error(format("ignoremac.interface: '%s' is not available from /system/network/interfaces tree", SELF));
+         return(false);
+    };
+    return(true);
+};
+
+@documentation{ 
+Type that sets which net interfaces/MACs
+will not include MAC values within ONE templates
+}
+type opennebula_ignoremac = {
+    "macaddr" ? type_hwaddr[]
+    "interface" ? valid_interface_ignoremac[]
+};
+
 type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
+    "ignoremac" ? opennebula_ignoremac
 };

@@ -558,7 +558,11 @@ sub install
             };
         }
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
-        $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+        if (defined($vmid) && $vmid =~ m/^\d+$/) {
+            $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+        } else {
+            $main::this_app->error("Unable to instantiate VM ${fqdn}: ${vmid}");
+        }
     }
 }
 
@@ -584,10 +588,12 @@ sub remove
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
+    my $stopvm = $tree->{vm};
+    $main::this_app->info("Stop VM flag is set to: $stopvm");
     my $rmimage = $tree->{image};
     $main::this_app->info("Remove image flag is set to: $rmimage");
     my $rmvmtemplate = $tree->{template};
-    $main::this_app->info("Remove VM template flag is set to: $rmvmtemplate");
+    $main::this_app->info("Remove VM templates flag is set to: $rmvmtemplate");
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
@@ -600,7 +606,9 @@ sub remove
     # Check RPC endpoint and OpenNebula version
     return 0 if !$self->is_supported_one_version($one);
 
-    $self->stop_and_remove_one_vms($one,$fqdn);
+    if ($stopvm) {
+        $self->stop_and_remove_one_vms($one,$fqdn);
+    }
 
     my %images = $self->get_images($config);
     if (%images) {
@@ -609,7 +617,7 @@ sub remove
 
     my %ars = $self->get_vnetars($config);
     if (%ars) {
-        $self->remove_and_create_vn_ars($one, \%ars, 1);
+        $self->remove_and_create_vn_ars($one, \%ars, $rmvmtemplate);
     }
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);

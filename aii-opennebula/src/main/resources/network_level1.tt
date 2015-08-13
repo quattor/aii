@@ -1,0 +1,19 @@
+[%     IF system.network.interfaces.${data.key}.bridge.defined -%]
+[%         tmpbridge = system.network.interfaces.${data.key}.bridge -%]
+IP = "[% system.network.interfaces.${tmpbridge}.ip %]",
+[%     ELSE -%]
+IP = "[% system.network.interfaces.${data.key}.ip %]",
+[%     END -%]
+[%-    FOREACH item IN system.opennebula.ignoremac.interface -%]
+[%         IF data.key == item -%]
+[%             ignoremac = 1 -%]
+[%         END -%]
+[%     END -%]
+[%-    FOREACH item IN system.opennebula.ignoremac.macaddr -%]
+[%         IF hardware.cards.nic.${data.key}.hwaddr == item -%]
+[%             ignoremac = 1 -%]
+[%         END -%]
+[%     END -%]
+[%     IF !ignoremac  -%]
+MAC = "[% hardware.cards.nic.${data.key}.hwaddr %]",
+[%     END -%]
