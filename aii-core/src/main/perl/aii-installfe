@@ -26,6 +26,7 @@ aii-installfe - AII remote command line management frontend
                           --remove <hostname|regexp>    |
                           --removelist <filename>       |
                           --removeall                   |
+                          --reinstall <hostname|regexp> |
                           --rescue <hostname|regex>     |
                           --rescuelist <filename>       |
                           --status <hostname|regexp>    |
@@ -98,6 +99,13 @@ be listed one per line. Lines starting with # are comment.
 
 Remove configurations for *ALL* hosts configured. Useful only in case
 of problems/test.
+
+=item --reinstall
+
+Remove, (re)configure and (re)install the configuration for <hostname>
+or all hostnames that match the Perl regular expression <regexp>
+(i.e. C<--reinstall host> is equal to
+C<--remove host --configure host --install host>).
 
 =item --rescue <hostname|regexp>
 
@@ -287,6 +295,10 @@ sub app_options {
 
         { NAME    => 'removelist=s',
           HELP    => 'File with the nodes to be removed',
+          DEFAULT => undef },
+
+        { NAME    => 'reinstall=s',
+          HELP    => 'Node(s) to be removed, (re)configured and (re)installed (can be a regexp)',
           DEFAULT => undef },
 
 	{ NAME    => 'rescue=s',
@@ -546,12 +558,15 @@ sub parse_options {
         $actions++;
     } else {
 
-        for $item ('install', 'boot', 'configure', 'remove', 'status', 'firmware', 'livecd', 'rescue') {
+        # processing order not important
+        for $item (qw(install boot configure remove status firmware livecd rescue reinstall)) {
 
             if ($this_app->option($item)) {
                 push(@Options, "--$item", $this_app->option($item));
                 $actions++;
             }
+
+            next if ($item eq 'reinstall');
 
             my $listoption = "${item}list";
             if ($this_app->option($listoption)) {
