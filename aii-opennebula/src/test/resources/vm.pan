@@ -98,7 +98,7 @@ prefix "/system/opennebula";
     "vda", "ceph.altaria",
     "vdb", "ceph.altaria");
 
-"graphics" = "VNC";
+"graphics" = "SPICE";
 
 "ignoremac/interface" = list (
     "eth2",
