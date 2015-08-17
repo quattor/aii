@@ -121,6 +121,8 @@ prefix "/system/opennebula";
     "vda", "ceph",
     "vdb", "default");
 
+"graphics" = "VNC";
+
 "ignoremac/interface" = list (
     "eth2",
 );

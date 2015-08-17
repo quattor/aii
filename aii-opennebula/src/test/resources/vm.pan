@@ -98,6 +98,8 @@ prefix "/system/opennebula";
     "vda", "ceph.altaria",
     "vdb", "ceph.altaria");
 
+"graphics" = "VNC";
+
 "ignoremac/interface" = list (
     "eth2",
 );

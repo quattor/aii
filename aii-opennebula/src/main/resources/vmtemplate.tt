@@ -47,7 +47,7 @@ IMAGE_UNAME = "oneadmin"
 GRAPHICS = [
 [%     FILTER indent -%]
 LISTEN = "0.0.0.0",
-TYPE = "VNC"
+TYPE = "[% system.opennebula.graphics %]"
 [%-    END %]
 ]
 MEMORY = "[% memory %]"

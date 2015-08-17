@@ -112,4 +112,5 @@ type opennebula_vmtemplate = {
     "vnet" : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
     "ignoremac" ? opennebula_ignoremac
-};
+    "graphics" : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
+} = dict();
