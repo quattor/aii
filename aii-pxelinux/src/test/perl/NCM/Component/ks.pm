@@ -14,8 +14,15 @@ use strict;
 use warnings;
 use parent qw(Exporter);
 
-our @EXPORT_OK = qw(ksuserhooks);
+our @EXPORT_OK = qw(ksuserhooks get_ks_userhook_args);
 
-sub ksuserhooks {}
+my $_args;
+
+# unittesting sub
+sub get_ks_userhook_args {
+    return $_args;
+}
+
+sub ksuserhooks { $_args = \@_; }
 
 1;
