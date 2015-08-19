@@ -52,7 +52,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                ACKURL           => "/system/aii/osinstall/ks/ackurl",
                ACKLIST          => "/system/aii/osinstall/ks/acklist",
                CARDS            => "/hardware/cards/nic",
-               SPMAPROXY        => "/software/components/spma/proxy",
                SPMA             => "/software/components/spma",
                SPMA_OBSOLETES   => "/software/components/spma/process_obsoletes",
                ROOTMAIL         => "/system/rootmail",
@@ -919,10 +918,15 @@ sub proxy
 {
     my ($config) = @_;
     my ($proxyhost, $proxyport, $proxytype);
-    if ($config->elementExists (SPMAPROXY)) {
-        my $spma = $config->getElement (SPMA)->getTree;
-        my $proxy_host = $spma->{proxyhost};
-        my @proxies = split /,/,$proxy_host;
+
+    my $spma = $config->getTree(SPMA);
+    my $use_proxy = $spma->{proxy} || 0;
+    # old SPMA boolean_yes_no schema
+    $use_proxy = $use_proxy eq "yes" ? 1 : 0;
+
+    if ($use_proxy) {
+        my $tmp_proxyhost = $spma->{proxyhost};
+        my @proxies = split /,/, $tmp_proxyhost;
         if (scalar(@proxies) == 1) {
             # there's only one proxy specified
             $proxyhost = $spma->{proxyhost};
@@ -939,6 +943,7 @@ sub proxy
             $proxytype = $spma->{proxytype};
         }
     }
+
     return ($proxyhost, $proxyport, $proxytype);
 }
 
