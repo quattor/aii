@@ -30,6 +30,7 @@ specified in the profile.
                         --remove <hostname|regexp>    |
                         --removelist <filename> >     |
                         --removeall                   |
+                        --reinstall <hostname|regexp> |
                         --rescue <hostname|regexp>    |
                         --rescuelist <filename>       |
                         --status <hostname|regexp>    |
@@ -122,6 +123,13 @@ contain one host name. Lines starting with a # are comment lines.
 Remove configurations for *ALL* hosts configured. Useful only in case
 of problems/test (note that DHCP configuration is not affected by this
 command).
+
+=item --reinstall
+
+Remove, (re)configure and (re)install the configuration for <hostname>
+or all hostnames that match the Perl regular expression <regexp>
+(i.e. C<--reinstall host> is equal to
+C<--remove host --configure host --install host>).
 
 =item --status <hostname|regexp>
 
@@ -396,6 +404,10 @@ sub app_options
 
        { NAME    => 'removeall',
          HELP    => 'Remove ALL nodes configured',
+         DEFAULT => undef },
+
+       { NAME    => 'reinstall=s',
+         HELP    => 'Node(s) to be removed, (re)configured and (re)installed (can be a regexp)',
          DEFAULT => undef },
 
        { NAME    => 'boot=s',
@@ -1136,20 +1148,39 @@ sub cmds
             $filecmds->{$cmd} ||= {};
             $filecmds->{$cmd}->{$host} = $arg;
         }
+
+        foreach my $host (sort keys %{$filecmds->{reinstall}}) {
+            $self->info("File reinstall option for host $host (setting remove, configure and install)");
+            foreach my $cmd (qw(remove configure install)) {
+                $filecmds->{$cmd}->{$host} = $filecmds->{reinstall}->{$host};
+            }
+        }
     }
 
     foreach my $cmd (COMMANDS) {
         my $rx;
         my @nl = ();
+
+        if ($cmd =~ m/^(remove|configure|install)$/ &&
+            $self->option ("reinstall")) {
+            $self->info("$cmd step for reinstall option.");
+
+            @nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
+                if ($rx = $self->option ('reinstall'));
+        }
+
         @nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
           if ($rx = $self->option ($cmd));
+
         if (exists $filecmds->{$cmd}) {
             push(@nl, keys %{$filecmds->{$cmd}});
         }
         $self->debug (2, "Nodes for $cmd: ", join ("\t", @nl));
+
         push (@nl, $self->filenodelist ($rx, $self->option ('use_fqdn')))
           if ($rx = $self->option ($cmd."list"));
         $self->debug (2, $cmd."list: ", join ("\t", @nl));
+
         if (@nl) {
             my %h = $self->fetch_profiles (@nl);
             $self->$cmd (%h);
