@@ -554,7 +554,8 @@ sub install
             if ($imagestate) {
                 $main::this_app->info("VM Image status: READY ,OK");
             } else {
-                $main::this_app->error("TIMEOUT! Image status is not ready yet...");
+                $main::this_app->error("TIMEOUT! VM image status: ", $t->state);
+                return 0;
             };
         }
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);

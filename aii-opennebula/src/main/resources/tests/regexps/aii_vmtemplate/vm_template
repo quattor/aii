@@ -49,7 +49,7 @@ multiline
 ^\]$
 ^GRAPHICS\s?=\s?\[$
 ^\s{4}LISTEN\s?=\s?"0.0.0.0",$
-^\s{4}TYPE\s?=\s?"VNC"$
+^\s{4}TYPE\s?=\s?"SPICE"$
 ^\]$
 ^MEMORY\s?=\s?"4096"$
 ^OS\s?=\s?\[$

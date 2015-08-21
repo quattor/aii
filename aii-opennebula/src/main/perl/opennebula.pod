@@ -36,6 +36,8 @@ Modify your machine template to:
 
 =item * (Optional) Set /system/opennebula/ignoremac tree to avoid to include MAC values within AR/VM templates
 
+=item * (Optional) Set /system/opennebula/graphics to export VM graphical display (VNC is used by default)
+
 =item * (Optional) Set OPENNEBULA_AII_REPLACE_MAC and MAC_PREFIX variables to replace VM MACs to use OpenNebula style
 
 =back
