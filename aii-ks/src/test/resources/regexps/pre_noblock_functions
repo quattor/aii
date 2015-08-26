@@ -91,8 +91,15 @@ Test the functions in the pre section
 ^wipe_metadata \(\) \{$
 ^\s{4}local path clear SIZE ENDSEEK ENDSEEK_OFFSET$
 ^\s{4}path="\$1"$
-^\s{4}\# wipe 4 MiB at begin and end$
+^$
+^\s{4}# default to 1$
+^\s{4}clearmb="\$\{2:-1\}"$
+^$
+^\s{4}# wipe at least 4 MiB at begin and end$
 ^\s{4}ENDSEEK_OFFSET=4$
+^\s{4}if \[ "\$clearmb" -gt \$ENDSEEK_OFFSET \]; then$
+^\s{8}ENDSEEK_OFFSET=\$clearmb$
+^\s{4}fi$
 ^\s{4}\# try to get the size with fdisk$
 ^\s{4}SIZE=`disksize_MiB "\$path"`$
 ^$

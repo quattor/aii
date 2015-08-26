@@ -767,8 +767,16 @@ correct_disksize_MiB () {
 wipe_metadata () {
     local path clear SIZE ENDSEEK ENDSEEK_OFFSET
     path="$1"
-    # wipe 4 MiB at begin and end
+
+    # default to 1
+    clearmb="${2:-1}"
+
+    # wipe at least 4 MiB at begin and end
     ENDSEEK_OFFSET=4
+    if [ "$clearmb" -gt $ENDSEEK_OFFSET ]; then
+        ENDSEEK_OFFSET=$clearmb
+    fi
+
     # try to get the size with fdisk
     SIZE=`disksize_MiB "$path"`
 
@@ -843,16 +851,21 @@ sub ksprint_filesystems
         $clear = $config->getElement ("/system/aii/osinstall/ks/clearpart")->getTree;
     }
 
-    foreach (@$clear) {
-        my $disk = build ($config, "physical_devs/".$self->escape($_));
-        $disk->clearpart_ks;
-    }
+    # cleanup/wipe partitions etc
     while ($fss->hasNextElement) {
         my $fs = $fss->getNextElement;
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
         $fstree->del_pre_ks;
         push (@filesystems, $fstree);
+    }
+
+    # only after cleaning up the partitions etc, perform the clearpart
+    # (clearpart_ks wipes disk and sets boot label, any parttion cleanup
+    # is useless after that)
+    foreach (@$clear) {
+        my $disk = build ($config, "physical_devs/".$self->escape($_));
+        $disk->clearpart_ks;
     }
 
     # Create what needs to be created.
