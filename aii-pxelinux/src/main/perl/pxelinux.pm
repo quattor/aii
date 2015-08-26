@@ -25,20 +25,20 @@ use constant LOCALBOOT => 'bootconfig';
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
 use constant ETH => "/system/network/interfaces";
+
+use constant CONFIGURE => undef;
 use constant INSTALL => 'install';
 use constant BOOT => 'boot';
 use constant RESCUE => 'rescue';
 use constant RESCUEBOOT => 'rescueconfig';
 use constant FIRMWARE => 'firmware';
 use constant LIVECD => 'livecd';
+
 # Hooks for NBP plug-in
-use constant RESCUE_HOOK_PATH => '/system/aii/hooks/rescue';
-use constant INSTALL_HOOK_PATH => '/system/aii/hooks/install';
-use constant REMOVE_HOOK_PATH => '/system/aii/hooks/remove';
-use constant CONFIGURE_HOOK_PATH => '/system/aii/hooks/configure';
-use constant BOOT_HOOK_PATH => '/system/aii/hooks/boot';
-use constant FIRMWARE_HOOK_PATH => '/system/aii/hooks/firmware';
-use constant LIVECD_HOOK_PATH => '/system/aii/hooks/livecd';
+use constant HOOK_PATH => '/system/aii/hooks/';
+use constant REMOVE_HOOK_PATH => HOOK_PATH.'remove';
+use constant STATUS_HOOK_PATH => HOOK_PATH.'status';
+
 # Kickstart constants (trying to use same name as in ks.pm from aii-ks)
 use constant KS => "/system/aii/osinstall/ks";
 
@@ -441,62 +441,6 @@ sub pxelink
     return 0;
 }
 
-# Sets the node's status to install.
-sub Install
-{
-    my ($self, $cfg) = @_;
-
-    unless (pxelink ($cfg, INSTALL)==0) {
-        my $fqdn = get_fqdn($cfg);
-        $self->error ("Failed to change the status of $fqdn to install");
-        return 0;
-    }
-    ksuserhooks ($cfg, INSTALL_HOOK_PATH) unless $NoAction;
-    return 1;
-}
-
-# Sets the node's status to firmware
-sub Firmware
-{
-    my ($self, $cfg) = @_;
-
-    unless (pxelink ($cfg, FIRMWARE)==0) {
-        my $fqdn = get_fqdn($cfg);
-        $self->error ("Failed to change the status of $fqdn to firmware");
-        return 0;
-    }
-    ksuserhooks ($cfg, FIRMWARE_HOOK_PATH) unless $NoAction;
-    return 1;
-}
-
-# Sets the node's status to livecd
-sub Livecd
-{
-    my ($self, $cfg) = @_;
-
-    unless (pxelink ($cfg, LIVECD)==0) {
-        my $fqdn = get_fqdn($cfg);
-        $self->error("Failed to change the status of $fqdn to livecd");
-        return 0;
-    }
-    ksuserhooks ($cfg, LIVECD_HOOK_PATH) unless $NoAction;
-    return 1;
-}
-
-# Sets the node's status to rescue.
-sub Rescue
-{
-    my ($self, $cfg) = @_;
-
-    unless (pxelink ($cfg, RESCUE)==0) {
-        my $fqdn = get_fqdn($cfg);
-        $self->error ("Failed to change the status of $fqdn to rescue");
-        return 0;
-    }
-    ksuserhooks ($cfg, RESCUE_HOOK_PATH) unless $NoAction;
-    return 1;
-}
-
 # Prints the status of the node.
 sub Status
 {
@@ -539,28 +483,7 @@ sub Status
         $self->info(ref($self), " status for $fqdn: $s->{ip} $st ",
                 "since: $since");
     }
-    return 1;
-}
-
-# Sets the node's status to boot from local boot.
-sub Boot
-{
-    my ($self, $cfg) = @_;
-    pxelink ($cfg, BOOT);
-    ksuserhooks ($cfg, BOOT_HOOK_PATH) unless $NoAction;
-    return 1;
-}
-
-# Creates the PXE configuration file.
-sub Configure
-{
-    my ($self, $cfg) = @_;
-
-    pxeprint ($cfg);
-    pxelink ($cfg);
-
-    ksuserhooks ($cfg, CONFIGURE_HOOK_PATH);
-
+    ksuserhooks ($cfg, STATUS_HOOK_PATH);
     return 1;
 }
 
@@ -583,3 +506,28 @@ sub Unconfigure
     ksuserhooks ($cfg, REMOVE_HOOK_PATH);
     return 1;
 }
+
+
+no strict 'refs';
+foreach my $i (qw(configure boot rescue livecd firmware install)) {
+    my $name = ucfirst($i);
+    my $cmd = uc($i);
+
+    *{$name} = sub {
+        my ($self, $cfg) = @_;
+
+        pxeprint($cfg) if ($i eq 'configure');
+
+        unless (pxelink ($cfg, &$cmd())==0) {
+            my $fqdn = get_fqdn($cfg);
+            $self->error ("Failed to change the status of $fqdn to $i");
+            return 0;
+        }
+        ksuserhooks ($cfg, HOOK_PATH.$i) unless $NoAction;
+        return 1;
+    };
+};
+use strict 'refs';
+
+1;
+

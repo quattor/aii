@@ -130,6 +130,10 @@ Sets the node's status to boot from firmware.
 
 Sets the node's status to boot from livecd.
 
+=item * status:
+
+Get the node's status.
+
 =back
 
 =cut
