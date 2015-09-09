@@ -12,7 +12,7 @@ use rpcdata;
 
 our @EXPORT = qw(rpc_history_reset rpc_history_ok diag_rpc_history);
 
-my $caf_trd = mock();
+my $caf_trd = mock_textrender();
 
 my @rpc_history = ();
 my @rpc_history_full = ();
