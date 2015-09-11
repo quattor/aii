@@ -9,7 +9,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^if ! grep -q 'sdb1\$' /proc/partitions$
 ^then$
 ^\s{4}echo "Creating partition sdb1"$
-^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==0 \{print \$5=="extended" \? \$2:\$3\}'`$
+^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==0 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
 ^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
@@ -21,7 +21,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^\s{4}let end=\$\{prev/MiB\}\+100$
 ^\s{4}parted /dev/sdb -s -- u MiB mkpart primary \$begin \$end$
 ^\s{4}rereadpt /dev/sdb$
-^\s{4}if \[ primary != "extended" \]$
+^\s{4}if \[ "primary" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb1 1$
 ^\s{4}fi$
@@ -36,7 +36,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^if ! grep -q 'sdb2\$' /proc/partitions$
 ^then$
 ^\s{4}echo "Creating partition sdb2"$
-^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==1 \{print \$5=="extended" \? \$2:\$3\}'`$
+^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==1 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
 ^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
@@ -48,7 +48,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^\s{4}let end=\$\{prev/MiB\}\+100$
 ^\s{4}parted /dev/sdb -s -- u MiB mkpart primary \$begin \$end$
 ^\s{4}rereadpt /dev/sdb$
-^\s{4}if \[ primary != "extended" \]$
+^\s{4}if \[ "primary" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb2 1$
 ^\s{4}fi$
@@ -63,7 +63,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^if ! grep -q 'sdb3\$' /proc/partitions$
 ^then$
 ^\s{4}echo "Creating partition sdb3"$
-^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==2 \{print \$5=="extended" \? \$2:\$3\}'`$
+^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==2 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
 ^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
@@ -75,7 +75,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^\s{4}let end=\$\{prev/MiB\}\+2500$
 ^\s{4}parted /dev/sdb -s -- u MiB mkpart extended \$begin \$end$
 ^\s{4}rereadpt /dev/sdb$
-^\s{4}if \[ extended != "extended" \]$
+^\s{4}if \[ "extended" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb3 1$
 ^\s{4}fi$
@@ -90,7 +90,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^if ! grep -q 'sdb4\$' /proc/partitions$
 ^then$
 ^\s{4}echo "Creating partition sdb4"$
-^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==3 \{print \$5=="extended" \? \$2:\$3\}'`$
+^\s{4}prev=`parted /dev/sdb -s u MiB p \|awk '\$1==3 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
 ^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
@@ -102,7 +102,7 @@ Test the blockdevice generation in the pre section with disk with correct size d
 ^\s{4}let end=\$\{prev/MiB\}\+1024$
 ^\s{4}parted /dev/sdb -s -- u MiB mkpart logical \$begin \$end$
 ^\s{4}rereadpt /dev/sdb$
-^\s{4}if \[ logical != "extended" \]$
+^\s{4}if \[ "logical" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb4 1$
 ^\s{4}fi$
