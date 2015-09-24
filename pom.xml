@@ -20,7 +20,7 @@
       <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-snapshots/</url>
     </snapshotRepository>
   </distributionManagement>
-  <version>15.4.1-SNAPSHOT</version>
+  <version>15.8.0-rc1</version>
   <name>AII</name>
   <scm>
     <connection>scm:git:git://github.com/quattor/aii.git</connection>
