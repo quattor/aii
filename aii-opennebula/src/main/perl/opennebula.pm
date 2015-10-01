@@ -44,6 +44,7 @@ sub make_one
     $config = Config::Tiny->read($filename);
     if (exists($config->{$domainname})) {
         $rpc = $domainname;
+        $main::this_app->info ("Detected configfile RPC section: [$domainname]");
     };
     my $port = $config->{$rpc}->{port} || 2633;
     my $host = $config->{$rpc}->{host} || "localhost";
@@ -51,7 +52,7 @@ sub make_one
     my $password = $config->{$rpc}->{password};
 
     if (! $password ) {
-        $main::this_app->error("No password set in configfile $filename.");
+        $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
         return;
     }
     

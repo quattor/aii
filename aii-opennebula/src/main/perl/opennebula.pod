@@ -126,31 +126,18 @@ By default ONE AII uses oneadmin user.
 
 It is also possible to set a different endpoint for each VM domain, as example:
 
-=over 
+    [rpc]
+    password=
+    host=
 
-=item [rpc]
+    [VM_DOMAIN_NAME1]
+    password=
+    user=
+    host=
 
-=item password=
-
-=item host=
-
-
-=item [VM_DOMAIN_NAME1]
-
-=item password=
-
-=item user=
-
-=item host=
-
-
-=item [VM_DOMAIN_NAME2]
-
-=item password=
-
-=item host=
-
-=back
+    [VM_DOMAIN_NAME2]
+    password=
+    host=
 
 =head2 AUTHOR
 
