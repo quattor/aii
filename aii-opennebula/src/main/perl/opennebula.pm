@@ -44,7 +44,7 @@ sub make_one
     $config = Config::Tiny->read($filename);
     if (exists($config->{$domainname})) {
         $rpc = $domainname;
-        $main::this_app->info ("Detected configfile RPC section: [$domainname]");
+        $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
     my $port = $config->{$rpc}->{port} || 2633;
     my $host = $config->{$rpc}->{host} || "localhost";
