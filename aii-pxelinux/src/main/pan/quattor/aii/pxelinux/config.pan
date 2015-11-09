@@ -4,8 +4,24 @@
 # ${build-info}
 template quattor/aii/pxelinux/config;
 
-include {'quattor/aii/pxelinux/schema'};
+include 'quattor/aii/pxelinux/schema';
 
+@documentation{
+    Use sys/pxelinux with lpxelinux.0
+    Tested with pxelinux.0 gpxelinux.0 chain.c32 ldlinux.c32 lpxelinux.0 from SYSLINUX 6.03,
+    should work since 5.10.
+}
+variable LPXELINUX ?= false;
+
+@documentation{
+    Relative path from the AII_OSINSTALL_PATH. defaults to images/pxeboot
+}
+variable LPXELINUX_OSINSTALL_PATH ?= "images/pxeboot";
+
+@documentation{
+    Base HTTP URL to find vmlinuz and initrd
+}
+variable LPXELINUX_ROOT ?= format("http://%s%s/%s", AII_OSINSTALL_SRV, AII_OSINSTALL_PATH, LPXELINUX_OSINSTALL_PATH);
 
 #
 # Kickstart file location
@@ -82,13 +98,18 @@ variable AII_NBP_ROOT ?= {
     if ( !is_defined(AII_OSINSTALL_OS_VERSION) ) {
         return(undef);
     };
-    toks =  matches(AII_OSINSTALL_OS_VERSION, '^(\w+?)[_\-](.*)');
-    if ( length(toks) < 3 ) {
-        root = undef;
+
+    if (LPXELINUX) {
+        root = LPXELINUX_ROOT;
     } else {
-        root = toks[1] + '_'+ toks[2];
-        if (length (toks) > 3) {
-            root = root + toks[3];
+        toks =  matches(AII_OSINSTALL_OS_VERSION, '^(\w+?)[_\-](.*)');
+        if ( length(toks) < 3 ) {
+            root = undef;
+        } else {
+            root = toks[1] + '_'+ toks[2];
+            if (length (toks) > 3) {
+                root = root + toks[3];
+            };
         };
     };
     root;
