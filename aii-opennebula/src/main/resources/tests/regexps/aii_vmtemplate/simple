@@ -20,6 +20,7 @@ multiline
 ^\s*IMAGE\s?=\s*".+",\s*$
 ^\s*TARGET\s?=\s*".+",\s*$
 ^\s*DEV_PREFIX\s?=\s*".+",\s*$
+^\s*CACHE\s?=\s*".+",\s*$
 ^\s*IMAGE_UNAME\s?=\s*".+"\s*$
 ^GRAPHICS\s?=\s?\[$
 ^\s*LISTEN\s?=\s*".+",\s*$

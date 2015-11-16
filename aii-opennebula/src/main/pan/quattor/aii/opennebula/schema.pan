@@ -109,8 +109,9 @@ type opennebula_ignoremac = {
 };
 
 type opennebula_vmtemplate = {
-    "vnet" : opennebula_vmtemplate_vnet
+    "vnet"      : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
     "ignoremac" ? opennebula_ignoremac
-    "graphics" : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
+    "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
+    "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
 } = dict();

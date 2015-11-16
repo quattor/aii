@@ -40,6 +40,9 @@ DISK = [
 IMAGE = "[%- fqdn %]_[% pair.key %]",
 TARGET = "[% pair.key %]",
 DEV_PREFIX = "vd",
+[%        IF system.opennebula.diskcache.defined -%]
+CACHE = "[% system.opennebula.diskcache %]",
+[%        END -%]
 IMAGE_UNAME = "oneadmin"
 [%-    END %]
 ]

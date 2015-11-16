@@ -100,6 +100,8 @@ prefix "/system/opennebula";
 
 "graphics" = "SPICE";
 
+"diskcache" = "default";
+
 "ignoremac/interface" = list (
     "eth2",
 );
