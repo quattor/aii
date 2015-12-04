@@ -1,0 +1,34 @@
+Test the yum_setup
+---
+---
+^mkdir -p /tmp/aii/yum/repos$
+^cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf$
+^\[main\]$
+^cachedir=/var/cache/yum/\$basearch/\$releasever$
+^keepcache=0$
+^debuglevel=2$
+^logfile=/var/log/yum.log$
+^exactarch=1$
+^gpgcheck=1$
+^plugins=1$
+^installonly_limit=3$
+^clean_dependencies_on_remove=1$
+^reposdir=/tmp/aii/yum/repos$
+^obsoletes=0$
+^end_of_yum_conf$
+^cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo$
+^\[repo0\]$
+^enabled=1$
+^baseurl=http://www.example.com$
+^name=repo0$
+^gpgcheck=0$
+^skip_if_unavailable=1$
+^\[repo1\]$
+^enabled=1$
+^baseurl=http://www.example.com$
+^name=repo1$
+^gpgcheck=0$
+^skip_if_unavailable=1$
+^exclude=woo hoo\*$
+^includepkgs=everything else$
+^end_of_repos$
