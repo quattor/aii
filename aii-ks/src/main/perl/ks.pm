@@ -1307,6 +1307,13 @@ EOF
 priority=$repo->{priority}
 EOF
         }
+
+        if ($repo->{excludepkgs}) {
+            print "exclude=", join(' ', @{$repo->{excludepkgs}}), "\n";
+        }
+        if ($repo->{includepkgs}) {
+            print "includepkgs=", join(' ', @{$repo->{includepkgs}}), "\n";
+        }
     }
 
     print "end_of_repos\n";
