@@ -335,6 +335,12 @@ variable AII_OSINSTALL_PACKAGES ?= list (
 
 
 "/system/aii/osinstall/ks/packages" ?= AII_OSINSTALL_PACKAGES;
+"/system/aii/osinstall/ks/packages" = {
+    if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
+        append('-selinux*');
+    };
+    SELF;
+};
 
 #
 # URL CGI script for acknowledge "install successful, do not install on next boot"
