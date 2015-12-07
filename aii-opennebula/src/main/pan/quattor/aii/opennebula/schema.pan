@@ -49,7 +49,6 @@ type structure_aii_opennebula = {
     "template" : boolean = false # force (re)create template [implies on remove template (also stop/delete vm) ]
     "vm" : boolean = false # instantiate template (i.e. make vm)
     "onhold" : boolean = true # when template is instantiated, then vm is placed onhold [if false, will start the VM asap]
-    "remove" : boolean = true # remove all VM resources
 };
 
 type opennebula_vmtemplate_vnet = string{} with {
@@ -109,8 +108,9 @@ type opennebula_ignoremac = {
 };
 
 type opennebula_vmtemplate = {
-    "vnet" : opennebula_vmtemplate_vnet
+    "vnet"      : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
     "ignoremac" ? opennebula_ignoremac
-    "graphics" : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
+    "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
+    "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
 } = dict();

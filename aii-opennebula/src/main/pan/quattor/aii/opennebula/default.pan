@@ -41,7 +41,7 @@ bind "/system/aii/hooks" = nlist with validate_aii_opennebula_hooks('install');
 
         "image", OPENNEBULA_AII_FORCE_REMOVE,
         "template", OPENNEBULA_AII_FORCE_REMOVE,
-        "remove", OPENNEBULA_AII_FORCE_REMOVE,
+        "vm", OPENNEBULA_AII_FORCE_REMOVE,
         ));
 
     SELF;
