@@ -98,9 +98,11 @@ Remove VM templates
 
 =back
 
+=back
+
 =head2 DEPENDENCIES
 
-The AII was tested with OpenNebula version 4.8 and 4.10
+The AII was tested with OpenNebula version 4.8 and 4.1x
 
 Following package dependencies should be installed to run the AII:
 
@@ -115,6 +117,28 @@ Following package dependencies should be installed to run the AII:
 =item * perl-Net-OpenNebula >= 0.2.2 !
 
 =back
+
+Set OpenNebula endpoints RPC connector /etc/aii/opennebula.conf
+
+It must include at least one RPC endpoint and password.
+
+By default ONE AII uses oneadmin user and port 2633.
+
+It is also possible to set a different endpoint for each VM domain, as example:
+
+    [rpc]
+    password=
+    host=
+
+    [VM_DOMAIN_NAME1]
+    password=
+    user=
+    host=
+    port=
+
+    [VM_DOMAIN_NAME2]
+    password=
+    host=
 
 =head2 AUTHOR
 

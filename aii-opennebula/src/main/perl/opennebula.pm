@@ -29,8 +29,9 @@ use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 #   password=secret
 sub make_one 
 {
-    my $self = shift;
-    my $filename = shift || AII_OPENNEBULA_CONFIG;
+    my ($self, $data) = @_;
+    my $filename = AII_OPENNEBULA_CONFIG;
+    my $rpc = "rpc";
 
     if (! -f $filename) {
         $main::this_app->error("No configfile $filename.");
@@ -38,15 +39,20 @@ sub make_one
     }
 
     my $config = Config::Tiny->new;
+    my $domainname = $data->getElement (DOMAINNAME)->getValue;
 
     $config = Config::Tiny->read($filename);
-    my $port = $config->{rpc}->{port} || 2633;
-    my $host = $config->{rpc}->{host} || "localhost";
-    my $user = $config->{rpc}->{user} || "oneadmin";
-    my $password = $config->{rpc}->{password};
+    if (exists($config->{$domainname})) {
+        $rpc = $domainname;
+        $main::this_app->info ("Detected configfile RPC section: [$rpc]");
+    };
+    my $port = $config->{$rpc}->{port} || 2633;
+    my $host = $config->{$rpc}->{host} || "localhost";
+    my $user = $config->{$rpc}->{user} || "oneadmin";
+    my $password = $config->{$rpc}->{password};
 
     if (! $password ) {
-        $main::this_app->error("No password set in configfile $filename.");
+        $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
         return;
     }
     
@@ -479,7 +485,7 @@ sub configure
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
-    my $one = make_one();
+    my $one = $self->make_one($config);
     if (!$one) {
         $main::this_app->error("No ONE instance returned");
         return 0;
@@ -520,7 +526,7 @@ sub install
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
-    my $one = make_one();
+    my $one = $self->make_one($config);
     if (!$one) {
         $main::this_app->error("No ONE instance returned");
         return 0;
@@ -598,7 +604,7 @@ sub remove
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
-    my $one = make_one();
+    my $one = $self->make_one($config);
     if (!$one) {
         $main::this_app->error("No ONE instance returned");
         return 0;
