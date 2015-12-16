@@ -1260,7 +1260,7 @@ sub yum_setup
 mkdir -p /tmp/aii/yum/repos
 cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
 [main]
-cachedir=/var/cache/yum/\$basearch/\$releasever
+cachedir=/var/cache/yum/\\\$basearch/\\\$releasever
 keepcache=0
 debuglevel=2
 logfile=/var/log/yum.log
