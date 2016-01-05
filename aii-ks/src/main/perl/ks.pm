@@ -536,7 +536,7 @@ EOF
 
         # EL7+ anaconda does not allow a preformatted / filesystem
         if ($version >= ANACONDA_VERSION_EL_7_0 &&
-                $fstree->{mountpoint} eq '/' &&
+                ($fstree->{mountpoint} eq '/' || $fstree->{type} eq 'swap')  &&
                 ! $fstree->{ksfsformat}) {
             $fstree->{ksfsformat}=1;
         }
