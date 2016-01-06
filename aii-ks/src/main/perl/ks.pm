@@ -534,7 +534,8 @@ EOF
                  $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
 
-        # EL7+ anaconda does not allow a preformatted / filesystem
+        # EL7+ anaconda does not allow a preformatted / filesystem.
+        # EL7+ anaconda does not write a preformatted swap partition to /etc/fstab
         if ($version >= ANACONDA_VERSION_EL_7_0 &&
                 ($fstree->{mountpoint} eq '/' || $fstree->{type} eq 'swap')  &&
                 ! $fstree->{ksfsformat}) {
