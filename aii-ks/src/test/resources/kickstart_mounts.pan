@@ -16,7 +16,7 @@ prefix "/system/aii/osinstall/ks";
 "/system/blockdevices" = nlist (
     "physical_devs", nlist (
         "sdb", nlist ("label", "gpt")
-        ),
+     ),
     "partitions", nlist (
         "sdb1", nlist (
             "holding_dev", "sdb",
@@ -27,7 +27,7 @@ prefix "/system/aii/osinstall/ks";
 );
 
 "/system/filesystems" = list (
-    nlist (
+    dict(
         "mount", true,
         "mountpoint", "swap",
         "preserve", true,
@@ -37,5 +37,5 @@ prefix "/system/aii/osinstall/ks";
         "type", "swap",
         "freq", 0,
         "pass", 1
-        )
-    );  
+    )
+);
