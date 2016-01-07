@@ -9,21 +9,21 @@ prefix "/system/aii/osinstall/ks";
 "version" = "19.31";
 
 
-"/hardware/harddisks/sdb" = nlist(
+"/hardware/harddisks/sdb" = dict(
     "capacity", 4000,
 );
 
-"/system/blockdevices" = nlist (
-    "physical_devs", nlist (
-        "sdb", nlist ("label", "gpt")
+"/system/blockdevices" = dict(
+    "physical_devs", dict(
+        "sdb", dict("label", "gpt")
      ),
-    "partitions", nlist (
-        "sdb1", nlist (
+    "partitions", dict(
+        "sdb1", dict(
             "holding_dev", "sdb",
             "size", 100,
             "type", "primary", # no defaults !
-            ),
-        )
+        ),
+    )
 );
 
 "/system/filesystems" = list (
