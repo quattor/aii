@@ -3,7 +3,7 @@
   <groupId>org.quattor.aii</groupId>
   <artifactId>aii-opennebula</artifactId>
   <packaging>pom</packaging>
-  <version>15.12.0-rc2-SNAPSHOT</version>
+  <version>15.12.0-rc2</version>
   <name>Opennebula hook for AII</name>
   <parent>
     <groupId>org.quattor.maven</groupId>
