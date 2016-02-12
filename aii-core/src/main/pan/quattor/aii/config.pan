@@ -14,13 +14,13 @@
 
 unique template quattor/aii/config;
 
-include { 'quattor/functions/network' };
-include { 'quattor/functions/filesystem' };
-include { 'quattor/aii/schema' };
+include 'quattor/functions/network';
+include 'quattor/functions/filesystem';
+include 'quattor/aii/schema';
 
 # First include AII site configuration, if any
 variable AII_CONFIG_SITE ?= null;
-include {if_exists(to_string(AII_CONFIG_SITE));};
+include if_exists(to_string(AII_CONFIG_SITE));
 
 # For convenience
 variable AII_DOMAIN ?= value('/system/network/domainname');
@@ -31,12 +31,11 @@ variable AII_OSINSTALL_GEN ?= "quattor/aii/ks/config";
 variable AII_NBP_GEN ?= "quattor/aii/pxelinux/config";
 
 # Including the KS generator or equivalent
-include { AII_OSINSTALL_GEN};
+include AII_OSINSTALL_GEN;
 # Including the PXE generator or equivalent
-include { AII_NBP_GEN };
+include AII_NBP_GEN;
 
 # Include DHCP configuration
 # Set AII_DHCP_CONFIG to null if DHCP configuratio is managed outside AII
 variable AII_DHCP_CONFIG ?= "quattor/aii/dhcp/config";
-include { AII_DHCP_CONFIG };
-
+include AII_DHCP_CONFIG;

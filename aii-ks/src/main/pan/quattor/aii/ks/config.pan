@@ -8,7 +8,7 @@
 
 template quattor/aii/ks/config;
 
-include {'quattor/aii/ks/schema'};
+include 'quattor/aii/ks/schema';
 
 variable AII_DOMAIN ?= value('/system/network/domainname');
 variable AII_HOSTNAME ?= value('/system/network/hostname');
