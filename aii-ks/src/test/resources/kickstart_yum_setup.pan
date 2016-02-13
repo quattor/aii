@@ -18,3 +18,7 @@ prefix "/software/repositories/1";
 "protocols/0/url" = "http://www.example.com";
 "excludepkgs" = list('woo', 'hoo*');
 "includepkgs" = list('everything', 'else');
+
+prefix "/software/components/spma/yumconf";
+"exclude" = list("a", "b");
+"retries" = 40;

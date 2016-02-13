@@ -54,6 +54,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                CARDS            => "/hardware/cards/nic",
                SPMA             => "/software/components/spma",
                SPMA_OBSOLETES   => "/software/components/spma/process_obsoletes",
+               SPMA_YUMCONF     => "/software/components/spma/yumconf",
                ROOTMAIL         => "/system/rootmail",
                AII_PROFILE      => "/system/aii/osinstall/ks/node_profile",
                CCM_PROFILE      => "/software/components/ccm/profile",
@@ -1257,21 +1258,41 @@ sub yum_setup
     }
     $repos = $config->getElement (REPO)->getTree();
 
+    my $extra_yum_opts = {};
+    if ( $config->elementExists(SPMA_YUMCONF) ) {
+        $extra_yum_opts = $config->getElement (SPMA_YUMCONF)->getTree();
+    }
+
+
     print <<EOF;
 mkdir -p /tmp/aii/yum/repos
 cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
 [main]
-cachedir=/var/cache/yum/\\\$basearch/\\\$releasever
-keepcache=0
-debuglevel=2
-logfile=/var/log/yum.log
-exactarch=1
-gpgcheck=1
-plugins=1
-installonly_limit=3
-clean_dependencies_on_remove=1
-reposdir=/tmp/aii/yum/repos
-obsoletes=$obsoletes
+EOF
+
+    my $default_opts = {
+        cachedir => '/var/cache/yum/\$basearch/\$releasever',
+        keepcache => 0,
+        debuglevel => 2,
+        logfile => '/var/log/yum.log',
+        exactarch => 1,
+        gpgcheck => 1,
+        plugins => 1,
+        installonly_limit => 3,
+        clean_dependencies_on_remove => 1,
+        reposdir => '/tmp/aii/yum/repos',
+        obsoletes => $obsoletes,
+    };
+
+    my %opts = (%$default_opts, %$extra_yum_opts);
+
+    foreach my $key (sort keys %opts) {
+        my $v = $opts{$key};
+        my $value = ref($v) eq 'ARRAY' ? join(($key eq 'exclude') ? ' ' : ',', @$v) : $v;
+        print "$key=$value\n";
+    };
+
+    print <<EOF;
 end_of_yum_conf
 
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo

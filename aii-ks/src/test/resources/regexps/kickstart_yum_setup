@@ -5,16 +5,18 @@ Test the yum_setup
 ^cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf$
 ^\[main\]$
 ^cachedir=/var/cache/yum/\\\$basearch/\\\$releasever$
-^keepcache=0$
-^debuglevel=2$
-^logfile=/var/log/yum.log$
-^exactarch=1$
-^gpgcheck=1$
-^plugins=1$
-^installonly_limit=3$
 ^clean_dependencies_on_remove=1$
-^reposdir=/tmp/aii/yum/repos$
+^debuglevel=2$
+^exactarch=1$
+^exclude=a b$
+^gpgcheck=1$
+^installonly_limit=3$
+^keepcache=0$
+^logfile=/var/log/yum.log$
 ^obsoletes=0$
+^plugins=1$
+^reposdir=/tmp/aii/yum/repos$
+^retries=40$
 ^end_of_yum_conf$
 ^cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo$
 ^\[repo0\]$
