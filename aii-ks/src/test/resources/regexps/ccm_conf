@@ -1,0 +1,14 @@
+Test the ccm.conf
+---
+---
+^cat <<End_Of_CCM_Conf > /etc/ccm.conf$
+^profile https://somewhere/node_profile$
+^key_file /path/to/key$
+^cert_file /path/to/cert$
+^ca_file /path/to/ca$
+^world_readable 0$
+^dbformat myformat$
+^trust MY@TRUST$
+^End_Of_CCM_Conf$
+^/usr/sbin/ccm-initialise \|\| fail
+^/usr/sbin/ccm-fetch \|\| fail

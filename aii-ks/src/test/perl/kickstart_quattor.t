@@ -5,6 +5,8 @@ use Test::Quattor qw(kickstart_quattor kickstart_quattor_initspma);
 use NCM::Component::ks;
 use CAF::FileWriter;
 use CAF::Object;
+use Test::Quattor::RegexpTest;
+use Cwd;
 
 =pod
 
@@ -35,6 +37,14 @@ like($fh, qr{^service nscd start$}m, 'service nscd restart');
 like($fh, qr{^sleep 5}m, 'sleep after nscd restart');
 like($fh, qr{^/usr/sbin/ncm-ncd --verbose  --configure spma || fail "ncm-ncd --configure spma failed"$}m, 'initial ncm-ncd --co spma');
 like($fh, qr{^/usr/sbin/ncm-ncd --verbose --configure --all$}m, 'final ncm-ncd --configure -all');
+
+# ccm.conf regexp tests
+diag "$fh";
+my $regexpdir= getcwd()."/src/test/resources/regexps";
+Test::Quattor::RegexpTest->new(
+    regexp => "$regexpdir/ccm_conf",
+    text => "$fh")->test();
+
 
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;
