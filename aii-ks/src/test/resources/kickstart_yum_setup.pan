@@ -19,6 +19,6 @@ prefix "/software/repositories/1";
 "excludepkgs" = list('woo', 'hoo*');
 "includepkgs" = list('everything', 'else');
 
-prefix "/software/components/spma/yumconf";
+prefix "/software/components/spma/main_options";
 "exclude" = list("a", "b");
 "retries" = 40;
