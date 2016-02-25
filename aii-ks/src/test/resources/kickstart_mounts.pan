@@ -23,7 +23,15 @@ prefix "/system/aii/osinstall/ks";
             "size", 100,
             "type", "primary", # no defaults !
         ),
-    )
+    ),
+    "md", dict(
+        "md1", dict (
+            "device_list", list ("partitions/sdb1"),
+            "raid_level", "RAID0",
+            "stripe_size", 64, 
+            ),
+    ),
+
 );
 
 "/system/filesystems" = list (
@@ -37,5 +45,16 @@ prefix "/system/aii/osinstall/ks";
         "type", "swap",
         "freq", 0,
         "pass", 1
-    )
+    ),
+    dict(
+        "mount", true,
+        "mountpoint", "/boot",
+        "preserve", true,
+        "format", false,
+        "mountopts", "auto",
+        "block_device", "md/md1",
+        "type", "ext4",
+        "freq", 0,
+        "pass", 1
+    ),
 );
