@@ -831,7 +831,7 @@ EOF
 
     # mdadm devices should be stopped at the end of the pre-ks phase on EL7
     if ($version >= ANACONDA_VERSION_EL_7_0) {
-        print "mdadm --stop --scan";
+        print "mdadm --stop --scan\n";
     } 
 
     print <<EOF;
