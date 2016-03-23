@@ -332,7 +332,7 @@ use EDG::WP4::CCM::Fetch;
 use EDG::WP4::CCM::CCfg;
 use File::Path qw(mkpath rmtree);
 use DB_File;
-
+use Readonly;
 our $profiles_info = undef;
 
 use constant MODULEBASE => 'NCM::Component::';
@@ -375,6 +375,8 @@ use constant DHCPPATH  => '/system/aii/dhcp';
 use constant MAC       => '--mac';
 
 
+Readonly my $PROTECTED_COMMANDS   => 'remove|configure|install';
+Readonly my $PROTECTED_OPTION   => 'protectid';
 
 our @ISA = qw (CAF::Application CAF::Reporter);
 
@@ -489,6 +491,10 @@ sub app_options
 
        { NAME    => 'noosinstall',
          HELP    => 'Do not update OS installer (e.g. kickstart) configuration',
+         DEFAULT => undef },
+
+       { NAME    => "$PROTECTED_OPTION=s",
+         HELP    => 'confirm id for reinstalling protected nodes',
          DEFAULT => undef },
 
          # other common options
@@ -1121,6 +1127,34 @@ sub remove_cache_node {
     rmtree($cachedir);
 }
 
+# If a host is protected, check the protectid is correct, else don't include to process further
+sub check_protected {
+    my ($self, $hash) = @_;
+    my @to_delete = ();
+    while (my ($host, $st) = each(%$hash)) {
+        my $cfg = $st->{configuration}->getElement('/system')->getTree;
+        if ($cfg->{aii}->{protected}){
+            $protectid = $cfg->{aii}->{protected};
+            $self->debug(1, "Parsing protected host $host");
+            my $verifyid = $self->option($PROTECTED_OPTION);
+            if (!$verifyid) {
+                $self->error("Host $host is protected. Specify --$PROTECTED_OPTION $protectid to overwrite.");
+                push(@to_delete, $host);
+            } elsif ($protectid != $verifyid) {
+                $self->error("Host $host is protected and wrong id specified. Specify --$PROTECTED_OPTION $protectid to overwrite.");
+                push(@to_delete, $host);
+            } else {
+                $self->debug(1, "Protected host $host confirm id ok");
+            }
+        }
+    }
+    if (@to_delete){
+        delete $hash(@to_delete);
+    }
+
+    return %$hash;
+}
+
 # Runs all the commands
 sub cmds
 {
@@ -1183,6 +1217,14 @@ sub cmds
 
         if (@nl) {
             my %h = $self->fetch_profiles (@nl);
+            if ($cmd =~ m/^($PROTECTED_COMMANDS)$/) {
+                %h = $self->check_protected(\%h);
+                if (!(%h)) {
+                    $self->error('No nodes left to process after checking for protected hosts');
+                    return ;
+                }
+
+            }
             $self->$cmd (%h);
             $self->info (scalar (keys (%h)) . " to $cmd");
         }
