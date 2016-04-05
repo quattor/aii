@@ -24,13 +24,15 @@ my $ks = NCM::Component::ks->new('ks');
 my $cfg = get_config_for_profile('kickstart_packagesinpost');
 
 my $packref = NCM::Component::ks::kscommands($cfg);
-like($fh, qr{^%packages\nEENNDD}m, "Empty packages section");
+like($fh, qr{^%packages --ignoremissing --resolvedeps\n-notthispackage\nEENNDD}m, "Only disabled packages in packages section");
 unlike($fh, qr{package2}, "No package2 in commands"); # one of the packages
 unlike($fh, qr{bind-utils}, "No bind-utils in commands"); # one of the auto-added packages
 
 $ks->yum_install_packages($cfg, $packref);
 like($fh, qr{\spackage2}, "package2 added"); # one of the packages
 like($fh, qr{\sbind-utils}, "bind-utils added"); # one of the auto-added packages
+unlike($fh, qr{\snotthispackage},
+       "disabled/ignored packages are not added to the package install in post");
 
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;

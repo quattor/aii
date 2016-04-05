@@ -6,4 +6,5 @@ object template kickstart_packagesinpost;
 include 'kickstart';
 prefix "/system/aii/osinstall/ks";
 "packagesinpost" = true;
+"packages" = append("-notthispackage");
 "version" = "19.31"; # to set end section

@@ -484,14 +484,21 @@ EOF
     my $unprocessed_packages = [];
 
     print "%packages";
+    my @packages_in_packages = @packages;
     if ($tree->{packagesinpost}) {
         # to be installed later in %post using all repos
-        print "\n";
-        $unprocessed_packages = \@packages;
-    } else {
-        print " ", join(" ",@{$tree->{packages_args}}), "\n",
-            join ("\n", @packages), "\n";
+        # disabled/ignored packages cannot be handled in packagesinpost
+        my $pattern = '^-';
+        @packages_in_packages = grep {m/$pattern/} @packages;
+        push(@$unprocessed_packages, grep {$_ !~ m/$pattern/} @packages);
     }
+
+    if (@packages_in_packages) {
+        print " ", join(" ",@{$tree->{packages_args}}), "\n",
+            join ("\n", @packages_in_packages);
+    }
+    print "\n";
+
     print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '',
           "\n";
     return $unprocessed_packages;
