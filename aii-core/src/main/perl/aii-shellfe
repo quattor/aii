@@ -374,11 +374,12 @@ use constant DHCPOPTION => '/system/aii/dhcp/options';
 use constant DHCPPATH  => '/system/aii/dhcp';
 use constant MAC       => '--mac';
 
+Readonly our $PROTECTED_COMMANDS   => 'remove|configure|(re)?install';
+Readonly our $PROTECTED_OPTION   => 'protectid';
 
-Readonly my $PROTECTED_COMMANDS   => 'remove|configure|install';
-Readonly my $PROTECTED_OPTION   => 'protectid';
 
-our @ISA = qw (CAF::Application CAF::Reporter);
+#our @ISA = qw (CAF::Application CAF::Reporter);
+use parent qw (CAF::Application CAF::Reporter);
 
 our $ec = LC::Exception::Context->new->will_store_errors;
 
@@ -1129,30 +1130,29 @@ sub remove_cache_node {
 
 # If a host is protected, check the protectid is correct, else don't include to process further
 sub check_protected {
-    my ($self, $hash) = @_;
-    my @to_delete = ();
-    while (my ($host, $st) = each(%$hash)) {
-        my $cfg = $st->{configuration}->getElement('/system')->getTree;
+    my ($self, %hash) = @_;
+    my @to_delete;
+    $self->info(Dumper(%hash));
+    while (my ($host, $st) = each %hash) {
+        my $cfg = $st->{configuration}->getTree('/system');
         if ($cfg->{aii}->{protected}){
-            $protectid = $cfg->{aii}->{protected};
+            my $protectid = $cfg->{aii}->{protected};
             $self->debug(1, "Parsing protected host $host");
             my $verifyid = $self->option($PROTECTED_OPTION);
             if (!$verifyid) {
                 $self->error("Host $host is protected. Specify --$PROTECTED_OPTION $protectid to overwrite.");
-                push(@to_delete, $host);
-            } elsif ($protectid != $verifyid) {
+                push( @to_delete, $host);
+            } elsif ($protectid ne $verifyid) {
                 $self->error("Host $host is protected and wrong id specified. Specify --$PROTECTED_OPTION $protectid to overwrite.");
-                push(@to_delete, $host);
+                push( @to_delete, $host);
             } else {
                 $self->debug(1, "Protected host $host confirm id ok");
             }
         }
     }
-    if (@to_delete){
-        delete $hash(@to_delete);
-    }
-
-    return %$hash;
+    delete @hash{@to_delete};
+    
+    return %hash;
 }
 
 # Runs all the commands
@@ -1218,7 +1218,7 @@ sub cmds
         if (@nl) {
             my %h = $self->fetch_profiles (@nl);
             if ($cmd =~ m/^($PROTECTED_COMMANDS)$/) {
-                %h = $self->check_protected(\%h);
+                %h = $self->check_protected(%h);
                 if (!(%h)) {
                     $self->error('No nodes left to process after checking for protected hosts');
                     return ;
