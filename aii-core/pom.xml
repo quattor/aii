@@ -109,6 +109,26 @@
                 </configuration>
               </execution>
               <execution>
+                <id>filter-perl-mod-sources</id>
+                    <phase>process-sources</phase>
+                <goals>
+                 <goal>copy-resources</goal>
+                </goals>
+              <configuration>
+                  <outputDirectory>${project.build.directory}/lib/perl/aii</outputDirectory>
+                <resources>
+                    <resource>
+                        <directory>src/main/perl</directory>
+                        <filtering>true</filtering>
+                        <includes>
+                            <include>**/*.pm</include>
+                        </includes>
+                   </resource>
+                </resources>
+              </configuration>
+           </execution>
+
+              <execution>
                 <id>filter-pod-sources</id>
                 <phase>process-sources</phase>
                 <goals>
