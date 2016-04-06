@@ -313,7 +313,7 @@ BEGIN {
         push (@INC, qw !/usr/lib/perl /opt/edg/lib/perl!);
 }
 
-package aii::shellfe;
+package AII::shellfe;
 
 use strict;
 use warnings;

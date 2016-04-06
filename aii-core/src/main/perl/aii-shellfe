@@ -319,12 +319,12 @@ package main;
 use strict;
 use warnings;
 use CAF::Object;
-use aii::shellfe;
+use AII::shellfe;
 $ENV{PATH} = join (":", qw (/bin /usr/bin /usr/sbin /sbin));
 
 use LC::Exception qw (SUCCESS throw_error);
 
-our $this_app = aii::shellfe->new ($0, @ARGV) or exit 1;
+our $this_app = AII::shellfe->new ($0, @ARGV) or exit 1;
 our %SIG;
 our $ec = LC::Exception::Context->new->will_store_errors;
 $CAF::Object::NoAction = 1 if $this_app->option('noaction');

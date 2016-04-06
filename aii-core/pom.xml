@@ -115,7 +115,7 @@
                  <goal>copy-resources</goal>
                 </goals>
               <configuration>
-                  <outputDirectory>${project.build.directory}/lib/perl/aii</outputDirectory>
+                  <outputDirectory>${project.build.directory}/lib/perl/AII</outputDirectory>
                 <resources>
                     <resource>
                         <directory>src/main/perl</directory>
