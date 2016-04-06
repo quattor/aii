@@ -10,7 +10,7 @@ use Test::MockModule;
 use EDG::WP4::CCM::Element;
 use CAF::Application;
 use CAF::Reporter;
-use AII::shellfe;
+use AII::Shellfe;
 
 use Readonly;
 
@@ -32,18 +32,18 @@ my @opts = qw(script --logfile=target/test/rci-protect.log --cfgfile=src/test/re
 Readonly::Array my @UNPROTECTED_HOSTS => ('test01.cluster', 'test04.cluster');
 Readonly::Array my @ALL_HOSTS => sort(keys(%h));
 
-my $mod = AII::shellfe->new(@opts);
+my $mod = AII::Shellfe->new(@opts);
 
 my %res = $mod->check_protected(%h);
 my @hosts_to_cfg = sort(keys(%res));
 cmp_deeply( \@hosts_to_cfg, \@UNPROTECTED_HOSTS, 'only configure unprotected hosts' ) ;
 
-$mod = AII::shellfe->new(@opts, "--protectid", "quattorid_1234" );
+$mod = AII::Shellfe->new(@opts, "--protectid", "quattorid_1234" );
 %res = $mod->check_protected(%h);
 @hosts_to_cfg = sort(keys(%res));
 cmp_deeply( \@hosts_to_cfg, \@ALL_HOSTS, 'protectedid given correctly' ) ;
 
-$mod = AII::shellfe->new(@opts, "--protectid", "quattorid_0000" );
+$mod = AII::Shellfe->new(@opts, "--protectid", "quattorid_0000" );
 %res = $mod->check_protected(%h);
 @hosts_to_cfg = sort(keys(%res));
 cmp_deeply( \@hosts_to_cfg, \@UNPROTECTED_HOSTS, 'protectedid given wrong' ); 

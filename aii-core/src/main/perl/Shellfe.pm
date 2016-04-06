@@ -20,7 +20,7 @@ Check aii-shellfe for option documentation
 
 =cut
 
-package AII::shellfe;
+package AII::Shellfe;
 
 use strict;
 use warnings;
