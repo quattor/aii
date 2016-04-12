@@ -6,6 +6,8 @@ include 'quattor/aii/opennebula/functions';
 #  undef are set via schema default
 variable OPENNEBULA_AII_FORCE ?= undef; 
 variable OPENNEBULA_AII_ONHOLD ?= undef;
+variable OPENNEBULA_AII_FORCE_REMOVE ?= false;
+
 variable MAC_PREFIX ?= '02:00';
 
 "/system/aii/hooks/configure/" = {
