@@ -96,7 +96,7 @@
               <execution>
                 <id>filter-perl-sources</id>
                 <configuration>
-                  <outputDirectory>${project.build.directory}/lib/perl</outputDirectory>
+                  <outputDirectory>${project.build.directory}/bin</outputDirectory>
                   <resources>
                     <resource>
                       <directory>src/main/perl</directory>
@@ -214,7 +214,7 @@
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
                   <source>
-                    <location>target/lib/perl</location>
+                    <location>target/bin</location>
                     <excludes>
                       <exclude>*.pod</exclude>
                     </excludes>
@@ -223,6 +223,21 @@
                     <destination>quattor-installer</destination>
                     <location>aii-shellfe</location>
                   </softlinkSource>
+                </sources>
+              </mapping>
+              <mapping>
+                <directory>/usr/lib</directory>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>target/lib</location>
+                    <excludes>
+                      <exclude>*.pod</exclude>
+                    </excludes>
+                    <includes>
+                        <include>**/*.pm</include>
+                    </includes>
+                  </source>
                 </sources>
               </mapping>
               <mapping>
