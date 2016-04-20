@@ -191,35 +191,43 @@ sub new
 sub change_resource_permissions
 {
     my ($self, $one, $type, $resource, $permissions) = @_;
-    my ($method, $id);
+    my ($method, $id, %chown, $out);
     my @options = qw(owner group mode);
+    # -1 value by default, owner and group are not changed
+    %chown = (
+        owner => -1,
+        group => -1,
+    );
 
-    $main::this_app->info("HERE CHANGE $type PERMISSIONS! :", Dumper($permissions));
     foreach my $value (@options) {
         if (exists($permissions->{$value})) {
             if ($value eq "mode") {
-                $main::this_app->info("HERE FOUND MODE CHANGE!!!");
+                $main::this_app->info("HERE FOUND MODE CHANGE FOR $type!!!: ", $resource->name);
+                #$out = $resource->chmod($permissions->{$value});
             } else {
                 $id = $self->get_resource_id($one, $value, $permissions->{$value});
-                $main::this_app->info("HERE FOUND  $value ID! :", $id) if $id;
+                $chown{$value} = $id if $id;
             };
         };
     };
+    $main::this_app->info("HERE AND NOW THE CHOWN: ", Dumper(%chown));
+    #$out = $resource->chown($chown{owner}, $chown{group});
 }
 
 sub get_resource_id
 {
     my ($self, $one, $resource, $name) = @_;
     my $method = "get_${resource}s";
-    $main::this_app->info("HERE $resource :", $name);
 
     $method = "get_users" if ($resource eq "owner");
 
     my @existres = $one->$method(qr{^$name$});
 
     foreach my $t (@existres) {
+        $main::this_app->info("Found requested $resource in ONE database: $name");
         return $t->id;
     };
+    $main::this_app->error("Not able to found $resource name $name in ONE database");
     return;
 }
 
