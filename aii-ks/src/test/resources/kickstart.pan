@@ -32,7 +32,7 @@ prefix "/system/aii/osinstall/ks";
 "rootpw" = "veryverysecret";
 "osinstall_protocol" = "https";
 "ackurl" = "http://ack";
-"auth" = list ("enableshadow", "enablemd5");
+"auth" = list ("enableshadow", "passalgo=sha512");
 "bootloader_location" = "mbr";
 "bootloader_append" = 'append something';
 "bootloader_password" = "$1$ZAOkBwVp$Cs5cO5cfaqzH5AdZ/jpjP/"; # "Quattor"
