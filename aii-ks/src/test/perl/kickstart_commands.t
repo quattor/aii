@@ -28,7 +28,7 @@ NCM::Component::ks::kscommands($cfg);
 like($fh, qr{^text}m, 'text mode install present');
 like($fh, qr{^reboot}m, 'reboot after install present');
 like($fh, qr{^skipx}m, 'skip x configuration present');
-like($fh, qr{^auth\s--enableshadow\s--enablemd5}m, 'authentication parameters present');
+like($fh, qr{^auth\s--enableshadow\s--passalgo=sha512}m, 'authentication parameters present');
 like($fh, qr{^install\n^url\s--url http://baseos}m, 'installtype present');
 like($fh, qr{^timezone\s--utc Europe/SomeCity}m, 'timezone present');
 like($fh, qr{^rootpw\s--iscrypted veryverysecret}m, 'crypted root password present');

@@ -295,9 +295,9 @@ variable  AII_OSINSTALL_BOOTPROTO ?= 'dhcp';
 
 #
 # Options for authentication
-# defaults to using shadow passwords and MD5 hashing
+# defaults to using shadow passwords and sha512 hashing
 #
-variable AII_OSINSTALL_OPTION_AUTH ?= list ("enableshadow", "enablemd5");
+variable AII_OSINSTALL_OPTION_AUTH ?= list ("enableshadow", "passalgo=sha512");
 "/system/aii/osinstall/ks/auth" ?= AII_OSINSTALL_OPTION_AUTH;
 #
 # Firewall

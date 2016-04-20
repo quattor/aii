@@ -57,7 +57,7 @@ type structure_ks_logging = {
 type structure_ks_ks_info = {
     "ackurl"	: type_absoluteURI
     "acklist"	? type_absoluteURI[]
-    "auth"		: string[] = list ("enableshadow", "enablemd5")
+    "auth" : string[] = list ("enableshadow", "passalgo=sha512")
     "bootloader_location" : string = "mbr"
     "bootloader_append" ? string
     "bootloader_password" ? string

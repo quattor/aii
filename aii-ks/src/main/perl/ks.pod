@@ -34,8 +34,8 @@ If acklist is set, then ackurl is not used.
 
 =item * auth : string[]
 
-List of options for authentication. Defaults to ("enableshadow", "enablemd5").
-i.e. enable shadow passwords and MD5 hashing.
+List of options for authentication. Defaults to ("enableshadow", "passalgo=sha512").
+i.e. enable shadow passwords and sha512 hashing.
 
 =item * bonding : boolean
 
@@ -458,8 +458,8 @@ the network via DHCP.
 
 =item * AII_OSINSTALL_OPTION_AUTH : string[]
 
-List of options for the authorization system. By default, MD5 shadowed
-passwords are enabled, this is C<list ("enableshadow", "enablemd5")>
+List of options for the authorization system. By default, sha512 shadowed
+passwords are enabled, this is C<list ("enableshadow", "passalgo=sha512")>
 
 =item * AII_OSINSTALL_OPTION_FIREWALL ? firewal
 
