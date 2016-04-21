@@ -188,10 +188,10 @@ sub new
     return bless {}, $class;
 }
 
-sub change_resource_permissions
+sub change_permissions
 {
     my ($self, $one, $type, $resource, $permissions) = @_;
-    my ($method, $id, %chown, $out);
+    my ($method, $id, $instance, %chown, $out);
     my @options = qw(owner group mode);
     # -1 value by default, owner and group are not changed
     %chown = (
@@ -205,8 +205,9 @@ sub change_resource_permissions
                 $main::this_app->info("HERE FOUND MODE CHANGE FOR $type!!!: ", $resource->name);
                 #$out = $resource->chmod($permissions->{$value});
             } else {
-                $id = $self->get_resource_id($one, $value, $permissions->{$value});
-                $chown{$value} = $id if $id;
+                $instance = $self->get_resource_instance($one, $value, $permissions->{$value});
+                $chown{$value} = $instance->id if $instance->id;
+                $main::this_app->info("HERE FOUND $value id: ", $instance->id) if $instance->id;
             };
         };
     };
@@ -214,7 +215,7 @@ sub change_resource_permissions
     #$out = $resource->chown($chown{owner}, $chown{group});
 }
 
-sub get_resource_id
+sub get_resource_instance
 {
     my ($self, $one, $resource, $name) = @_;
     my $method = "get_${resource}s";
@@ -225,7 +226,7 @@ sub get_resource_id
 
     foreach my $t (@existres) {
         $main::this_app->info("Found requested $resource in ONE database: $name");
-        return $t->id;
+        return $t;
     };
     $main::this_app->error("Not able to found $resource name $name in ONE database");
     return;
@@ -273,7 +274,7 @@ sub create_vm_images
         if ($newimage) {
             $main::this_app->info("Created new VM image ID: ", $newimage->id);
             if (ref $permissions eq ref {}) {
-                $self->change_resource_permissions($one, "image", $newimage, $permissions);
+                $self->change_permissions($one, "image", $newimage, $permissions);
             };
             push(@{$ref_nimages}, $imagename);
         } else {
@@ -470,6 +471,9 @@ sub remove_and_create_vm_template
                 $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
                 $self->debug(1, "New $fqdn template : $vmtemplate");
                 my $update = $t->update($vmtemplate, 0);
+                if (ref $permissions eq ref {}) {
+                    $self->change_permissions($one, "template", $t, $permissions);
+                };
                 return $update;
             }
         } else {
@@ -480,6 +484,9 @@ sub remove_and_create_vm_template
     if ($createvmtemplate && !$remove) {
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
+        if (ref $permissions eq ref {}) {
+            $self->change_permissions($one, "template", $templ, $permissions);
+        };
         return $templ;
     }
 }
@@ -624,6 +631,10 @@ sub install
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
         if (defined($vmid) && $vmid =~ m/^\d+$/) {
             $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+            if (ref $permissions eq ref {}) {
+                my $newvm = $self->get_resource_instance($one, "vm", $fqdn);
+                $self->change_permissions($one, "vm", $newvm, $permissions) if $newvm;
+            };
         } else {
             $main::this_app->error("Unable to instantiate VM ${fqdn}: ${vmid}");
         }
