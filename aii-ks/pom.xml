@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.48</version>
+    <version>1.49</version>
   </parent>
   <developers>
     <developer>
@@ -47,11 +47,9 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
-            <summary>aii-${project.artifactId}</summary>
+            <summary>AII Kickstart generator</summary>
             <name>aii-${project.artifactId}</name>
-            <provides>
-              <provide>aii-${project.artifactId}</provide>
-            </provides>
+            <url>https://github.com/quattor/aii/tree/master/aii-ks</url>
           </configuration>
         </plugin>
       </plugins>
