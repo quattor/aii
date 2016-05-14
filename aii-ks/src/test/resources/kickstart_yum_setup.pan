@@ -10,7 +10,15 @@ prefix "/software/repositories/0";
 "owner" = "me@example.com";
 "protocols/0/name" = "http";
 "protocols/0/url" = "http://www.example.com";
-
+"gpgcheck" = false;
+"repo_gpgcheck" = false;
+"gpgkey" = list(
+    "file:///path/to/key",
+    "https://somewhere/very/very/far",
+    "ftp://because/ftp/and/security/go/well/together",
+);
+"gpgcakey" = "file:///super/ca/key";         
+    
 prefix "/software/repositories/1";
 "name" = "repo1";
 "owner" = "me@example.com";

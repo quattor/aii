@@ -20,17 +20,22 @@ Test the yum_setup
 ^end_of_yum_conf$
 ^cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo$
 ^\[repo0\]$
-^enabled=1$
-^baseurl=http://www.example.com$
 ^name=repo0$
-^gpgcheck=0$
-^skip_if_unavailable=1$
-^\[repo1\]$
-^enabled=1$
 ^baseurl=http://www.example.com$
-^name=repo1$
+^skip_if_unavailable=1$
+^enabled=1$
 ^gpgcheck=0$
+^repo_gpgcheck=0$
+^gpgcakey=file:///super/ca/key$
+^gpgkey=file:///path/to/key$
+^\s{4}https://somewhere/very/very/far$
+^\s{4}ftp://because/ftp/and/security/go/well/together$
+^\[repo1\]$
+^name=repo1$
+^baseurl=http://www.example.com$
 ^skip_if_unavailable=1$
 ^exclude=woo hoo\*$
+^enabled=1$
+^gpgcheck=0$
 ^includepkgs=everything else$
 ^end_of_repos$
