@@ -1313,36 +1313,41 @@ EOF
         if ($ptype && $ptype eq 'reverse') {
             $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
         }
+        # mandatory in 16.4 schema
+        #   these values are the default values in the schema
+        $repo->{enabled} = 1 if(! defined($repo->{enabled}));
+        $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
+
         print <<EOF;
 [$repo->{name}]
-enabled=1
-baseurl=$repo->{protocols}->[0]->{url}
 name=$repo->{name}
-gpgcheck=0
+baseurl=$repo->{protocols}->[0]->{url}
 skip_if_unavailable=1
 EOF
         if ($repo->{proxy}) {
-            print <<EOF;
-proxy=$repo->{proxy}
-EOF
+            print "proxy=$repo->{proxy}\n";
         } elsif ($ptype && $ptype eq 'forward') {
-            print <<EOF;
-proxy=http://$phost:$pport/
-EOF
+            print "proxy=http://$phost:$pport/\n";
         }
 
-        if ($repo->{priority}) {
-            print <<EOF;
-priority=$repo->{priority}
-EOF
-        }
-
+        # Handle inconsistent name mapping
         if ($repo->{excludepkgs}) {
             print "exclude=", join(' ', @{$repo->{excludepkgs}}), "\n";
         }
-        if ($repo->{includepkgs}) {
-            print "includepkgs=", join(' ', @{$repo->{includepkgs}}), "\n";
+
+        # in line with 16.4 ncm-spma repository.tt
+        # exception: skip_if_unavailable is forced to true above
+        foreach my $opt (qw(enabled gpgcheck priority includepkgs repo_gpgcheck gpgcakey)) {
+            if(defined($repo->{$opt})) {
+                my $value = ref($repo->{$opt}) eq 'ARRAY' ? join(' ', @{$repo->{$opt}}) : $repo->{$opt};
+                print "$opt=$value\n";
+            }
         }
+
+        if(defined($repo->{gpgkey})) {
+            print "gpgkey=", join("\n    ", @{$repo->{gpgkey}}), "\n";
+        }
+
     }
 
     print "end_of_repos\n";
