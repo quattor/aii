@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.48</version>
+    <version>1.49</version>
     <relativePath />
   </parent>
   <licenses>
@@ -180,13 +180,11 @@
           <configuration>
             <summary>Opennebula hook for AII</summary>
             <name>${project.artifactId}</name>
+            <url>https://github.com/quattor/aii/tree/master/aii-opennebula</url>
             <requires />
             <mappings>
               <mapping>
                 <directory>/usr/lib/perl/AII</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
                   <source>
@@ -197,9 +195,6 @@
               </mapping>
               <mapping>
                 <directory>/usr/share/doc/${project.artifactId}-${project.version}</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
                 <documentation>true</documentation>
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
@@ -213,10 +208,6 @@
               </mapping>
               <mapping>
                 <directory>${man.page.dir}/man8</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
-                <configuration>false</configuration>
                 <documentation>true</documentation>
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
@@ -228,9 +219,6 @@
               </mapping>
               <mapping>
                 <directory>/usr/share/templates/</directory>
-                <filemode>644</filemode>
-                <username>root</username>
-                <groupname>root</groupname>
                 <sources>
                   <source>
                     <location>${project.build.directory}/share/templates/</location>

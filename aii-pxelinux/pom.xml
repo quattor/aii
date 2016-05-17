@@ -4,12 +4,12 @@
   <artifactId>pxelinux</artifactId>
   <packaging>pom</packaging>
   <version>16.2.1-SNAPSHOT</version>
-  <name>AII PXE-linux generator</name>
+  <name>AII PXELINUX generator</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.48</version>
+    <version>1.49</version>
   </parent>
   <developers>
     <developer>
@@ -47,11 +47,9 @@
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
-            <summary>aii-${project.artifactId}</summary>
+            <summary>AII PXELINUX generator</summary>
             <name>aii-${project.artifactId}</name>
-            <provides>
-              <provide>aii-${project.artifactId}</provide>
-            </provides>
+            <url>https://github.com/quattor/aii/tree/master/aii-pxelinux</url>
           </configuration>
         </plugin>
       </plugins>
