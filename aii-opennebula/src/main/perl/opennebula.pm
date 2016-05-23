@@ -13,7 +13,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.2.2;
+use Net::OpenNebula 0.301.0;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -202,17 +202,27 @@ sub change_permissions
     foreach my $value (@options) {
         if (exists($permissions->{$value})) {
             if ($value eq "mode") {
-                $main::this_app->info("HERE FOUND MODE CHANGE FOR $type!!!: ", $resource->name);
-                #$out = $resource->chmod($permissions->{$value});
+                $out = $resource->chmod($permissions->{$value});
+                if ($out) {
+                    $main::this_app->info("Changed $value to: ", $permissions->{$value});
+                } else {
+                    $main::this_app->error("Not able to change $value to: ", $permissions->{$value});
+                };
             } else {
                 $instance = $self->get_resource_instance($one, $value, $permissions->{$value});
                 $chown{$value} = $instance->id if $instance->id;
-                $main::this_app->info("HERE FOUND $value id: ", $instance->id) if $instance->id;
             };
         };
     };
-    $main::this_app->info("HERE AND NOW THE CHOWN: ", Dumper(%chown));
-    #$out = $resource->chown($chown{owner}, $chown{group});
+
+    $out = $resource->chown($chown{owner}, $chown{group});
+    if ($out) {
+        $main::this_app->info("Changed $type user:group ids. ", 
+                              "$chown{owner}:$chown{group} for: ", $resource->name);
+    } else {
+        $main::this_app->error("Not able to change $type user:group ids. ", 
+                               "$chown{owner}:$chown{group} for: ", $resource->name);
+    };
 }
 
 sub get_resource_instance

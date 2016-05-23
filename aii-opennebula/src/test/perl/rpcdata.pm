@@ -425,6 +425,10 @@ $cmds{rpc_chown_vm}{params} = [60, 3, 1];
 $cmds{rpc_chown_vm}{method} = "one.vm.chown";
 $cmds{rpc_chown_vm}{out} = 60;
 
+$cmds{rpc_chmod_vm}{params} = [60, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_vm}{method} = "one.vm.chmod";
+$cmds{rpc_chmod_vm}{out} = 60;
+
 # Manage images
 
 $cmds{rpc_list_imagespool}{params} = [-2, -1, -1];
@@ -490,6 +494,14 @@ $cmds{rpc_chown_image}{out} = 43;
 $cmds{rpc_chown_image2}{params} = [44, 3, 1];
 $cmds{rpc_chown_image2}{method} = "one.image.chown";
 $cmds{rpc_chown_image2}{out} = 44;
+
+$cmds{rpc_chmod_image}{params} = [43, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_image}{method} = "one.image.chmod";
+$cmds{rpc_chmod_image}{out} = 43;
+
+$cmds{rpc_chmod_image2}{params} = [44, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_image2}{method} = "one.image.chmod";
+$cmds{rpc_chmod_image2}{out} = 44;
 
 
 # Manage VM templates
@@ -587,6 +599,10 @@ EOF
 $cmds{rpc_instantiate_template}{params} = [4, "node630.cubone.os", 1, $data];
 $cmds{rpc_instantiate_template}{method} = "one.template.instantiate";
 $cmds{rpc_instantiate_template}{out} = 60;
+
+$cmds{rpc_chmod_template}{params} = [4, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_template}{method} = "one.template.chmod";
+$cmds{rpc_chmod_template}{out} = 4;
 
 $cmds{rpc_remove_template}{params} = [4];
 $cmds{rpc_remove_template}{method} = "one.template.delete";
