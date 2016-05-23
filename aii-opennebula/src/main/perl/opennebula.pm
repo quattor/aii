@@ -95,8 +95,12 @@ sub get_permissions
 {
     my ($self, $config) = @_;
 
-    my $tree = $config->getElement('/system/opennebula/permissions')->getTree();
-    return $tree;
+    my $tree = $config->getElement('/system/opennebula')->getTree();
+    if ($tree->{permissions}) {
+        $main::this_app->info("Found new resources permissions.");
+        return $tree->{permissions};
+    };
+    return;
 }
 
 # Return fqdn of the node
@@ -204,9 +208,9 @@ sub change_permissions
             if ($value eq "mode") {
                 $out = $resource->chmod($permissions->{$value});
                 if ($out) {
-                    $main::this_app->info("Changed $value to: ", $permissions->{$value});
+                    $main::this_app->info("Changed $type mode to: ", $permissions->{$value});
                 } else {
-                    $main::this_app->error("Not able to change $value to: ", $permissions->{$value});
+                    $main::this_app->error("Not able to change $type mode to: ", $permissions->{$value});
                 };
             } else {
                 $instance = $self->get_resource_instance($one, $value, $permissions->{$value});
@@ -220,7 +224,7 @@ sub change_permissions
         $main::this_app->info("Changed $type user:group ids. ", 
                               "$chown{owner}:$chown{group} for: ", $resource->name);
     } else {
-        $main::this_app->error("Not able to change $type user:group ids. ", 
+        $main::this_app->error("Not able to change $type user:group ids ", 
                                "$chown{owner}:$chown{group} for: ", $resource->name);
     };
 }

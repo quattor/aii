@@ -112,4 +112,4 @@ prefix "/system/opennebula";
 
 "permissions/owner" = "lsimngar";
 "permissions/group" = "users";
-"permissions/mode" = "0400";
+"permissions/mode" = 400;
