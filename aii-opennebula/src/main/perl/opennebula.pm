@@ -13,7 +13,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.301.0;
+use Net::OpenNebula 0.306.0;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -213,18 +213,19 @@ sub change_permissions
                     $main::this_app->error("Not able to change $type mode to: ", $permissions->{$value});
                 };
             } else {
-                $instance = $self->get_resource_instance($one, $value, $permissions->{$value});
-                $chown{$value} = $instance->id if $instance->id;
+                #$instance = $self->get_resource_instance($one, $value, $permissions->{$value});
+                #$chown{$value} = $instance->id if $instance->id;
+                $chown{$value} = $permissions->{$value} if $permissions->{$value};
             };
         };
     };
 
     $out = $resource->chown($chown{owner}, $chown{group});
     if ($out) {
-        $main::this_app->info("Changed $type user:group ids. ", 
+        $main::this_app->info("Changed $type user:group ", 
                               "$chown{owner}:$chown{group} for: ", $resource->name);
     } else {
-        $main::this_app->error("Not able to change $type user:group ids ", 
+        $main::this_app->error("Not able to change $type user:group ", 
                                "$chown{owner}:$chown{group} for: ", $resource->name);
     };
 }
