@@ -1437,10 +1437,10 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
-    while (my ($pkg, $st) = each(%$t)) {
+    foreach my $pkg (sort keys %$t) {
         my $pkgst = unescape($pkg);
         if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-            push (@pkgs, [$pkgst, $st]);
+            push (@pkgs, [$pkgst, $t->{$pkg}]);
         }
     }
 
@@ -1451,10 +1451,10 @@ EOF
         push(@yumpkgs, @$packages);
     }
     push(@yumpkgs, $self->simple_version_glob(@pkgs));
-    $self->debug(5,"    Adding YUM commands to install ".join(",",@pkgs));
+    $self->debug(5, "    Adding YUM commands to install " . join(",", @yumpkgs));
     ksinstall_rpm($config, @yumpkgs);
 
-    $self->debug(5,"Packages to installi added...");
+    $self->debug(5, "Packages to install added...");
 }
 
 # Prints the %post script. The post_reboot script is created inside
