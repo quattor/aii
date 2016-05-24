@@ -196,11 +196,12 @@ sub change_permissions
 {
     my ($self, $one, $type, $resource, $permissions) = @_;
     my ($method, $id, $instance, %chown, $out);
-    my @options = qw(owner group mode);
+    my @options = qw(user group mode);
     # -1 value by default, owner and group are not changed
     %chown = (
-        owner => -1,
-        group => -1,
+        uid => -1,
+        gid => -1,
+        one => $one,
     );
 
     foreach my $value (@options) {
@@ -208,25 +209,27 @@ sub change_permissions
             if ($value eq "mode") {
                 $out = $resource->chmod($permissions->{$value});
                 if ($out) {
-                    $main::this_app->info("Changed $type mode to: ", $permissions->{$value});
+                    $main::this_app->info("Changed $type mode id $out to: ", $permissions->{$value});
                 } else {
                     $main::this_app->error("Not able to change $type mode to: ", $permissions->{$value});
                 };
             } else {
-                #$instance = $self->get_resource_instance($one, $value, $permissions->{$value});
-                #$chown{$value} = $instance->id if $instance->id;
-                $chown{$value} = $permissions->{$value} if $permissions->{$value};
+                if ($value eq "user") {
+                    $chown{uid} = $permissions->{$value};
+                } else {
+                    $chown{gid} = $permissions->{$value};
+                };
             };
         };
     };
 
-    $out = $resource->chown($chown{owner}, $chown{group});
+    $out = $resource->chown(%chown);
     if ($out) {
         $main::this_app->info("Changed $type user:group ", 
-                              "$chown{owner}:$chown{group} for: ", $resource->name);
+                              "$chown{uid}:$chown{gid} for: ", $resource->name);
     } else {
         $main::this_app->error("Not able to change $type user:group ", 
-                               "$chown{owner}:$chown{group} for: ", $resource->name);
+                               "$chown{uid}:$chown{gid} for: ", $resource->name);
     };
 }
 
