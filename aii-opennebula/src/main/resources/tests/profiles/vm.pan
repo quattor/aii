@@ -132,3 +132,7 @@ prefix "/system/opennebula";
 "ignoremac/macaddr" = list (
     "AA:00:00:80:01:03",
 );
+
+"permissions/user" = "lsimngar";
+"permissions/group" = "users";
+"permissions/mode" = 0400;

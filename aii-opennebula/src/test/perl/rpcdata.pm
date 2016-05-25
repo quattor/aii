@@ -559,14 +559,14 @@ DISK = [
     TARGET = "vda",
     DEV_PREFIX = "vd",
     CACHE = "default",
-    IMAGE_UNAME = "oneadmin"
+    IMAGE_UNAME = "lsimngar"
 ]
 DISK = [
     IMAGE = "node630.cubone.os_vdb",
     TARGET = "vdb",
     DEV_PREFIX = "vd",
     CACHE = "default",
-    IMAGE_UNAME = "oneadmin"
+    IMAGE_UNAME = "lsimngar"
 ]
 GRAPHICS = [
     LISTEN = "0.0.0.0",

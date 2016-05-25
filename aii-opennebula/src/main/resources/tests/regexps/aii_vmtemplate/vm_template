@@ -41,14 +41,14 @@ multiline
 ^\s{4}TARGET\s?=\s?"vda",$
 ^\s{4}DEV_PREFIX\s?=\s?"vd",$
 ^\s{4}CACHE\s?=\s?"default",$
-^\s{4}IMAGE_UNAME\s?=\s?"oneadmin"$
+^\s{4}IMAGE_UNAME\s?=\s?"lsimngar"$
 ^\]$
 ^DISK\s?=\s?\[$
 ^\s{4}IMAGE\s?=\s?"node630.cubone.os_vdb",$
 ^\s{4}TARGET\s?=\s?"vdb",$
 ^\s{4}DEV_PREFIX\s?=\s?"vd",$
 ^\s{4}CACHE\s?=\s?"default",$
-^\s{4}IMAGE_UNAME\s?=\s?"oneadmin"$
+^\s{4}IMAGE_UNAME\s?=\s?"lsimngar"$
 ^\]$
 ^GRAPHICS\s?=\s?\[$
 ^\s{4}LISTEN\s?=\s?"0.0.0.0",$

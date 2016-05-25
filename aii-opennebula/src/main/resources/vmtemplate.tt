@@ -43,8 +43,12 @@ DEV_PREFIX = "vd",
 [%        IF system.opennebula.diskcache.defined -%]
 CACHE = "[% system.opennebula.diskcache %]",
 [%        END -%]
+[%        IF system.opennebula.permissions.user.defined -%]
+IMAGE_UNAME = "[% system.opennebula.permissions.user %]"
+[%        ELSE -%]
 IMAGE_UNAME = "oneadmin"
-[%-    END %]
+[%        END -%]
+[%-    END -%]
 ]
 [%- END %]
 GRAPHICS = [
