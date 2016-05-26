@@ -50,7 +50,7 @@ ok(rpc_history_ok(["one.templatepool.info",
 
 # Check VM template remove
 rpc_history_reset;
-$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, 1);
+$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, undef, 1);
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.delete"]),
                    "remove_and_create_vm_template remove rpc history ok");

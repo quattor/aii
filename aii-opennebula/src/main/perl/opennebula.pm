@@ -277,7 +277,7 @@ sub create_vm_images
         }
         if ($newimage) {
             $main::this_app->info("Created new VM image ID: ", $newimage->id);
-            if (ref $permissions eq ref {}) {
+            if ($permissions) {
                 $self->change_permissions($one, "image", $newimage, $permissions);
             };
             push(@{$ref_nimages}, $imagename);
@@ -475,7 +475,7 @@ sub remove_and_create_vm_template
                 $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
                 $self->debug(1, "New $fqdn template : $vmtemplate");
                 my $update = $t->update($vmtemplate, 0);
-                if (ref $permissions eq ref {}) {
+                if ($permissions) {
                     $self->change_permissions($one, "template", $t, $permissions);
                 };
                 return $update;
@@ -488,7 +488,7 @@ sub remove_and_create_vm_template
     if ($createvmtemplate && !$remove) {
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
-        if (ref $permissions eq ref {}) {
+        if ($permissions) {
             $self->change_permissions($one, "template", $templ, $permissions);
         };
         return $templ;
@@ -635,7 +635,7 @@ sub install
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
         if (defined($vmid) && $vmid =~ m/^\d+$/) {
             $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
-            if (ref $permissions eq ref {}) {
+            if ($permissions) {
                 my $newvm = $self->get_resource_instance($one, "vm", $fqdn);
                 $self->change_permissions($one, "vm", $newvm, $permissions) if $newvm;
             };
