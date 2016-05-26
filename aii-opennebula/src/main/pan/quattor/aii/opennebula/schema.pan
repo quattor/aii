@@ -112,7 +112,7 @@ Type that changes resources owner/group permissions.
 By default opennebula-aii generates all the resources as oneadmin owner/group.
 }
 type opennebula_permissions = {
-    "user"  ? string # id or user name
+    "owner"  ? string # id or user name
     "group" ? string # id or group name
     "mode" ? long # octal notation, e.g. 0600
 };

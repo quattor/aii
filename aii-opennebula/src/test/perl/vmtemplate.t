@@ -36,7 +36,6 @@ rpc_history_reset;
 $aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.delete",
                    "one.template.allocate",
                    "one.template.info"]),
@@ -46,7 +45,6 @@ ok(rpc_history_ok(["one.templatepool.info",
 rpc_history_reset;
 $aii->remove_and_create_vm_template($one, $templatename, 0, $vmtemplate);
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.update"]),
                    "remove_and_create_vm_template update rpc history ok");
 
@@ -54,7 +52,6 @@ ok(rpc_history_ok(["one.templatepool.info",
 rpc_history_reset;
 $aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, 1);
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.delete"]),
                    "remove_and_create_vm_template remove rpc history ok");
 

@@ -13,7 +13,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.306.0;
+use Net::OpenNebula 0.307.0;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -195,41 +195,27 @@ sub new
 sub change_permissions
 {
     my ($self, $one, $type, $resource, $permissions) = @_;
-    my ($method, $id, $instance, %chown, $out);
-    my @options = qw(user group mode);
-    # -1 value by default, owner and group are not changed
-    %chown = (
-        uid => -1,
-        gid => -1,
-        one => $one,
-    );
+    my ($method, $id, $instance, $out);
+    my %chown = (one => $one);
+    my $mode = $permissions->{mode};
 
-    foreach my $value (@options) {
-        if (exists($permissions->{$value})) {
-            if ($value eq "mode") {
-                $out = $resource->chmod($permissions->{$value});
-                if ($out) {
-                    $main::this_app->info("Changed $type mode id $out to: ", $permissions->{$value});
-                } else {
-                    $main::this_app->error("Not able to change $type mode to: ", $permissions->{$value});
-                };
-            } else {
-                if ($value eq "user") {
-                    $chown{uid} = $permissions->{$value};
-                } else {
-                    $chown{gid} = $permissions->{$value};
-                };
-            };
+    if(defined($mode)) {
+        $out = $resource->chmod($mode);
+        if ($out) {
+            $main::this_app->info("Changed $type mode id $out to: $mode");
+        } else {
+        $main::this_app->error("Not able to change $type mode to: $mode");
         };
     };
+    $chown{uid} = defined($permissions->{owner}) ? $permissions->{owner} : -1;
+    $chown{gid} = defined($permissions->{group}) ? $permissions->{group} : -1;
 
+    my $msg = "user:group $chown{uid}:$chown{gid} for: " . $resource->name;
     $out = $resource->chown(%chown);
     if ($out) {
-        $main::this_app->info("Changed $type user:group ", 
-                              "$chown{uid}:$chown{gid} for: ", $resource->name);
+        $main::this_app->info("Changed $type $msg");
     } else {
-        $main::this_app->error("Not able to change $type user:group ", 
-                               "$chown{uid}:$chown{gid} for: ", $resource->name);
+        $main::this_app->error("Not able to change $type $msg");
     };
 }
 
@@ -246,7 +232,7 @@ sub get_resource_instance
         $main::this_app->info("Found requested $resource in ONE database: $name");
         return $t;
     };
-    $main::this_app->error("Not able to found $resource name $name in ONE database");
+    $main::this_app->error("Not able to find $resource name $name in ONE database");
     return;
 }
 
@@ -705,7 +691,7 @@ sub remove
 
     my %images = $self->get_images($config);
     if (%images) {
-        $self->remove_and_create_vm_images($one, 1, \%images, 0, $rmimage);
+        $self->remove_and_create_vm_images($one, 1, \%images, undef, $rmimage);
     }
 
     my %ars = $self->get_vnetars($config);
@@ -715,7 +701,7 @@ sub remove
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, 0, $rmvmtemplate);
+        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }
 }
 

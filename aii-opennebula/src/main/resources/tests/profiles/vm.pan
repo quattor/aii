@@ -133,6 +133,6 @@ prefix "/system/opennebula";
     "AA:00:00:80:01:03",
 );
 
-"permissions/user" = "lsimngar";
+"permissions/owner" = "lsimngar";
 "permissions/group" = "users";
 "permissions/mode" = 0400;
