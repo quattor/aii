@@ -17,7 +17,8 @@ use AII::opennebula;
 use OpennebulaMock;
 
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
-$opennebulaaii->mock('make_one', Net::OpenNebula->new());
+$opennebulaaii->mock('make_one', Net::OpenNebula->new(url  => "http://localhost/RPC2",
+                                                      user => "oneadmin",));
 $opennebulaaii->mock('opennebula_aii_vminstantiate', undef);
 $opennebulaaii->mock('is_timeout', undef);
 
