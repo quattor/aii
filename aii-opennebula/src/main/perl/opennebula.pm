@@ -41,13 +41,14 @@ sub make_one
     my $config = Config::Tiny->new;
     my $domainname = $data->getElement (DOMAINNAME)->getValue;
     my $hostname = $data->getElement (HOSTNAME)->getValue;
+    my $fqdn = "${hostname}.${domainname}";
 
     $config = Config::Tiny->read($filename);
     foreach my $section (sort keys %{$config}) {
         $main::this_app->debug ("Found RPC section: $section");
-        if ($hostname =~ qr{$section}) {
+        if ($fqdn =~ /^$section$/ and $rpc eq 'rpc') {
             $rpc = $section;
-            $main::this_app->info ("Match regex for RPC section: [$rpc]");
+            $main::this_app->info ("Match fqdn regex for RPC section: [$rpc]");
         };
     };
     if (exists($config->{$domainname}) and $rpc eq 'rpc') {
