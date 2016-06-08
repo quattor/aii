@@ -110,11 +110,14 @@ type opennebula_ignoremac = {
 @documentation{
 Type that changes resources owner/group permissions.
 By default opennebula-aii generates all the resources as oneadmin owner/group.
+  owner: OpenNebula user id or user name
+  group: OpenNebula group id or username
+  long: Ocatal notation, e.g. 0600
 }
 type opennebula_permissions = {
-    "owner"  ? string # id or user name
-    "group" ? string # id or group name
-    "mode" ? long # octal notation, e.g. 0600
+    "owner"  ? string
+    "group" ? string
+    "mode" ? long
 };
 
 type opennebula_vmtemplate = {

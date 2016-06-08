@@ -97,8 +97,12 @@ sub get_permissions
 
     my $tree = $config->getElement('/system/opennebula')->getTree();
     if ($tree->{permissions}) {
-        $main::this_app->info("Found new resources permissions.");
-        return $tree->{permissions};
+        my $perm = $tree->{permissions};
+        $main::this_app->info("Found new resources permissions: ");
+        $main::this_app->info("Owner: ", $perm->{owner}) if $perm->{owner};
+        $main::this_app->info("Group: ", $perm->{group}) if $perm->{group};
+        $main::this_app->info("Mode: ", $perm->{mode}) if $perm->{mode};
+        return $perm;
     };
     return;
 }
@@ -204,7 +208,7 @@ sub change_permissions
         if ($out) {
             $main::this_app->info("Changed $type mode id $out to: $mode");
         } else {
-        $main::this_app->error("Not able to change $type mode to: $mode");
+            $main::this_app->error("Not able to change $type mode to: $mode");
         };
     };
     $chown{uid} = defined($permissions->{owner}) ? $permissions->{owner} : -1;
