@@ -46,9 +46,10 @@ sub make_one
     $config = Config::Tiny->read($filename);
     foreach my $section (sort keys %{$config}) {
         $main::this_app->debug ("Found RPC section: $section");
-        if ($fqdn =~ /^$section$/ and $rpc eq 'rpc') {
+        my $pattern = $config->{$section}->{pattern} || "";
+        if ($fqdn =~ /^$pattern$/ and $rpc eq 'rpc') {
             $rpc = $section;
-            $main::this_app->info ("Match fqdn regex for RPC section: [$rpc]");
+            $main::this_app->info ("Match pattern in RPC section: [$rpc]");
         };
     };
     if (exists($config->{$domainname}) and $rpc eq 'rpc') {
