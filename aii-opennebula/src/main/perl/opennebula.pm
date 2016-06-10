@@ -372,7 +372,7 @@ sub remove_and_create_vn_ars
             if ($remove) {
                 $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
             } elsif (!$remove and $arinfo) {
-                $self->update_vn_ars($one, $vnet, $ardata, $t);
+                $self->update_vn_ars($one, $arinfo, $vnet, $ardata, $t);
             } else { 
                 $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
@@ -423,11 +423,17 @@ sub remove_vn_ars
 # Update VN AR leases
 sub update_vn_ars
 {
-    my ($self, $one, $vnet, $ardata, $ar) = @_;
-    my $arid;
+    my ($self, $one, $arinfo, $vnet, $ardata, $ar) = @_;
+    my ($arid, $modtpl);
     # Update the AR info
-    $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
-    $arid = $ar->updatear($ardata->{ar});
+    $arid = $self->detect_vn_ar_quattor($arinfo);
+    if (defined($arid)) {
+        ($modtpl = $ardata->{ar}) =~ s/\[/\[\n    AR\_ID \= "$arid",/;
+    } else {
+        $modtpl = $ardata->{ar};
+    };
+    $main::this_app->info("AR template to update from $vnet and id $arid: ", $modtpl);
+    $arid = $ar->updatear($modtpl);
     if (defined($arid)) {
         $main::this_app->info("Updated $vnet AR id: ", $arid);
     } else {
