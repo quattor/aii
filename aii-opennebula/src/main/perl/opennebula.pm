@@ -432,7 +432,7 @@ sub update_vn_ars
     } else {
         $modtpl = $ardata->{ar};
     };
-    $main::this_app->info("AR template to update from $vnet and id $arid: ", $modtpl);
+    $main::this_app->debug(1, "AR template to update from $vnet and id $arid: ", $modtpl);
     $arid = $ar->updatear($modtpl);
     if (defined($arid)) {
         $main::this_app->info("Updated $vnet AR id: ", $arid);
