@@ -15,7 +15,8 @@ use OpennebulaMock;
 
 my $cfg = get_config_for_profile('aii_vmtemplate');
 my $opennebulaaii = new Test::MockModule('AII::opennebula');
-$opennebulaaii->mock('make_one', Net::OpenNebula->new());
+$opennebulaaii->mock('make_one', Net::OpenNebula->new(url  => "http://localhost/RPC2",
+                                                      user => "oneadmin",));
 
 my $aii = AII::opennebula->new();
 
@@ -36,7 +37,6 @@ rpc_history_reset;
 $aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.delete",
                    "one.template.allocate",
                    "one.template.info"]),
@@ -46,15 +46,13 @@ ok(rpc_history_ok(["one.templatepool.info",
 rpc_history_reset;
 $aii->remove_and_create_vm_template($one, $templatename, 0, $vmtemplate);
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.update"]),
                    "remove_and_create_vm_template update rpc history ok");
 
 # Check VM template remove
 rpc_history_reset;
-$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, 1);
+$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, undef, 1);
 ok(rpc_history_ok(["one.templatepool.info",
-                   "one.template.info",
                    "one.template.delete"]),
                    "remove_and_create_vm_template remove rpc history ok");
 

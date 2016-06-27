@@ -107,10 +107,24 @@ type opennebula_ignoremac = {
     "interface" ? valid_interface_ignoremac[]
 };
 
+@documentation{
+Type that changes resources owner/group permissions.
+By default opennebula-aii generates all the resources as oneadmin owner/group.
+  owner: OpenNebula user id or user name
+  group: OpenNebula group id or username
+  long:  Octal notation, e.g. 0600
+}
+type opennebula_permissions = {
+    "owner"  ? string
+    "group" ? string
+    "mode" ? long
+};
+
 type opennebula_vmtemplate = {
     "vnet"      : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
     "ignoremac" ? opennebula_ignoremac
     "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
+    "permissions" ? opennebula_permissions
 } = dict();

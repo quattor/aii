@@ -13,7 +13,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.2.2;
+use Net::OpenNebula 0.307.0;
 use Data::Dumper;
 
 use constant TEMPLATEPATH => "/usr/share/templates/quattor";
@@ -89,6 +89,22 @@ sub process_template
         return;
     }
     return "$tpl";
+}
+
+sub get_permissions
+{
+    my ($self, $config) = @_;
+
+    my $tree = $config->getElement('/system/opennebula')->getTree();
+    if ($tree->{permissions}) {
+        my $perm = $tree->{permissions};
+        $main::this_app->info("Found new resources permissions: ");
+        $main::this_app->info("Owner: ", $perm->{owner}) if $perm->{owner};
+        $main::this_app->info("Group: ", $perm->{group}) if $perm->{group};
+        $main::this_app->info("Mode: ", $perm->{mode}) if $perm->{mode};
+        return $perm;
+    };
+    return;
 }
 
 # Return fqdn of the node
@@ -180,16 +196,61 @@ sub new
     return bless {}, $class;
 }
 
+sub change_permissions
+{
+    my ($self, $one, $type, $resource, $permissions) = @_;
+    my ($method, $id, $instance, $out);
+    my %chown = (one => $one);
+    my $mode = $permissions->{mode};
+
+    if(defined($mode)) {
+        $out = $resource->chmod($mode);
+        if ($out) {
+            $main::this_app->info("Changed $type mode id $out to: $mode");
+        } else {
+            $main::this_app->error("Not able to change $type mode to: $mode");
+        };
+    };
+    $chown{uid} = defined($permissions->{owner}) ? $permissions->{owner} : -1;
+    $chown{gid} = defined($permissions->{group}) ? $permissions->{group} : -1;
+
+    my $msg = "user:group $chown{uid}:$chown{gid} for: " . $resource->name;
+    $out = $resource->chown(%chown);
+    if ($out) {
+        $main::this_app->info("Changed $type $msg");
+    } else {
+        $main::this_app->error("Not able to change $type $msg");
+    };
+}
+
+sub get_resource_instance
+{
+    my ($self, $one, $resource, $name) = @_;
+    my $method = "get_${resource}s";
+
+    $method = "get_users" if ($resource eq "owner");
+
+    my @existres = $one->$method(qr{^$name$});
+
+    foreach my $t (@existres) {
+        $main::this_app->info("Found requested $resource in ONE database: $name");
+        return $t;
+    };
+    $main::this_app->error("Not able to find $resource name $name in ONE database");
+    return;
+}
+
 sub remove_and_create_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagesref, $remove) = @_;
+    my ($self, $one, $forcecreateimage, $imagesref, $permissions, $remove) = @_;
     my (@rimages, @nimages, @qimages, $newimage, $count);
+
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
         $self->remove_vm_images($one, $forcecreateimage, $imagename, \@rimages);
-        $self->create_vm_images($one, $imagename, $imagedata, $remove, \@nimages);
+        $self->create_vm_images($one, $imagename, $imagedata, $remove, $permissions, \@nimages);
     }
     # Check created/removed image lists
     if ($remove) {
@@ -208,7 +269,7 @@ sub remove_and_create_vm_images
 # Create new VM images
 sub create_vm_images
 {
-    my ($self, $one, $imagename, $imagedata, $remove, $ref_nimages) = @_;
+    my ($self, $one, $imagename, $imagedata, $remove, $permissions, $ref_nimages) = @_;
 
     my $newimage;
     if (!$remove) {
@@ -220,6 +281,9 @@ sub create_vm_images
         }
         if ($newimage) {
             $main::this_app->info("Created new VM image ID: ", $newimage->id);
+            if ($permissions) {
+                $self->change_permissions($one, "image", $newimage, $permissions);
+            };
             push(@{$ref_nimages}, $imagename);
         } else {
             $main::this_app->error("VM image: $imagename is not available");
@@ -399,7 +463,7 @@ sub stop_and_remove_one_vms
 # $createvmtemplate hook forces to remove/create
 sub remove_and_create_vm_template
 {
-    my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $remove) = @_;
+    my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $permissions, $remove) = @_;
     
     # Check if the vm template already exists
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
@@ -415,6 +479,9 @@ sub remove_and_create_vm_template
                 $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
                 $self->debug(1, "New $fqdn template : $vmtemplate");
                 my $update = $t->update($vmtemplate, 0);
+                if ($permissions) {
+                    $self->change_permissions($one, "template", $t, $permissions);
+                };
                 return $update;
             }
         } else {
@@ -425,6 +492,9 @@ sub remove_and_create_vm_template
     if ($createvmtemplate && !$remove) {
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
+        if ($permissions) {
+            $self->change_permissions($one, "template", $templ, $permissions);
+        };
         return $templ;
     }
 }
@@ -481,6 +551,7 @@ sub configure
     $main::this_app->info("Forcecreate image flag is set to: $forcecreateimage");
     my $createvmtemplate = $tree->{template};
     $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
+    my $permissions = $self->get_permissions($config);
 
     my $fqdn = $self->get_fqdn($config);
 
@@ -499,13 +570,13 @@ sub configure
     }
 
     my %images = $self->get_images($config);
-    $self->remove_and_create_vm_images($one, $forcecreateimage, \%images);
+    $self->remove_and_create_vm_images($one, $forcecreateimage, \%images, $permissions);
 
     my %ars = $self->get_vnetars($config);
     $self->remove_and_create_vn_ars($one, \%ars);
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
-    my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt);
+    my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
 }
 
 # Based on Quattor template this function:
@@ -522,6 +593,7 @@ sub install
     $main::this_app->info("Instantiate VM flag is set to: $instantiatevm");
     my $onhold = $tree->{onhold};
     $main::this_app->info("Start VM onhold flag is set to: $onhold");
+    my $permissions = $self->get_permissions($config);
         
     my $fqdn = $self->get_fqdn($config);
 
@@ -567,6 +639,10 @@ sub install
         my $vmid = $vmtemplate->instantiate(name => $fqdn, onhold => $onhold);
         if (defined($vmid) && $vmid =~ m/^\d+$/) {
             $main::this_app->info("VM ${fqdn} was created successfully with ID: ${vmid}");
+            if ($permissions) {
+                my $newvm = $self->get_resource_instance($one, "vm", $fqdn);
+                $self->change_permissions($one, "vm", $newvm, $permissions) if $newvm;
+            };
         } else {
             $main::this_app->error("Unable to instantiate VM ${fqdn}: ${vmid}");
         }
@@ -619,7 +695,7 @@ sub remove
 
     my %images = $self->get_images($config);
     if (%images) {
-        $self->remove_and_create_vm_images($one, 1, \%images, $rmimage);
+        $self->remove_and_create_vm_images($one, 1, \%images, undef, $rmimage);
     }
 
     my %ars = $self->get_vnetars($config);
@@ -629,7 +705,7 @@ sub remove
 
     my $vmtemplatetxt = $self->get_vmtemplate($config);
     if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, $rmvmtemplate);
+        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }
 }
 

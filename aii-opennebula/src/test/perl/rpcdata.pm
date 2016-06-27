@@ -35,6 +35,14 @@ $cmds{rpc_create_newuser2}{params} = ["stdweird", "another_fancy_pass", "core"];
 $cmds{rpc_create_newuser2}{method} = "one.user.allocate";
 $cmds{rpc_create_newuser2}{out} = 4;
 
+$cmds{rpc_create_newuser3}{params} = ["vsc200", 'vsc200@HPC.UGENT.BE', "public"];
+$cmds{rpc_create_newuser3}{method} = "one.user.allocate";
+$cmds{rpc_create_newuser3}{out} = 5;
+
+$cmds{rpc_create_newuser4}{params} = ["vsc400", 'vsc400@HPC.UGENT.BE', "public"];
+$cmds{rpc_create_newuser4}{method} = "one.user.allocate";
+$cmds{rpc_create_newuser4}{out} = 6;
+
 $cmds{rpc_delete_user}{params} = [3];
 $cmds{rpc_delete_user}{method} = "one.user.delete";
 $cmds{rpc_delete_user}{out} = 3;
@@ -73,6 +81,48 @@ $cmds{rpc_list_user4}{out} = <<'EOF';
 <USER><ID>1</ID><GID>0</GID><GROUPS><ID>0</ID></GROUPS><GNAME>oneadmin</GNAME><NAME>serveradmin</NAME><PASSWORD>3f5013xxa0354dc79cd5c4998eec39b457595724</PASSWORD><AUTH_DRIVER>server_cipher</AUTH_DRIVER><ENABLED>1</ENABLED><TEMPLATE><TOKEN_PASSWORD><![CDATA[205ca1e04934df2ac448b5e693f6aca567a5e450]]></TOKEN_PASSWORD></TEMPLATE><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA><DEFAULT_USER_QUOTAS><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA></DEFAULT_USER_QUOTAS></USER>
 EOF
 
+$cmds{rpc_list_user5}{params} = [5];
+$cmds{rpc_list_user5}{method} = "one.user.info";
+$cmds{rpc_list_user5}{out} = <<'EOF';
+<USER><ID>5</ID><GID>1</GID><GROUPS><ID>1</ID></GROUPS><GNAME>users</GNAME><NAME>vsc200</NAME><PASSWORD>vsc200@HPC.UGENT.BE</PASSWORD><AUTH_DRIVER>public</AUTH_DRIVER><ENABLED>1</ENABLED><TEMPLATE><TOKEN_PASSWORD><![CDATA[4a782c2aec2b95bf97701d4a57f7cc9032d7331b]]></TOKEN_PASSWORD></TEMPLATE><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA><DEFAULT_USER_QUOTAS><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA></DEFAULT_USER_QUOTAS></USER>
+EOF
+
+$cmds{rpc_list_user6}{params} = [6];
+$cmds{rpc_list_user6}{method} = "one.user.info";
+$cmds{rpc_list_user6}{out} = <<'EOF';
+<USER><ID>6</ID><GID>1</GID><GROUPS><ID>1</ID></GROUPS><GNAME>users</GNAME><NAME>vsc400</NAME><PASSWORD>vsc400@HPC.UGENT.BE</PASSWORD><AUTH_DRIVER>public</AUTH_DRIVER><ENABLED>1</ENABLED><TEMPLATE><TOKEN_PASSWORD><![CDATA[4a782c2aec2b95bf97701d4a57f7cc9032d7331b]]></TOKEN_PASSWORD></TEMPLATE><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA><DEFAULT_USER_QUOTAS><DATASTORE_QUOTA></DATASTORE_QUOTA><NETWORK_QUOTA></NETWORK_QUOTA><VM_QUOTA></VM_QUOTA><IMAGE_QUOTA></IMAGE_QUOTA></DEFAULT_USER_QUOTAS></USER>
+EOF
+
+$data = <<'EOF';
+SSH_PUBLIC_KEY = "ssh-dss AAAAB3NzaC1kc3MAAACBAOTAivURhUrg2Zh3DqgVd2ofRYKmXKjWDM4LITQJ/Tr6RBWhufdxmJos/w0BG9jFbPWbUyPn1mbRFx9/2JJjaspJMACiNsQV5KD2a2H/yWVBxNkWVUwmq36JNh0Tvx+ts9Awus9MtJIxUeFdvT433DePqRXx9EtX9WCJ1vMyhwcFAAAAFQDcuA4clpwjiL9E/2CfmTKHPCAxIQAAAIEAnCQBn1/tCoEzI50oKFyF5Lvum/TPxh6BugbOKu18Okvwf6/zpsiUTWhpxaa40S4FLzHFopTklTHoG3JaYHuksdP4ZZl1mPPFhCTk0uFsqfEVlK9El9sQak9vXPIi7Tw/dyylmRSq+3p5cmurjXSI93bJIRv7X4pcZlIAvHWtNAYAAACBAOCkwou/wYp5polMTqkFLx7dnNHG4Je9UC8Oqxn2Gq3uu088AsXwaVD9t8tTzXP1FSUlG0zfDU3BX18Ds11p57GZtBSECAkqH1Q6vMUiWcoIwj4hq+xNq3PFLmCG/QP+5Od5JvpbBKqX9frc1UvOJJ3OKSjgWMx6FfHr8PxqqACw lsimngar@OptiPlex-790
+ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDI4gvhOpwKbukZP/Tht/GmKcRCBHGn8JadVlgb9U6O/EP/hR1KLDbKY7KVjVOlUcvfawn44SIGsmKCzehYJV2s/XU1QSaaLrjB7n+vfOyj1C3EgzfZcMOHvL51xPuSgIoKd9oER/63B/pUV/BEZK5LEC06O1LgAjwLy2DrHNN3cQdnTbxQ4vM5ggDb/BC+DyRYlN5NG74VFguVQmoqMPA8FYXBvT/bBvIAZFw7piZIQFd6C803dtG6xwgo2yNXp hello@mylaptop
+"
+QUATTOR = 1
+EOF
+$cmds{rpc_update_user}{params} = [3, $data, 1];
+$cmds{rpc_update_user}{method} = "one.user.update";
+$cmds{rpc_update_user}{out} = 3;
+
+$data = 'SSH_PUBLIC_KEY="ssh-rsa KvPM7szEutOPh+K3uVV0U3XVl/writethisisquiteboringXB6nCSyok0hokA+MhIuhCbGdBtOX1jkIj8kvqp guybrush@UGent.be
+"';
+$cmds{rpc_update2_user}{params} = [5, $data, 1];
+$cmds{rpc_update2_user}{method} = "one.user.update";
+$cmds{rpc_update2_user}{out} = 5;
+
+$data = 'SSH_PUBLIC_KEY="ssh-rsa KvIdontlikeunittestsPM7szEutOPh+K3uVV0U3XVl/XB6nCSyok0hokA+MhIuhCbGdBtOX1jkIj8kvqp mrguy@UGent.be
+"';
+$cmds{rpc_update3_user2}{params} = [6, $data, 1];
+$cmds{rpc_update3_user2}{method} = "one.user.update";
+$cmds{rpc_update3_user2}{out} = 6;
+
+$data = <<'EOF';
+SSH_PUBLIC_KEY = "ssh-dss AAAAB3NzaC1yc2EAAAADAQABAAABAQDI4gvhOpwKbukZP/Tht/GmKcRCBHGn8JadVlgb9U6O/EP/hR1KLDbKY7KVjVOlUcvfawn44SIGsmKCzehYJV2s/XU1QSaaLrjB7n+vfOyj1C3EgzfZcMOHvL51xPuSgIoKd9oER/63B/pUV/BEZK5LEC06O1LgAjwLy2DrHNN3cQdnTbxQ4vM5ggDb/BC+DyRYlN5NG74VFguVQmoqMPA8FYXBvT/bBvIAZFw7piZIQFd6C803dtG61234 another@laptop
+"
+EOF
+$cmds{rpc_update_user3}{params} = [0, $data, 1];
+$cmds{rpc_update_user3}{method} = "one.user.update";
+$cmds{rpc_update_user3}{out} = 0;
+
 # Manage VNETs
 
 $data = <<'EOF';
@@ -101,6 +151,26 @@ $cmds{rpc_create_newvnet2}{params} = [$data, -1];
 $cmds{rpc_create_newvnet2}{method} = "one.vn.allocate";
 $cmds{rpc_create_newvnet2}{out} = 88;
 
+$data = <<'EOF';
+AR = [
+    ip = "10.141.14.100",
+    size = "29",
+    type = "IP4"
+]
+BRIDGE = "br100"
+BRIDGE_OVS = "ovsbr0"
+DNS = "10.141.3.250"
+GATEWAY = "10.141.3.250"
+NAME = "pool.altaria.os"
+NETWORK_MASK = "255.255.0.0"
+VLAN = "YES"
+VLAN_ID = "0"
+QUATTOR = 1
+EOF
+$cmds{rpc_create_newvnet3}{params} = [$data, -1];
+$cmds{rpc_create_newvnet3}{method} = "one.vn.allocate";
+$cmds{rpc_create_newvnet3}{out} = 98;
+
 $cmds{rpc_delete_vnet}{params} = [68];
 $cmds{rpc_delete_vnet}{method} = "one.vn.delete";
 $cmds{rpc_delete_vnet}{out} = 68;
@@ -109,10 +179,26 @@ $cmds{rpc_delete_vnet2}{params} = [88];
 $cmds{rpc_delete_vnet2}{method} = "one.vn.delete";
 $cmds{rpc_delete_vnet2}{out} = 88;
 
+$cmds{rpc_delete_vnet3}{params} = [98];
+$cmds{rpc_delete_vnet3}{method} = "one.vn.delete";
+$cmds{rpc_delete_vnet3}{out} = 98;
+
 $cmds{rpc_list_vnetspool}{params} = [-2, -1, -1];
 $cmds{rpc_list_vnetspool}{method} = "one.vnpool.info";
 $cmds{rpc_list_vnetspool}{out} = <<'EOF';
 <VNET_POOL><VNET><ID>0</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER/><BRIDGE>br100</BRIDGE><VLAN>0</VLAN><PARENT_NETWORK_ID/><PHYDEV/><VLAN_ID/><USED_LEASES>1</USED_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NAME><![CDATA[altaria.os]]></NAME><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><TYPE><![CDATA[FIXED]]></TYPE><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><AR_POOL><AR><ALLOCATED><![CDATA[068719476737]]></ALLOCATED><AR_ID><![CDATA[0]]></AR_ID><GLOBAL_PREFIX/><HOSTNAME><![CDATA[node630.cubone.os]]></HOSTNAME><IP><![CDATA[10.141.8.30]]></IP><MAC><![CDATA[AA:00:00:80:01:00]]></MAC><QUATTOR><![CDATA[1]]></QUATTOR><SIZE><![CDATA[1]]></SIZE><TYPE><![CDATA[IP4]]></TYPE><ULA_PREFIX/></AR></AR_POOL></VNET><VNET><ID>2</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.vsc</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER/><BRIDGE>br101</BRIDGE><VLAN>0</VLAN><PARENT_NETWORK_ID/><PHYDEV/><VLAN_ID/><USED_LEASES>1</USED_LEASES><TEMPLATE><BRIDGE><![CDATA[br101]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><TYPE><![CDATA[FIXED]]></TYPE><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><AR_POOL><AR><ALLOCATED><![CDATA[068719476737]]></ALLOCATED><AR_ID><![CDATA[0]]></AR_ID><GLOBAL_PREFIX/><HOSTNAME><![CDATA[node630.cubone.os]]></HOSTNAME><IP><![CDATA[172.24.8.30]]></IP><MAC><![CDATA[AA:00:00:80:01:01]]></MAC><QUATTOR><![CDATA[1]]></QUATTOR><SIZE><![CDATA[1]]></SIZE><TYPE><![CDATA[IP4]]></TYPE><ULA_PREFIX/></AR></AR_POOL></VNET></VNET_POOL>
+EOF
+
+$cmds{rpc_list_vnetspool2}{params} = [];
+$cmds{rpc_list_vnetspool2}{method} = "one.vnpool.info";
+$cmds{rpc_list_vnetspool2}{out} = <<'EOF';
+<VNET_POOL><VNET><ID>68</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER></CLUSTER><TYPE>1</TYPE><BRIDGE>br100</BRIDGE><VLAN>0</VLAN><PHYDEV/><VLAN_ID/><GLOBAL_PREFIX/><SITE_PREFIX/><TOTAL_LEASES>1</TOTAL_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE></VNET><VNET><ID>98</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>pool.altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER/><BRIDGE>br100</BRIDGE><VLAN>1</VLAN><PARENT_NETWORK_ID/><PHYDEV/><VLAN_ID><![CDATA[0]]></VLAN_ID><USED_LEASES>0</USED_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><BRIDGE_OVS><![CDATA[ovsbr0]]></BRIDGE_OVS><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[YES]]></VLAN><VLAN_ID><![CDATA[0]]></VLAN_ID></TEMPLATE><AR_POOL><AR><AR_ID><![CDATA[0]]></AR_ID><IP><![CDATA[10.141.14.100]]></IP><MAC><![CDATA[02:00:0a:8d:0e:64]]></MAC><SIZE><![CDATA[29]]></SIZE><TYPE><![CDATA[IP4]]></TYPE><USED_LEASES>0</USED_LEASES><LEASES/></AR></AR_POOL></VNET></VNET_POOL>
+EOF
+
+$cmds{rpc_list_vnet}{params} = [68];
+$cmds{rpc_list_vnet}{method} = "one.vn.info";
+$cmds{rpc_list_vnet}{out} = <<'EOF';
+<VNET><ID>68</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER></CLUSTER><TYPE>1</TYPE><BRIDGE>br100</BRIDGE><VLAN>0</VLAN><PHYDEV/><VLAN_ID/><GLOBAL_PREFIX/><SITE_PREFIX/><TOTAL_LEASES>1</TOTAL_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><LEASES><LEASE><MAC>02:00:0a:8d:08:1e</MAC><IP>10.141.8.30</IP><IP6_LINK>fe80::400:aff:fe8d:81e</IP6_LINK><USED>1</USED><VID>55</VID></LEASE></LEASES></VNET>
 EOF
 
 $cmds{rpc_list_vnet2}{params} = [2];
@@ -125,6 +211,12 @@ $cmds{rpc_list_vnet3}{params} = [0];
 $cmds{rpc_list_vnet3}{method} = "one.vn.info";
 $cmds{rpc_list_vnet3}{out} = <<'EOF';
 <VNET><ID>0</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER/><BRIDGE>br100</BRIDGE><VLAN>0</VLAN><PARENT_NETWORK_ID/><PHYDEV/><VLAN_ID/><USED_LEASES>1</USED_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NAME><![CDATA[altaria.os]]></NAME><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><TYPE><![CDATA[FIXED]]></TYPE><VLAN><![CDATA[NO]]></VLAN><VLAN_ID><![CDATA[]]></VLAN_ID></TEMPLATE><AR_POOL><AR><AR_ID><![CDATA[0]]></AR_ID><GLOBAL_PREFIX><![CDATA[]]></GLOBAL_PREFIX><HOSTNAME><![CDATA[node630.cubone.os]]></HOSTNAME><IP><![CDATA[10.141.8.30]]></IP><MAC><![CDATA[AA:00:00:80:01:00]]></MAC><QUATTOR><![CDATA[1]]></QUATTOR><SIZE><![CDATA[1]]></SIZE><TYPE><![CDATA[IP4]]></TYPE><ULA_PREFIX><![CDATA[]]></ULA_PREFIX><USED_LEASES>1</USED_LEASES><LEASES><LEASE><IP><![CDATA[10.141.8.30]]></IP><MAC><![CDATA[AA:00:00:80:01:00]]></MAC><VM><![CDATA[1]]></VM></LEASE></LEASES></AR></AR_POOL></VNET>
+EOF
+
+$cmds{rpc_list_vnet4}{params} = [98];
+$cmds{rpc_list_vnet4}{method} = "one.vn.info";
+$cmds{rpc_list_vnet4}{out} = <<'EOF';
+<VNET><ID>98</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>pool.altaria.os</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><CLUSTER_ID>-1</CLUSTER_ID><CLUSTER/><BRIDGE>br100</BRIDGE><VLAN>1</VLAN><PARENT_NETWORK_ID/><PHYDEV/><VLAN_ID><![CDATA[0]]></VLAN_ID><USED_LEASES>0</USED_LEASES><TEMPLATE><BRIDGE><![CDATA[br100]]></BRIDGE><BRIDGE_OVS><![CDATA[ovsbr0]]></BRIDGE_OVS><DNS><![CDATA[10.141.3.250]]></DNS><GATEWAY><![CDATA[10.141.3.250]]></GATEWAY><NETWORK_MASK><![CDATA[255.255.0.0]]></NETWORK_MASK><PHYDEV><![CDATA[]]></PHYDEV><QUATTOR><![CDATA[1]]></QUATTOR><VLAN><![CDATA[YES]]></VLAN><VLAN_ID><![CDATA[0]]></VLAN_ID></TEMPLATE><AR_POOL><AR><AR_ID><![CDATA[0]]></AR_ID><IP><![CDATA[10.141.14.100]]></IP><MAC><![CDATA[02:00:0a:8d:0e:64]]></MAC><SIZE><![CDATA[29]]></SIZE><TYPE><![CDATA[IP4]]></TYPE><USED_LEASES>0</USED_LEASES><LEASES/></AR></AR_POOL></VNET>
 EOF
 
 $data = <<'EOF';
@@ -329,6 +421,14 @@ $cmds{rpc_list_vm}{out} = <<'EOF';
 <VM><ID>60</ID><UID>0</UID><GID>0</GID><UNAME>oneadmin</UNAME><GNAME>oneadmin</GNAME><NAME>testttylinux-60</NAME><PERMISSIONS><OWNER_U>1</OWNER_U><OWNER_M>1</OWNER_M><OWNER_A>0</OWNER_A><GROUP_U>0</GROUP_U><GROUP_M>0</GROUP_M><GROUP_A>0</GROUP_A><OTHER_U>0</OTHER_U><OTHER_M>0</OTHER_M><OTHER_A>0</OTHER_A></PERMISSIONS><LAST_POLL>1410855578</LAST_POLL><STATE>3</STATE><LCM_STATE>3</LCM_STATE><RESCHED>0</RESCHED><STIME>1410854434</STIME><ETIME>0</ETIME><DEPLOY_ID>one-60</DEPLOY_ID><MEMORY>524288</MEMORY><CPU>2</CPU><NET_TX>0</NET_TX><NET_RX>0</NET_RX><TEMPLATE><AUTOMATIC_REQUIREMENTS><![CDATA[!(PUBLIC_CLOUD=YES)]]></AUTOMATIC_REQUIREMENTS><CONTEXT><DISK_ID><![CDATA[1]]></DISK_ID><NETWORK><![CDATA[YES]]></NETWORK><TARGET><![CDATA[hdb]]></TARGET></CONTEXT><CPU><![CDATA[1]]></CPU><DISK><CACHE><![CDATA[default]]></CACHE><CEPH_HOST><![CDATA[ceph021.altaria.osceph022.altaria.osceph023.altaria.os]]></CEPH_HOST><CEPH_SECRET><![CDATA[8271ce8a-385d-44d7-a228-c42de4259c5e]]></CEPH_SECRET><CEPH_USER><![CDATA[libvirt]]></CEPH_USER><CLONE><![CDATA[YES]]></CLONE><CLONE_TARGET><![CDATA[SELF]]></CLONE_TARGET><DATASTORE><![CDATA[ceph.altaria]]></DATASTORE><DATASTORE_ID><![CDATA[105]]></DATASTORE_ID><DEV_PREFIX><![CDATA[hd]]></DEV_PREFIX><DISK_ID><![CDATA[0]]></DISK_ID><IMAGE><![CDATA[ttylinux-kvm_file0]]></IMAGE><IMAGE_ID><![CDATA[43]]></IMAGE_ID><IMAGE_UNAME><![CDATA[oneadmin]]></IMAGE_UNAME><LN_TARGET><![CDATA[NONE]]></LN_TARGET><READONLY><![CDATA[NO]]></READONLY><SAVE><![CDATA[NO]]></SAVE><SIZE><![CDATA[40]]></SIZE><SOURCE><![CDATA[one/one-43]]></SOURCE><TARGET><![CDATA[hda]]></TARGET><TM_MAD><![CDATA[ceph]]></TM_MAD><TYPE><![CDATA[RBD]]></TYPE></DISK><GRAPHICS><LISTEN><![CDATA[0.0.0.0]]></LISTEN><PORT><![CDATA[5960]]></PORT><TYPE><![CDATA[SPICE]]></TYPE></GRAPHICS><MEMORY><![CDATA[512]]></MEMORY><TEMPLATE_ID><![CDATA[4]]></TEMPLATE_ID><VMID><![CDATA[60]]></VMID></TEMPLATE><USER_TEMPLATE><QUATTOR><![CDATA[1]]></QUATTOR><SCHED_MESSAGE><![CDATA[TueSep1610:04:002014:NosystemdatastoresfoundtorunVMs]]></SCHED_MESSAGE></USER_TEMPLATE><HISTORY_RECORDS><HISTORY><OID>60</OID><SEQ>0</SEQ><HOSTNAME>hyp101</HOSTNAME><HID>190</HID><CID>-1</CID><STIME>1410854670</STIME><ETIME>0</ETIME><VMMMAD>kvm</VMMMAD><VNMMAD>dummy</VNMMAD><TMMAD>shared</TMMAD><DS_LOCATION>/var/lib/one//datastores</DS_LOCATION><DS_ID>106</DS_ID><PSTIME>1410854670</PSTIME><PETIME>1410854671</PETIME><RSTIME>1410854671</RSTIME><RETIME>0</RETIME><ESTIME>0</ESTIME><EETIME>0</EETIME><REASON>0</REASON><ACTION>0</ACTION></HISTORY></HISTORY_RECORDS></VM>
 EOF
 
+$cmds{rpc_chown_vm}{params} = [60, 3, 1];
+$cmds{rpc_chown_vm}{method} = "one.vm.chown";
+$cmds{rpc_chown_vm}{out} = 60;
+
+$cmds{rpc_chmod_vm}{params} = [60, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_vm}{method} = "one.vm.chmod";
+$cmds{rpc_chmod_vm}{out} = 60;
+
 # Manage images
 
 $cmds{rpc_list_imagespool}{params} = [-2, -1, -1];
@@ -387,6 +487,22 @@ $cmds{rpc_create_image2}{params} = [$data, 102];
 $cmds{rpc_create_image2}{method} = "one.image.allocate";
 $cmds{rpc_create_image2}{out} = 44;
 
+$cmds{rpc_chown_image}{params} = [43, 3, 1];
+$cmds{rpc_chown_image}{method} = "one.image.chown";
+$cmds{rpc_chown_image}{out} = 43;
+
+$cmds{rpc_chown_image2}{params} = [44, 3, 1];
+$cmds{rpc_chown_image2}{method} = "one.image.chown";
+$cmds{rpc_chown_image2}{out} = 44;
+
+$cmds{rpc_chmod_image}{params} = [43, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_image}{method} = "one.image.chmod";
+$cmds{rpc_chmod_image}{out} = 43;
+
+$cmds{rpc_chmod_image2}{params} = [44, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_image2}{method} = "one.image.chmod";
+$cmds{rpc_chmod_image2}{out} = 44;
+
 
 # Manage VM templates
 
@@ -443,14 +559,14 @@ DISK = [
     TARGET = "vda",
     DEV_PREFIX = "vd",
     CACHE = "default",
-    IMAGE_UNAME = "oneadmin"
+    IMAGE_UNAME = "lsimngar"
 ]
 DISK = [
     IMAGE = "node630.cubone.os_vdb",
     TARGET = "vdb",
     DEV_PREFIX = "vd",
     CACHE = "default",
-    IMAGE_UNAME = "oneadmin"
+    IMAGE_UNAME = "lsimngar"
 ]
 GRAPHICS = [
     LISTEN = "0.0.0.0",
@@ -474,12 +590,43 @@ $cmds{rpc_update_template}{params} = [4, $data, 0];
 $cmds{rpc_update_template}{method} = "one.template.update";
 $cmds{rpc_update_template}{out} = 4;
 
+$cmds{rpc_chown_template}{params} = [4, 3, 1];
+$cmds{rpc_chown_template}{method} = "one.template.chown";
+$cmds{rpc_chown_template}{out} = 4;
+
 $data = <<'EOF';
 EOF
 $cmds{rpc_instantiate_template}{params} = [4, "node630.cubone.os", 1, $data];
 $cmds{rpc_instantiate_template}{method} = "one.template.instantiate";
 $cmds{rpc_instantiate_template}{out} = 60;
 
+$cmds{rpc_chmod_template}{params} = [4, 1, 1, 0, 0, 0, 0, 0, 0, 0];
+$cmds{rpc_chmod_template}{method} = "one.template.chmod";
+$cmds{rpc_chmod_template}{out} = 4;
+
 $cmds{rpc_remove_template}{params} = [4];
 $cmds{rpc_remove_template}{method} = "one.template.delete";
 $cmds{rpc_remove_template}{out} = 4;
+
+# Manage groups
+
+$cmds{rpc_list_groupspool}{params} = [];
+$cmds{rpc_list_groupspool}{method} = "one.grouppool.info";
+$cmds{rpc_list_groupspool}{out} = <<'EOF';
+<GROUP_POOL><GROUP><ID>0</ID><NAME>oneadmin</NAME><TEMPLATE/><USERS><ID>0</ID><ID>1</ID></USERS><ADMINS/></GROUP><QUOTAS><ID>0</ID><DATASTORE_QUOTA/><NETWORK_QUOTA/><VM_QUOTA/><IMAGE_QUOTA/></QUOTAS><GROUP><ID>1</ID><NAME>users</NAME><TEMPLATE/><USERS><ID>2</ID><ID>3</ID></USERS><ADMINS/></GROUP><QUOTAS><ID>1</ID><DATASTORE_QUOTA/><NETWORK_QUOTA/><VM_QUOTA/><IMAGE_QUOTA/></QUOTAS><DEFAULT_GROUP_QUOTAS><DATASTORE_QUOTA/><NETWORK_QUOTA/><VM_QUOTA/><IMAGE_QUOTA/></DEFAULT_GROUP_QUOTAS></GROUP_POOL>
+EOF
+
+$cmds{rpc_create_newgroup}{params} = ["gvo01"];
+$cmds{rpc_create_newgroup}{method} = "one.group.allocate";
+$cmds{rpc_create_newgroup}{out} = 2;
+
+$cmds{rpc_list_group}{params} = [2];
+$cmds{rpc_list_group}{method} = "one.group.info";
+$cmds{rpc_list_group}{out} = <<'EOF';
+<GROUP><ID>2</ID><NAME>gvo01</NAME><TEMPLATE/><USERS><ID>5</ID><ID>6</ID></USERS><ADMINS/><DATASTORE_QUOTA/><NETWORK_QUOTA/><VM_QUOTA/><IMAGE_QUOTA/><DEFAULT_GROUP_QUOTAS><DATASTORE_QUOTA/><NETWORK_QUOTA/><VM_QUOTA/><IMAGE_QUOTA/></DEFAULT_GROUP_QUOTAS></GROUP>
+EOF
+
+$data = 'DESCRIPTION="ccn"';
+$cmds{rpc_update_group}{params} = [2, $data, 1];
+$cmds{rpc_update_group}{method} = "one.group.update";
+$cmds{rpc_update_group}{out} = 2;
