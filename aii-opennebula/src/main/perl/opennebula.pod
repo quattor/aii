@@ -38,6 +38,8 @@ Modify your machine template to:
 
 =item * (Optional) Set /system/opennebula/graphics to export VM graphical display (VNC is used by default)
 
+=item * (Optional) Set /system/opennebula/pci list values to enable PCI Passthrough
+
 =item * (Optional) Set /system/opennebula/diskcache to select the cache mechanism for your disks. (by default is set to none)
 
 =item * (Optional) Set OPENNEBULA_AII_REPLACE_MAC and MAC_PREFIX variables to replace VM MACs to use OpenNebula style

@@ -113,3 +113,9 @@ prefix "/system/opennebula";
 "permissions/owner" = "lsimngar";
 "permissions/group" = "users";
 "permissions/mode" = 0400;
+
+"pci" = append(dict(
+    "vendor", "8086",
+    "device", "0a0c",
+    "class", "0403",
+    ));

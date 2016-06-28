@@ -120,6 +120,24 @@ type opennebula_permissions = {
     "mode" ? long
 };
 
+@documentation{
+It is possible to discover PCI devices in the Hosts 
+and assign them to Virtual Machines for the KVM hypervisor.
+I/O MMU and SR-IOV must be supported and enabled by the hyp OS and Bios.
+More than one PCI options can be added to attach more than one PCI device to the VM.
+The device can be also specified without all the type values.
+PCI values must be hexadecimal.
+If the PCI values are not found in any hyp the VM is queued waiting for the 
+required resouces.
+For more info:
+http://docs.opennebula.org/5.0/deployment/open_cloud_host_setup/pci_passthrough.html
+}
+type opennebula_vmtemplate_pci = {
+    "vendor" ? string
+    "device" ? string
+    "class" ? string
+};
+
 type opennebula_vmtemplate = {
     "vnet"      : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
@@ -127,4 +145,5 @@ type opennebula_vmtemplate = {
     "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
     "permissions" ? opennebula_permissions
+    "pci"       ? opennebula_vmtemplate_pci[]
 } = dict();
