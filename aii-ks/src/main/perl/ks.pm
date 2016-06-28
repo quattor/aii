@@ -551,7 +551,10 @@ EOF
                 ! $fstree->{ksfsformat}) {
             $fstree->{ksfsformat}=1;
         }
-
+        if ($version >= ANACONDA_VERSION_EL_7_0) {
+             $fstree->{useexisting_md} = 1;
+        }
+  
         $fstree->print_ks;
     }
 }
@@ -823,6 +826,13 @@ EOF
     ksuserhooks ($config, PREENDHOOK);
 
     my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
+    my $kstree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($kstree);
+
+    # mdadm devices should be stopped at the end of the pre-ks phase on EL7
+    if ($version >= ANACONDA_VERSION_EL_7_0) {
+        print "mdadm --stop --scan\n";
+    } 
 
     print <<EOF;
 
