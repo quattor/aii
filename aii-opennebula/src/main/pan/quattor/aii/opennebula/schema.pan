@@ -126,16 +126,16 @@ and assign them to Virtual Machines for the KVM hypervisor.
 I/O MMU and SR-IOV must be supported and enabled by the hyp OS and Bios.
 More than one PCI options can be added to attach more than one PCI device to the VM.
 The device can be also specified without all the type values.
-PCI values must be hexadecimal.
+PCI values must be hexadecimal (0xhex)
 If the PCI values are not found in any hyp the VM is queued waiting for the 
 required resouces.
 For more info:
 http://docs.opennebula.org/5.0/deployment/open_cloud_host_setup/pci_passthrough.html
 }
 type opennebula_vmtemplate_pci = {
-    "vendor" ? string
-    "device" ? string
-    "class" ? string
+    "vendor" ? long
+    "device" ? long
+    "class" ? long
 };
 
 type opennebula_vmtemplate = {

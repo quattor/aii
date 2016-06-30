@@ -115,7 +115,7 @@ prefix "/system/opennebula";
 "permissions/mode" = 0400;
 
 "pci" = append(dict(
-    "vendor", "8086",
-    "device", "0a0c",
-    "class", "0403",
+    "vendor", 0x8086,
+    "device", 0x0a0c,
+    "class", 0x0403,
     ));
