@@ -609,6 +609,11 @@ PCI = [
     DEVICE = "0a0c",
     VENDOR = "8086"
 ]
+PCI = [
+    CLASS = "0c06",
+    DEVICE = "1002",
+    VENDOR = "15b3"
+]
 QUATTOR = 1
 EOF
 $cmds{rpc_create_template}{params} = [$data];

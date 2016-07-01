@@ -40,6 +40,12 @@ Modify your machine template to:
 
 =item * (Optional) Set /system/opennebula/pci list values to enable PCI Passthrough
 
+=over 6
+
+=item * PCI Passthrough section is also generated based on hardware/cards/ib/<interface>/pci values
+
+=back
+
 =item * (Optional) Set /system/opennebula/diskcache to select the cache mechanism for your disks. (by default is set to none)
 
 =item * (Optional) Set OPENNEBULA_AII_REPLACE_MAC and MAC_PREFIX variables to replace VM MACs to use OpenNebula style
