@@ -78,11 +78,13 @@ PCI = [
 ]
 [%- END %]
 [%- FOR pair IN hardware.cards.ib.pairs %]
+[%-     IF hardware.cards.ib.${pair.key}.pci.defined %]
 PCI = [
-[%    FILTER indent -%]
-[%    INCLUDE 'aii-opennebula/pci_level1.tt' 
-               data=hardware.cards.ib.${pair.key}.pci -%]
-[%-   END -%]
+[%          FILTER indent -%]
+[%          INCLUDE 'aii-opennebula/pci_level1.tt' 
+                    data=hardware.cards.ib.${pair.key}.pci -%]
+[%-         END -%]
 ]
+[%-     END %]
 [%- END %]
 QUATTOR = 1
