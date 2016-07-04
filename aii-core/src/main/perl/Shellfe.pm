@@ -357,7 +357,7 @@ sub report
 sub plugin_handler {
     my ($self, $plugin, $ec, $e) = @_;
     $self->error("$plugin: $e");
-    $self->{STATUS} = PARTERR_ST;
+    $self->{status} = PARTERR_ST;
     $e->has_been_reported(1);
     return;
 }
