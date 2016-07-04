@@ -1,13 +1,7 @@
-#!/usr/bin/perl -w
+#!/usr/bin/perl -Tw
 # ${license-info}
 # ${developer-info}
 # ${author-info}
-# ${build-info}
-################################################################################
-#
-# aii-dhcp      Automatic DHCP Server Configuration
-#
-################################################################################
 
 =pod
 
@@ -24,11 +18,11 @@ aii-dhcp - add/remove host entries to an ISC DHCP server.
 
 =head1 DESCRIPTION
 
-aii-dhcp is a command line tool to add/remove nodes specific entries to
+aii-dhcp is a command line tool to add/remove node specific entries to
 an ISC DHCP server. Already existing entries are preserved.
 The administrator has to prepare the DHCP server configuration file with
 all common network definitions and subnets declarations. The tool
-add/remove/update entries to the corresponding subnet and restart the
+adds/removes/updates entries to the corresponding subnet and restarts the
 DHCP server. A backup copy of the configuration file is created
 before updating it and restarting the DHCP server.
 
@@ -71,8 +65,8 @@ configuration file. An example:
  node3.qwer.fi 00:80:45:6F:19:1C  bootserver.qwer.fi filename "down.bin";
  node3.qwer.fi 00-80-45-6F-19-1D
 
-Note that in this example, host node3 has to NICs.
- 
+Note that in this example, host node3 has two NICs.
+
 =item --remove <hostname>
 
 Remove <hostname> from the DHCP server configuration.
@@ -127,7 +121,7 @@ Set the debugging level to <1..5>.
 
 =item --cfgfile <path>
 
-Use the as configuration file <path> instead of default
+Use the configuration file <path> instead of default
 /etc/aii/aii-dhcp.conf
 
 =item --logfile <file>
@@ -151,33 +145,16 @@ e.g.:
 
 =back
 
-=head1 AUTHORS
-
-Enrico Ferro <enrico.ferro@pd.infn.it>
-Rafael A. Garcia Leiva <angel.leiva@uam.es>
-
 =cut
 
-#
-# Standard Common Application Framework beginning sequence
-#
-
-#
-# Beginning sequence (necessary only for EDG stuff)
-#
 BEGIN {
-
-    # use perl libs in /usr/lib/perl
     push(@INC, '/usr/lib/perl');
-    push(@INC,'/opt/edg/lib/perl');
-
 }
 
-#------------------------------------------------------------
-# Application
-#------------------------------------------------------------
-
 package aii_dhcp;
+
+use strict;
+use warnings;
 
 use CAF::Application;
 use CAF::Reporter;
@@ -185,14 +162,10 @@ use LC::Exception qw (SUCCESS throw_error);
 
 use Socket;
 
-use strict;
 use vars qw(@ISA);
 
 @ISA = qw(CAF::Application CAF::Reporter);
 
-#
-# Public Methods/Functions for CAF
-#
 
 sub app_options {
 
@@ -205,7 +178,7 @@ sub app_options {
           HELP    => 'Node to be configured (needs MAC address)',
           DEFAULT => undef },
 
-        { NAME    => 'configurelist=s', 
+        { NAME    => 'configurelist=s',
           HELP    => 'File with the list of nodes to be configured',
           DEFAULT => undef },
 
@@ -246,7 +219,7 @@ sub app_options {
         # other common options
 
         { NAME    => 'logfile=s',
-          HELP    => 'path/filename to use for prograprogramm logs',
+          HELP    => 'path/filename to use for program logs',
           DEFAULT => "/var/log/aii-dhcp.log" },
 
         { NAME    => 'cfgfile=s',
@@ -275,7 +248,7 @@ sub _initialize {
     #
 
     # external version number
-    $self->{'VERSION'} = '1.0';
+    $self->{'VERSION'} = '${project.version}';
 
     # show setup text
     $self->{'USAGE'} = "Usage: aii-dhcp [options]\n";
@@ -294,7 +267,7 @@ sub _initialize {
     # start initialization of CAF::Application
     #
     unless ($self->SUPER::_initialize(@_)) {
-        return(undef);
+        return;
     }
 
     # start using log file (could be done later on instead)
@@ -304,18 +277,24 @@ sub _initialize {
 
 }
 
-#############################################################
-# aii-dhcp main program
-#############################################################
-
 package main;
+
+use strict;
+use warnings;
+
+$ENV{PATH} = join (":", qw (/bin /usr/bin /usr/sbin /sbin));
 
 use File::Compare;
 use LC::Exception qw (SUCCESS throw_error);
+
+use CAF::Process;
+use CAF::FileReader;
+use CAF::FileWriter;
 use CAF::Lock qw (FORCE_IF_STALE);
 
-use strict;
-use vars qw($this_app %SIG);
+use vars qw($this_app %SIG $EC);
+$EC=LC::Exception::Context->new->will_store_all;
+
 
 # locking configuration
 use constant TIMEOUT => 60;
@@ -335,8 +314,10 @@ my (@NTC, @NTR);
 # restart_daemon()
 #
 # restart dhcp daemon
+# Return 1 on failure, 0 on success.
 #
-sub restart_daemon {
+sub restart_daemon
+{
 
     my ($cmd, $output);
 
@@ -344,8 +325,8 @@ sub restart_daemon {
 
     $cmd = $this_app->option('restartcmd');
 
-    $output = `$cmd 2>&1`;
-    if ($? != 0) {
+    $output = CAF::Process->new([split(/\s+/, $cmd)], log => $this_app)->output();
+    if ($?) {
         $this_app->error("aii-dhcp: error restarting dhcp daemon: $output");
         return(1);
     } else {
@@ -353,79 +334,76 @@ sub restart_daemon {
     }
 
     return(0);
-
 }
 
-#
 # update_dhcp_config_file($text)
 #
-# Remove and add host declarations
+# Remove and add host declarations from global resp @NTR and @NTC
+# Returns tuple with first element succes(=0) or failure (=1),
+# 2nd element the new text (or empty in case of failure).
 #
-sub update_dhcp_config_file($) {
+sub update_dhcp_config_file
+{
 
     my $text = shift;
     my ($nodes_regexp, $node);
 
-    #
     # Remove existing nodes (both NodesToConfigure and NodesToRemove)
-    #
     $nodes_regexp = '';
     foreach $node (@NTC, @NTR) {
         $nodes_regexp .= $node->{NAME} . '|' . $node->{FQDN} . '|';
     }
     $nodes_regexp =~ s/\|$//; # remove last '|'
-    ##
-    ## primitive support for if {} else {} parameters host group
-    ## only starting from perl 5.10 can you use recursive regexp
-    ## fro recursive examples, see http://www.perlmonks.org/?node_id=547596 or
-    ## http://stackoverflow.com/questions/133601/can-regular-expressions-be-used-to-match-nested-patterns
-    ##
+
+    # primitive support for if {} else {} parameters host group
+    # only starting from perl 5.10 can you use recursive regexp
+    # for recursive examples, see http://www.perlmonks.org/?node_id=547596 or
+    # http://stackoverflow.com/questions/133601/can-regular-expressions-be-used-to-match-nested-patterns
     $nodes_regexp = '\\n\s*host\s+(' . $nodes_regexp . ')\s*\{[^{}]*(?:\{[^{}]*\}(?:[^{}]*\{[^{}]*\})?|[^{}]*)[^{}]*\}';
+
+    # Remove all to be configured and to be removed
     $text =~ s/$nodes_regexp//gm;
 
-    #
     # Collect the subnets + netmask definitions
-    #
-	# Fix for bug #10455: regexp should not match comment lines
-	#
-    my @netandmasks = ($text =~
-                       /\n\s*subnet\s+([\d\.]+)\s+netmask\s+([\d\.]+)/g);
+    my @netandmasks = ($text =~ /\n\s*subnet\s+([\d\.]+)\s+netmask\s+([\d\.]+)/g);
+
     if ($#netandmasks % 2 == 0) {
-        $this_app->error("aii-dhcp: syntax error on dhcpd.conf: " . 
-                    "netmask/network missing in subnet declaration");
+        $this_app->error("aii-dhcp: syntax error on dhcpd.conf: " .
+                         "netmask/network missing in subnet declaration");
         return(1, '');
     }
+
     my (@subnets, $i);
     for ($i=0 ; $i<$#netandmasks ; $i=$i+2) {
-        push (@subnets,
-                 { NET     => unpack('N',Socket::inet_aton($netandmasks[$i])),
-                   MASK    => unpack('N',Socket::inet_aton($netandmasks[$i+1])),
-                   ST_NET  => $netandmasks[$i],
-                   ST_MASK => $netandmasks[$i+1]});
-        $this_app->verbose("aii-dhcp: found subnet $netandmasks[$i] " . 
-                      "mask $netandmasks[$i+1]");
+        push (@subnets, {
+                NET     => unpack('N',Socket::inet_aton($netandmasks[$i])),
+                MASK    => unpack('N',Socket::inet_aton($netandmasks[$i+1])),
+                ST_NET  => $netandmasks[$i],
+                ST_MASK => $netandmasks[$i+1],
+              });
+        $this_app->verbose("aii-dhcp: found subnet $netandmasks[$i] " .
+                           "mask $netandmasks[$i+1]");
     }
+
     # If subnets are not defined in the DHCP configuration file managed by AII,
     # just add an empty subnet. This will have the effect of disabling all the checks
     # related to subnets.
     my $subnet_defined = 1;
     if ( @subnets == 0 ) {
-      push (@subnets,{});
-      $subnet_defined = 0;
+        push (@subnets, {});
+        $subnet_defined = 0;
     }
 
-    #
     # for each subnet, write entries that belong to it
-    #
     my ($net, $mac, $newnodes, $netfound);
     my $indent = "  ";
     unless ( $subnet_defined ) {
-      $indent = "";
+        $indent = "";
     }
-    
+
     foreach $net (@subnets) {
         $newnodes = '';
- 
+
         foreach $node (@NTC) {
 
             # Does the node belong to this subnet?
@@ -436,35 +414,35 @@ sub update_dhcp_config_file($) {
 
                 # basic host declaration
                 $newnodes .= "\n".$indent."host $node->{NAME} {  # added by aii-dhcp\n";
-		
+
                 foreach $mac (split(' ', $node->{MAC})) {
                     $newnodes .= "$indent  hardware ethernet $mac;\n";
                 }
-                
+
                 $newnodes .= "$indent  fixed-address $node->{ST_IP};\n";
 
                 # TFTP server
                 if ($node->{ST_IP_TFTP}) {
                     $newnodes.="$indent  next-server $node->{ST_IP_TFTP};\n";
                 }
-   
+
                 # additional options
                 if ($node->{MORE_OPT}) {
                     $newnodes .= "$indent  $node->{MORE_OPT}\n";
                 }
- 
+
                 $newnodes.="$indent}\n";
-                if ( $subnet_defined ) {   
+                if ( $subnet_defined ) {
                     $this_app->verbose("aii-dhcp: added node $node->{NAME} ".
                                        "to subnet $net->{ST_NET}");
                 } else {
-                    $this_app->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");                  
+                    $this_app->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");
                 }
             }
 
         }
 
-        # Insert the nodes to the current subnet
+        # Insert the nodes in the current subnet
         if ($newnodes ne '') {
             $this_app->debug(1,"aii-dhcp: newnodes=|$newnodes|\n");
             if ( $subnet_defined ) {
@@ -476,124 +454,96 @@ sub update_dhcp_config_file($) {
                 $text .= $newnodes;
             };
         }
-
     }
 
-    #
     # Just a stupid check for nodes not inserted
-    #
     foreach $node (@NTC) {
         ($node->{OK}) || $this_app->warn("dhcp: No valid subnet found " .
-                                    "for $node->{FQDN}");
+                                         "for $node->{FQDN}");
     }
 
     return (0, $text);
 
 }
 
-#
 # update_dhcp_config()
 #
 # Update DHCP configuration file
-#
-sub update_dhcp_config {
+# Return 1 on failure, 0 on success
+sub update_dhcp_config
+{
 
-    my (@lines);
-    my ($filename, $text, $error, $lockfile);
-
-    #
     # Lock and load the current dhcp configuration file
-    #
-    $filename = $this_app->option('dhcpconf');
-    $lockfile = $filename . ".lock";
+    my $filename = $this_app->option('dhcpconf');
+    my $lockfile = $filename . ".lock";
     my $lock = CAF::Lock->new ($lockfile);
     unless ($lock && $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE)) {
-	$this_app->error("dhcp: couldn't acquire lock on $lockfile");
-	return(1);
+        $this_app->error("dhcp: couldn't acquire lock on $lockfile");
+        return(1);
     }
     $this_app->debug(3, "Locked dhcp configuration");
-    $this_app->debug(3,"DHCP configuration file : $filename");
-    if (!open(FILE, "< $filename")) {
-        $this_app->error("dhcp: update configuration: ". 
-                         "file access error $filename");
-        return(1);
-    }
-    @lines = <FILE>;
-    close (FILE);
-    $text = join ('', @lines);
 
-    #
+    $this_app->debug(3, "DHCP configuration file : $filename");
+    my $fh = CAF::FileReader->new($filename, log => $this_app);
+    if ($EC->error()) {
+        $this_app->error("dhcp: update configuration: read dhcp config $filename: ".$EC->error()->reason());
+        $EC->ignore_error();
+        return 1;
+    }
+
     # Add/removal of nodes
-    #
-    ($error, $text) = update_dhcp_config_file($text);
-    if ($error != 0) {
-        return(1);
-    }
+    my ($error, $text) = update_dhcp_config_file("$fh");
+    return 1 if $error;
 
-    #
-    # Backup the old one
-    #
-    if (!rename ($filename, $filename . '.pre_aii')) {
-        $this_app->error("dhcp: error creating backup copy $filename.pre_aii");
-        return(1);
-    }
-
-    #
     # Write the new dhcp configuration file
-    #
-    if (!open(FILE, "> $filename") ) {
-        $this_app->error("dhcp: error creating output file $filename");
-        return(1);
-    } else {
-        print(FILE $text);
-        close(FILE);
-    }
- 
-    return(0);
+    $fh = CAF::FileWriter->new($filename, backup => '.pre_aii', log => $this_app);
+    print $fh $text;
+    my $changed = $fh->close();
 
+    if ($EC->error()) {
+        $this_app->error("dhcp: Error creating dhcp config $filename: ".$EC->error()->reason());
+        $EC->ignore_error();
+        return 1;
+    }
+
+
+    return(0);
 }
 
-#
 # new_remove_entry($host)
-#
 # Check and add a node to the array NTR (nodes to remove)
-#
-sub new_remove_entry($) {
+# Return 1 on failure, 0 on success
+sub new_remove_entry
+{
 
     my $host = shift;
-    my ($fqdn, @all_address);
 
-    #
     # Check host
-    #
     if (!defined($host) || $host eq '') {
         $this_app->warn('aii-dhcp: missing hostname');
         return(1);
     }
 
-    ($fqdn, @all_address) = (gethostbyname($host))[0,4];
+    my ($fqdn, @all_address) = (gethostbyname($host))[0,4];
     if ($#all_address < 0) {
         # The array is empty => invalid name
         $this_app->warn("aii-dhcp: invalid hostname to remove ($host)");
         return(1);
     } else {
         $host = $fqdn;
-# why remove the domain name?
-#        $host =~ s/([^.]+)(.*)/$1/;
     }
 
-    #
     # add entry to NodesToRemove array
-    #
-    push(@NTR, { FQDN => $fqdn,
-                 NAME => $host,
-                 IP   => Socket::inet_ntoa($all_address[0]) } );
+    my $ip = Socket::inet_ntoa($all_address[0]);
+    push(@NTR, {
+            FQDN => $fqdn,
+            NAME => $host,
+            IP   => $ip,
+         } );
 
-    $this_app->debug(2, "aii-dhcp: mark $host (fqdn: $fqdn, ip: "
-                        . Socket::inet_ntoa($all_address[0]) . ") to remove");
+    $this_app->debug(2, "aii-dhcp: mark $host (fqdn: $fqdn, ip: $ip) to remove");
 
     return(0);
-
 }
 
 #
@@ -608,28 +558,19 @@ sub new_configure_entry {
     my $tftpserver = shift;
     my $additional = join(' ', @_);
 
-    my ($fqdn, @all_address, @all_tftp_address);
-    my ($item);
-
-    #
     # Check hostname
-    #
-
     if (!defined($host) || $host eq '') {
         $this_app->warn('aii-dhcp: missing hostname');
         return(1);
     }
 
-    ($fqdn, @all_address) = (gethostbyname($host))[0,4];
-    if ($#all_address < 0) {		# The array is empty => invalid name
+    my ($fqdn, @all_address) = (gethostbyname($host))[0,4];
+    if ($#all_address < 0) {        # The array is empty => invalid name
         $this_app->warn("aii-dhcp: invalid hostname to add ($host)");
         return(1);
     }
 
-    #
     # Check MAC address
-    #
-
     if (!defined($mac)) {
         $this_app->warn("aii-dhcp: missing MAC address for host $host");
         return(1);
@@ -640,18 +581,14 @@ sub new_configure_entry {
         return(1);
     }
 
-    #
     # Check TFTP server
-    # 
+    #
     # special case: input from file, there are additional options defined
     # but no tftpserver => in the text file tftpserver should be ';'
-    #
-
     if ($tftpserver && $tftpserver ne ';') {
-        @all_tftp_address=(gethostbyname($tftpserver))[4];
+        my @all_tftp_address = (gethostbyname($tftpserver))[4];
         if ($#all_tftp_address < 0) { # The array is empty => invalid name
-            $this_app->warn("aii-dhcp: invalid TFTP server ($tftpserver) ".
-                            "for $host");
+            $this_app->warn("aii-dhcp: invalid TFTP server ($tftpserver) for $host");
             return(1);
         } else {
             # Get the IP address
@@ -663,124 +600,101 @@ sub new_configure_entry {
     my $ip = Socket::inet_ntoa($all_address[0]);
 
     $host = $fqdn;
-# again, why remove the domain name?
-#    $host =~ s/([^.]+)(.*)/$1/;
 
     # check if the host entry already exists
-    foreach $item (@NTC) {
-        if($$item{FQDN} eq $fqdn) {
+    foreach my $item (@NTC) {
+        if($item->{FQDN} eq $fqdn) {
             $this_app->debug(2,
-	        	"aii-dhcp: new MAC entry for existing host = $host mac = $mac");
-	        $$item{MAC} .= " $mac";
-	        $mac = ""; # flag meaning object found
-	        last;
+                "aii-dhcp: new MAC entry for existing host = $host mac = $mac");
+            $item->{MAC} .= " $mac";
+            $mac = ""; # flag meaning object found
+            last;
         }
     }
-    
-    if ($mac ne "") {	# it was a new host entry
-        push(@NTC, { FQDN       => $fqdn,
-                     NAME       => $host,
-                     ST_IP      => Socket::inet_ntoa($all_address[0]),
-                     IP         => unpack('N', $all_address[0]),
-                     MAC        => $mac,
-                     ST_IP_TFTP => $tftpserver,
-                     MORE_OPT   => $additional} );
+
+    if ($mac ne "") {    # it was a new host entry
+        push(@NTC, {
+                FQDN       => $fqdn,
+                NAME       => $host,
+                ST_IP      => Socket::inet_ntoa($all_address[0]),
+                IP         => unpack('N', $all_address[0]),
+                MAC        => $mac,
+                ST_IP_TFTP => $tftpserver,
+                MORE_OPT   => $additional,
+             } );
         $this_app->debug(2, "aii-dhcp: add new entry: host = $host mac = $mac");
         $this_app->debug(3, "aii-dhcp: add new entry: additional opts -->$additional<--");
     }
 
     return(0);
-
 }
 
-#
 # read_input()
 #
 # Read from command line and/or file lists the hostnames involved
 # and save them in @NTC (NodesToConfigure) or in @NTR (NodesToRemove)
 #
-# Return true in case of error
-#
+# Return true in case of any error
 sub read_input {
 
-    my ($host);
-    my ($item, $filename, $error);
-    my (@nodelist, @data);
+    my (@nodelist);
 
-    #
+    my $error = 0;
+
     # add one entry (from command line)
-    #
     if ($this_app->option('configure')) {
-        $error = new_configure_entry($this_app->option('configure'),
-                                     $this_app->option('mac'),
-                                     $this_app->option('tftpserver'),
-                                     $this_app->option('addoptions') );
-        return($error);
+        $error += new_configure_entry(
+            $this_app->option('configure'),
+            $this_app->option('mac'),
+            $this_app->option('tftpserver'),
+            $this_app->option('addoptions'),
+            );
     }
 
-    #
     # remove one entry (from command line)
-    #
     if ($this_app->option('remove')) {
-        $error = new_remove_entry($this_app->option('remove'));
-        return($error);
+        $error += new_remove_entry($this_app->option('remove'));
     }
 
-    #
     # add more than one entries (from a text file)
-    #
-    if ($this_app->option('configurelist')) {
-
+    my $filename = $this_app->option('configurelist');
+    if ($filename) {
         # get input data
-        $filename = $this_app->option('configurelist');
-        if (!open(FILE, "< $filename") ) {
+        my $fh = CAF::FileReader->new($filename, log => $this_app);
+        if ($EC->error()) {
             $this_app->error("aii-dhcp: configurelist error: " .
                              "file access error $filename");
-            return(1);
-        }
-
-        $this_app->debug(2, "aii-dhcp: reading nodes from file: $filename");
-        @nodelist = <FILE>;
-        close(FILE);
-
-        foreach $item (@nodelist) {
-            $item =~ s/^\s*(\w*)\s*$/$1/;
-            if ($item !~ /^#/ && $item ne "") {
-                 (@data) = split("[ \t\n]+", $item);
-                 new_configure_entry(@data);
+            $error +=1;
+        } else {
+            $this_app->debug(2, "aii-dhcp: reading nodes to configure from file: $filename");
+            foreach my $item (split(m/\n/, "$fh")) {
+                if ($item =~ m/^\s*([^#].*?)\s*$/) {
+                    $error += new_configure_entry(split(m/\s+/, $1));
+                }
             }
         }
-
     }
 
-    #
     # Remove some entries (from a text file)
-    #
-    if ($this_app->option('removelist')) {
+    $filename = $this_app->option('removelist');
+    if ($filename) {
 
-        # get input data
-        $filename = $this_app->option('removelist');
-        if (!open(FILE, "< $filename") ) {
+        my $fh = CAF::FileReader->new($filename, log => $this_app);
+        if ($EC->error()) {
             $this_app->error("aii-dhcp: removelist error: " .
                              "file access error $filename");
-            return(1);
-        }
-
-        $this_app->debug(2, "aii-dhcp: reading nodes from file: $filename");
-        @nodelist=<FILE>;
-        close (FILE);
-
-        foreach $item (@nodelist) {
-            $item =~ s/[\s\n]//g;		# remove spaces and \n
-            if ($item ne ""  && ($item !~ /^\s*\#/)) {
-                new_remove_entry($item);
+            $error +=1;
+        } else {
+            $this_app->debug(2, "aii-dhcp: reading nodes to remove from file: $filename");
+            foreach my $item (split(m/\n/, "$fh")) {
+                if ($item =~ m/^\s*([^#].*?)\s*$/) {
+                    $error += new_remove_entry($1);
+                }
             }
         }
-
     }
 
-    return(0);
-
+    return $error;
 }
 
 #------------------------------------------------------------
@@ -818,8 +732,9 @@ if( scalar(@NTC) > 0 || scalar(@NTR) > 0 ) {
 }
 
 # restart dhcpd daemon
-if (!$this_app->option('norestart')) {
-
+if ($this_app->option('norestart')) {
+    $this_app->verbose("aii-dhcp: dhcpd daemon do not restart (norestart set)");
+} else {
     if (compare($this_app->option('dhcpconf'),
                 $this_app->option('dhcpconf').'.pre_aii') == 0) {
         $this_app->verbose('aii-dhcp: no changes to '
@@ -829,9 +744,6 @@ if (!$this_app->option('norestart')) {
         $this_app->debug(1, "aii-dhcp: restarting dhcpd daemon");
         restart_daemon();
     }
-} else {
-    $this_app->verbose("aii-dhcp: dhcpd daemon do not restarted");
 }
 
 exit (0);
-
