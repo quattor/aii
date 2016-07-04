@@ -316,16 +316,18 @@ Ronald Starink <ronalds@nikhef.nl>
 
 =cut
 
-BEGIN {
-        push (@INC, qw !/usr/lib/perl /opt/edg/lib/perl!);
-}
-
 package main;
+
+BEGIN {
+        push (@INC, '/usr/lib/perl');
+}
 
 use strict;
 use warnings;
+
 use CAF::Object;
 use AII::Shellfe;
+
 $ENV{PATH} = join (":", qw (/bin /usr/bin /usr/sbin /sbin));
 
 use LC::Exception qw (SUCCESS throw_error);
@@ -338,4 +340,5 @@ $CAF::Object::NoAction = 1 if $this_app->option('noaction');
 
 $this_app->cmds;
 $this_app->finish;
+
 exit ($this_app->{status});

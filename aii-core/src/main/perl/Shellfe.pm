@@ -1,8 +1,4 @@
-# ${license-info}
-# ${developer-info}
-# ${author-info}
-# ${build-info}
-################################################################################
+#${PMpre} AII::Shellfe${PMpost}
 
 # This is the shellfe module for aii-shellfe
 
@@ -20,14 +16,7 @@ Check aii-shellfe for option documentation
 
 =cut
 
-package AII::Shellfe;
-
-use strict;
-use warnings;
-
-use CAF::Application;
 use CAF::FileWriter;
-use CAF::Reporter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
 use LC::Exception qw (SUCCESS throw_error);
@@ -40,6 +29,7 @@ use File::Path qw(mkpath rmtree);
 use File::Basename qw(basename);
 use DB_File;
 use Readonly;
+
 our $profiles_info = undef;
 
 use constant MODULEBASE => 'NCM::Component::';
@@ -85,8 +75,6 @@ use constant MAC       => '--mac';
 Readonly our $PROTECTED_COMMANDS   => 'remove|configure|(re)?install';
 Readonly our $PROTECTED_OPTION   => 'confirm';
 
-
-#our @ISA = qw (CAF::Application CAF::Reporter);
 use parent qw (CAF::Application CAF::Reporter);
 
 our $ec = LC::Exception::Context->new->will_store_errors;
@@ -306,9 +294,6 @@ sub _initialize
     $self->{VERSION} = '2.0';
     $self->{USAGE} = "Usage: $0 [options]\n";
 
-# removing the global lock
-#    ($self->{lock} = CAF::Lock->new (LOCKFILE)) &&
-#      $self->{lock}->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
     $self->{LOG_APPEND} = 1;
     $self->{LOG_TSTAMP} = 1;
     $self->{status} = 0;
