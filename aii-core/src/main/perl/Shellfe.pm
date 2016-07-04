@@ -37,6 +37,7 @@ use XML::Simple;
 use EDG::WP4::CCM::Fetch;
 use EDG::WP4::CCM::CCfg;
 use File::Path qw(mkpath rmtree);
+use File::Basename qw(basename);
 use DB_File;
 use Readonly;
 our $profiles_info = undef;
@@ -174,7 +175,7 @@ sub app_options
          HELP    => 'File with the nodes requiring livecd target',
          DEFAULT => undef },
 
-       { NAME    => 'cdburl=s',
+       { NAME    => CDBURL.'=s',
          HELP    => 'URL for CDB location',
          DEFAULT => undef },
 
@@ -531,28 +532,35 @@ sub nodelist
     # allow the nodename to be specified as either simple nodename, or
     # as filename (i.e. .xml). However, to make sure our regexes make
     # sense, we normalize to forget about the .xml for now.
-    $rx =~ s{\.(?:xml|json)(?:\.gz)?$}{};
+    my $extension = '\.(?:xml|json)(?:\.gz)?$';
+    $rx =~ s{$extension}{};
     my $prefix = $self->option (PREFIX) || '';
 
     if (!$profiles_info) {
-        my $url = $self->option (CDBURL) . "/" . PROFILEINFO;
-        my $ua = LWP::UserAgent->new;
-        $self->debug (4, "Downloading profiles-info: $url");
-        my $rp = $ua->get ($url);
-        unless ($rp->is_success) {
+        if ($self->option (CDBURL) =~ m{^dir://(.*)$} ) {
+            my $dir = $1;
+            $self->debug (4, "Creating profiles-info from local directory $dir");
+            # Fake the XMLin structure
+            $profiles_info = {profile => [map {{content => basename($_)}} grep {m/$extension/} glob ("$dir/*")]};
+        } else {
+            my $url = $self->option (CDBURL) . "/" . PROFILEINFO;
+            my $ua = LWP::UserAgent->new;
+            $self->debug (4, "Downloading profiles-info: $url");
+            my $rp = $ua->get ($url);
+            unless ($rp->is_success) {
                 $self->error ("Couldn't download $url. Aborting ",
                               $rp->status_line());
                 $self->{state} = 1;
                 return;
-        }
-        my $xml = $rp->content;
-        $self->debug (4, "Parsing XML file from $url");
-        $profiles_info = XMLin ($xml, ForceArray => 1);
-        throw_error ("XML error: $_") unless $profiles_info;
+            }
+
+            my $xml = $rp->content;
+            $self->debug (4, "Parsing XML file from $url");
+            $profiles_info = XMLin ($xml, ForceArray => 1);
+            throw_error ("XML error: $_") unless $profiles_info;
+        };
     }
 
-    # Let's try to fix the --use_fqdn once and for all:
-    #   $rx =~ s/^([^.]+).*/$1/ unless $fqdn;
     $rx =~ m{^([^.]*)(.*)};
     $rx = $1;
     $rx .= "($2)" if $fqdn;
@@ -606,6 +614,8 @@ sub fetch_profiles
 
     if ($cdb =~ m{([\w\-\.+]+://[+\w\.\-%?=/:]+)}) {
         $cdb = $1;
+        # All profiles from dir:// can be accessed as file://
+        $cdb =~ s{^dir://}{file://};
     } else {
         $self->error ("Invalid base URL. Leaving");
         $self->{status} = PARTERR_ST;
@@ -839,7 +849,7 @@ sub remove_cache_node {
 sub check_protected {
     my ($self, %hash) = @_;
     my @to_delete;
-    
+
     foreach my $host (sort(keys %hash)) {
         my $st = $hash{$host};
         my $cfg = $st->{configuration}->getTree('/system');
@@ -859,7 +869,7 @@ sub check_protected {
         }
     }
     delete @hash{@to_delete};
-    
+
     return %hash;
 }
 

@@ -211,6 +211,12 @@ command.
 
 URL for CDB location
 
+Known profiles are determined via the C<profiles-info.xml> file.
+
+In case the C<dir:///path/profile/directory> is used,
+all profiles in that directory are considered usable via C<file://>
+url.
+
 =back
 
 =head2 Other Options
