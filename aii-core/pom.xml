@@ -186,6 +186,7 @@
             <url>https://github.com/quattor/aii/tree/master/aii-core</url>
             <requires>
               <require>perl-CDB_File</require>
+              <require>perl-XML-Simple</require>
             </requires>
             <mappings>
               <mapping>
