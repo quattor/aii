@@ -121,14 +121,33 @@ type opennebula_permissions = {
 };
 
 @documentation{
-It is possible to discover PCI devices in the Hosts 
+It is possible to discover PCI devices in the hypervisors
 and assign them to Virtual Machines for the KVM hypervisor.
-I/O MMU and SR-IOV must be supported and enabled by the hyp OS and Bios.
-More than one PCI options can be added to attach more than one PCI device to the VM.
+I/O MMU and SR-IOV must be supported and enabled by the hypervisor OS and Bios.
+More than one PCI option can be added to attach more than one PCI device to the VM.
 The device can be also specified without all the type values.
 PCI values must be hexadecimal (0xhex)
-If the PCI values are not found in any hyp the VM is queued waiting for the 
+If the PCI values are not found in any hypervisor the VM is queued waiting for the
 required resouces.
+
+"onehost show <hypervisor>" command gives us the list
+of PCI devices and "vendor", "device" and "class" values within PCI DEVICES section
+as example:
+
+VM ADDR    TYPE           NAME
+   06:00.1 15b3:1002:0c06 MT25400 Family [ConnectX-2 Virtual Function]
+
+  VM: The VM ID using that specific device. Empty if no VMs are using that device.
+  ADDR: PCI Address.
+  TYPE: Values describing the device. These are VENDOR:DEVICE:CLASS.
+        These values are used when selecting a PCI device do to passthrough.
+  NAME: Name of the PCI device.
+
+In this case to request this IB device we should set:
+  vendor: 0x15b3
+  device: 0x1002
+  class:  0x0c06
+
 For more info:
 http://docs.opennebula.org/5.0/deployment/open_cloud_host_setup/pci_passthrough.html
 }
