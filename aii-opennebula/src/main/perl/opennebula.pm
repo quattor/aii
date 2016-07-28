@@ -371,8 +371,6 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
                 $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
-            } elsif (!$remove and $arinfo) {
-                $self->update_vn_ars($one, $arinfo, $vnet, $ardata, $t);
             } else { 
                 $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
@@ -417,27 +415,6 @@ sub remove_vn_ars
     } else {
         $main::this_app->debug(1, "Unable to remove AR. ",
                              "AR template is not available from vnet: $vnet: ", $ardata->{ar});
-    }
-}
-
-# Update VN AR leases
-sub update_vn_ars
-{
-    my ($self, $one, $arinfo, $vnet, $ardata, $ar) = @_;
-    my ($arid, $modtpl);
-    # Update the AR info
-    $arid = $self->detect_vn_ar_quattor($arinfo);
-    if (defined($arid)) {
-        ($modtpl = $ardata->{ar}) =~ s/\[/\[\n    AR\_ID \= "$arid",/;
-    } else {
-        $modtpl = $ardata->{ar};
-    };
-    $main::this_app->debug(1, "AR template to update from $vnet and id $arid: ", $modtpl);
-    $arid = $ar->updatear($modtpl);
-    if (defined($arid)) {
-        $main::this_app->info("Updated $vnet AR id: ", $arid);
-    } else {
-        $main::this_app->error("Unable to update AR from vnet: $vnet");
     }
 }
 
