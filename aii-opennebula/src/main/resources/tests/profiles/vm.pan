@@ -14,8 +14,14 @@ prefix "/hardware";
         "eth3", dict("boot", "false", "hwaddr", "AA:00:00:80:01:03", "pxe", "true"),
     ),
     "ib", dict(
-        "ib0", dict("media", "infiniband", "name", "My fancy Infiniband",
-                    "pci", dict("vendor", 0x15b3, "device", 0x1002, "class", 0x0c06),
+        "ib0", dict(
+            "media", "infiniband",
+            "name", "My fancy Infiniband",
+            "pci", dict(
+                "vendor", 0x15b3,
+                "device", 0x1002,
+                "class", 0x0c06,
+            ),
         ),
     ),
 );
@@ -146,4 +152,4 @@ prefix "/system/opennebula";
     "vendor", 0x8086,
     "device", 0x0a0c,
     "class", 0x0403,
-    ));
+));

@@ -123,7 +123,7 @@ type opennebula_permissions = {
 @documentation{
 It is possible to discover PCI devices in the hypervisors
 and assign them to Virtual Machines for the KVM hypervisor.
-I/O MMU and SR-IOV must be supported and enabled by the hypervisor OS and Bios.
+I/O MMU and SR-IOV must be supported and enabled by the hypervisor OS and BIOS.
 More than one PCI option can be added to attach more than one PCI device to the VM.
 The device can be also specified without all the type values.
 PCI values must be hexadecimal (0xhex)
@@ -164,5 +164,5 @@ type opennebula_vmtemplate = {
     "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
     "permissions" ? opennebula_permissions
-    "pci"       ? opennebula_vmtemplate_pci[]
+    "pci" ? opennebula_vmtemplate_pci[]
 } = dict();
