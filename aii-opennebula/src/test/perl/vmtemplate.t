@@ -7,6 +7,7 @@
 
 use strict;
 use warnings;
+use version;
 use Test::More;
 use AII::opennebula;
 use Test::MockModule;
@@ -19,12 +20,13 @@ $opennebulaaii->mock('make_one', Net::OpenNebula->new(url  => "http://localhost/
                                                       user => "oneadmin",));
 
 my $aii = AII::opennebula->new();
+my $oneversion = version->new("5.0.0");
 
-my $ttout = $aii->process_template($cfg, "vmtemplate");
+my $ttout = $aii->process_template($cfg, "vmtemplate", $oneversion);
 
 like($ttout, qr{^NAME\s+=\s+}m, "Found template NAME");
 
-my $vmtemplate = $aii->get_vmtemplate($cfg);
+my $vmtemplate = $aii->get_vmtemplate($cfg, $oneversion);
 
 my $templatename = "node630.cubone.os";
 

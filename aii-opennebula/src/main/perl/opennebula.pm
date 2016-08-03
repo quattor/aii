@@ -86,9 +86,14 @@ sub make_one
 # Detect and process ONE templates
 sub process_template
 {
-    my ($self, $config, $tt_name) = @_;
+    my ($self, $config, $tt_name, $oneversion) = @_;
     
     my $tree = $config->getElement('/')->getTree();
+    if ((defined $oneversion) and ($oneversion >= version->new("4.9.0"))) {
+        $tree->{system}->{opennebula}->{boot} = $oneversion;
+        $main::this_app->info("BOOT section updated to support OpenNebula version >= 5.0.0");
+    };
+
     my $tpl = CAF::TextRender->new(
         $tt_name,
         $tree,
@@ -101,6 +106,7 @@ sub process_template
     }
     return "$tpl";
 }
+
 
 sub get_permissions
 {
@@ -182,10 +188,10 @@ sub get_vnetars
 
 sub get_vmtemplate
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $oneversion) = @_;
     my ($vmtemplatename, $quattor);
 
-    my $vm_template = $self->process_template($config, "vmtemplate");
+    my $vm_template = $self->process_template($config, "vmtemplate", $oneversion);
     $vmtemplatename = $1 if ($vm_template =~ m/^NAME\s+=\s+(?:"|')(.*?)(?:"|')\s*$/m);
     $quattor = $1 if ($vm_template =~ m/^QUATTOR\s+=\s+(.*?)\s*$/m);
 
@@ -511,10 +517,11 @@ sub is_supported_one_version
     my $res= $oneversion >= MINIMAL_ONE_VERSION;
     if ($res) {
         $main::this_app->verbose("Version $oneversion is ok.");
+        return $oneversion;
     } else {
         $main::this_app->error("OpenNebula AII requires ONE v".MINIMAL_ONE_VERSION." or higher (found $oneversion).");
     }
-    return $res;
+    return;
 }
 
 # Detects if the resource is already there
@@ -557,7 +564,8 @@ sub configure
     }
 
     # Check RPC endpoint and OpenNebula version
-    return 0 if !$self->is_supported_one_version($one);
+    my $oneversion = $self->is_supported_one_version($one);
+    return 0 if !$oneversion;
 
     if ($forcecreateimage || $createvmtemplate) {
         $self->stop_and_remove_one_vms($one, $fqdn);
@@ -569,7 +577,7 @@ sub configure
     my %ars = $self->get_vnetars($config);
     $self->remove_and_create_vn_ars($one, \%ars);
 
-    my $vmtemplatetxt = $self->get_vmtemplate($config);
+    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
     my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
 }
 
@@ -599,7 +607,8 @@ sub install
     }
 
     # Check RPC endpoint and OpenNebula version
-    return 0 if !$self->is_supported_one_version($one);
+    my $oneversion = $self->is_supported_one_version($one);
+    return 0 if !$oneversion;
 
     $self->stop_and_remove_one_vms($one, $fqdn);
 
@@ -681,7 +690,8 @@ sub remove
     }
 
     # Check RPC endpoint and OpenNebula version
-    return 0 if !$self->is_supported_one_version($one);
+    my $oneversion = $self->is_supported_one_version($one);
+    return 0 if !$oneversion;
 
     if ($stopvm) {
         $self->stop_and_remove_one_vms($one,$fqdn);
@@ -697,7 +707,7 @@ sub remove
         $self->remove_and_create_vn_ars($one, \%ars, $rmvmtemplate);
     }
 
-    my $vmtemplatetxt = $self->get_vmtemplate($config);
+    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
     if ($vmtemplatetxt) {
         $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }

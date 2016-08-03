@@ -41,6 +41,7 @@ like($fh, qr{^yum\s-c\s/tmp/aii/yum/yum.conf\s-y\sinstall\sacpid}m, 'yum install
 like($fh, qr{^service\sacpid\sstart}m, 'service acpid restart present');
 
 # close the selected FH and reset STDOUT
+$fh->close();
 NCM::Component::ks::ksclose;
 
 done_testing();

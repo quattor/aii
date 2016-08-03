@@ -598,7 +598,7 @@ GRAPHICS = [
 ]
 MEMORY = "4096"
 OS = [
-    BOOT = "network,hd"
+    BOOT = "nic0,disk0"
 ]
 RAW = [
     DATA = "<vcpu>4</vcpu><cpu mode='host-passthrough'><topology sockets='2' cores='2' threads='1'/></cpu>",
