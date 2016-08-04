@@ -928,6 +928,7 @@ sub fetch_profiles
         } else {
             print $cfg_fh "cache_root $ccmdir\n";
             print $cfg_fh "json_typed $json_typed\n";
+            print $cfg_fh "tabcompletion 0\n";
 
             my $changed = $cfg_fh->close() ? "" : "not";
             $self->debug(1, "config file $config $changed changed.");
