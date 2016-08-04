@@ -126,19 +126,21 @@ It must include at least one RPC endpoint and password.
 
 By default ONE AII uses oneadmin user and port 2633.
 
-It is also possible to set a different endpoint for each VM domain, as example:
+It is also possible to set a different endpoint for each VM domain or use a fqdn pattern
+as example:
 
     [rpc]
     password=
     host=
 
-    [VM_DOMAIN_NAME1]
+    [example.com]
     password=
     user=
     host=
     port=
 
-    [VM_DOMAIN_NAME2]
+    [myhosts]
+    pattern=myhos\d+.example.com
     password=
     host=
 

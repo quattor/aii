@@ -40,9 +40,20 @@ sub make_one
 
     my $config = Config::Tiny->new;
     my $domainname = $data->getElement (DOMAINNAME)->getValue;
+    my $hostname = $data->getElement (HOSTNAME)->getValue;
+    my $fqdn = "${hostname}.${domainname}";
 
     $config = Config::Tiny->read($filename);
-    if (exists($config->{$domainname})) {
+    foreach my $section (sort keys %{$config}) {
+        $main::this_app->verbose("Found RPC section: $section");
+        my $pattern = $config->{$section}->{pattern};
+        if ($pattern and $fqdn =~ /^$pattern$/ and $rpc eq 'rpc') {
+            $rpc = $section;
+            $main::this_app->info("Match pattern in RPC section: [$rpc]");
+            last;
+        };
+    };
+    if (exists($config->{$domainname}) and $rpc eq 'rpc') {
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
@@ -361,8 +372,6 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
                 $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
-            } elsif (!$remove and $arinfo) {
-                $self->update_vn_ars($one, $vnet, $ardata, $t);
             } else { 
                 $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
@@ -407,21 +416,6 @@ sub remove_vn_ars
     } else {
         $main::this_app->debug(1, "Unable to remove AR. ",
                              "AR template is not available from vnet: $vnet: ", $ardata->{ar});
-    }
-}
-
-# Update VN AR leases
-sub update_vn_ars
-{
-    my ($self, $one, $vnet, $ardata, $ar) = @_;
-    my $arid;
-    # Update the AR info
-    $main::this_app->debug(1, "AR template to update from $vnet: ", $ardata->{ar});
-    $arid = $ar->updatear($ardata->{ar});
-    if (defined($arid)) {
-        $main::this_app->info("Updated $vnet AR id: ", $arid);
-    } else {
-        $main::this_app->error("Unable to update AR from vnet: $vnet");
     }
 }
 

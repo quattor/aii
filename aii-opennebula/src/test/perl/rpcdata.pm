@@ -234,6 +234,18 @@ $cmds{rpc_create_vnet_ar}{params} = [2, $data];
 $cmds{rpc_create_vnet_ar}{method} = "one.vn.add_ar";
 $cmds{rpc_create_vnet_ar}{out} = 0;
 
+$data = <<'EOF';
+
+AR = [
+    AR_ID = "0",
+    TYPE = "IP4",
+    IP = "172.24.8.30",
+    MAC = "AA:00:00:80:01:01",
+    QUATTOR = "1",
+    HOSTNAME = "node630.cubone.os",
+    SIZE = "1"
+]
+EOF
 $cmds{rpc_update_vnet_ar}{params} = [2, $data];
 $cmds{rpc_update_vnet_ar}{method} = "one.vn.update_ar";
 $cmds{rpc_update_vnet_ar}{out} = 0;
@@ -254,6 +266,18 @@ $cmds{rpc_create_vnet_ar2}{params} = [0, $data];
 $cmds{rpc_create_vnet_ar2}{method} = "one.vn.add_ar";
 $cmds{rpc_create_vnet_ar2}{out} = 0;
 
+$data = <<'EOF';
+
+AR = [
+    AR_ID = "0",
+    TYPE = "IP4",
+    IP = "10.141.8.30",
+    MAC = "AA:00:00:80:01:00",
+    QUATTOR = "1",
+    HOSTNAME = "node630.cubone.os",
+    SIZE = "1"
+]
+EOF
 $cmds{rpc_update_vnet_ar2}{params} = [0, $data];
 $cmds{rpc_update_vnet_ar2}{method} = "one.vn.update_ar";
 $cmds{rpc_update_vnet_ar2}{out} = 0;
