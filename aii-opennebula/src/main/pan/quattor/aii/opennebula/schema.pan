@@ -152,8 +152,11 @@ For more info:
 http://docs.opennebula.org/5.0/deployment/open_cloud_host_setup/pci_passthrough.html
 }
 type opennebula_vmtemplate_pci = {
+    @{first value from onehost TYPE section}
     "vendor" ? long
+    @{second value from onehost TYPE section}
     "device" ? long
+    @{third value from onehost TYPE section}
     "class" ? long
 };
 

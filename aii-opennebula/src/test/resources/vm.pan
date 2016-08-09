@@ -24,6 +24,17 @@ prefix "/hardware";
             ),
         ),
     ),
+    "video", dict(
+        "video0", dict(
+            "media", "Integrated Graphics",
+            "name", "Broadwell-U Integrated Graphics",
+            "pci", dict(
+                "vendor", 0x8086,
+                "device", 0x1616,
+                "class", 0x0300,
+            ),
+        ),
+    ),
 );
 
 "cpu" = list(
