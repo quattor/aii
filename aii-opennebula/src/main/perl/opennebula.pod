@@ -42,7 +42,7 @@ Modify your machine template to:
 
 =over 6
 
-=item * PCI Passthrough section is also generated based on hardware/cards/ib/<interface>/pci values
+=item * PCI Passthrough section is also generated based on hardware/cards/<card_type>/<interface>/pci values
 
 =back
 

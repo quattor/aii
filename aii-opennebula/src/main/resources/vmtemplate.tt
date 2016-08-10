@@ -71,19 +71,14 @@ TYPE = "kvm"
 ]
 [%- FOREACH item IN system.opennebula.pci %]
 PCI = [
-[%    FILTER indent -%]
-[%    INCLUDE 'aii-opennebula/pci_level1.tt' 
-               data=item -%]
-[%-   END -%]
+[%    INCLUDE 'aii-opennebula/pci_level1.tt' data=item FILTER indent -%]
 ]
 [%- END %]
 [%- FOR device IN hardware.cards.pairs %]
-[%-     FOR pair IN hardware.cards.${device.key}.pairs %]
-[%-         IF hardware.cards.${device.key}.${pair.key}.pci.defined %]
+[%-     FOR pair IN device.value.pairs %]
+[%-         IF pair.value.pci.defined %]
 PCI = [
-[%              FILTER indent -%]
-[%                  INCLUDE 'aii-opennebula/pci_level1.tt' data=hardware.cards.${device.key}.${pair.key}.pci -%]
-[%-             END -%]
+[%              INCLUDE 'aii-opennebula/pci_level1.tt' data=pair.value.pci FILTER indent -%]
 ]
 [%-         END %]
 [%-     END %]
