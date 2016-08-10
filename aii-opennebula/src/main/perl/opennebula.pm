@@ -90,7 +90,7 @@ sub process_template
     
     my $tree = $config->getElement('/')->getTree();
     if ((defined $oneversion) and ($oneversion >= version->new("4.9.0"))) {
-        $tree->{system}->{opennebula}->{boot} = $oneversion;
+        $tree->{system}->{opennebula}->{boot} = "nic0,disk0";
         $main::this_app->info("BOOT section updated to support OpenNebula version >= 5.0.0");
     };
 

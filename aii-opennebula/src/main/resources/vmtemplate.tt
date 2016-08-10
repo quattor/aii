@@ -61,7 +61,7 @@ MEMORY = "[% memory %]"
 OS = [
 [%     FILTER indent -%]
 [%         IF system.opennebula.boot.defined -%]
-BOOT = "nic0,disk0"
+BOOT = "[% system.opennebula.boot %]"
 [%         ELSE -%]
 BOOT = "network,hd"
 [%         END -%]
