@@ -26,6 +26,9 @@ my $ttout = $aii->process_template($cfg, "vmtemplate", $oneversion);
 
 like($ttout, qr{^NAME\s+=\s+}m, "Found template NAME");
 
+# ONEv5 BOOT section was changed, the BOOT section should be tested here
+like($ttout, qr{^\s*BOOT\s?=\s*"nic0,disk0"\s*$}m, "Found template v5 BOOT");
+
 my $vmtemplate = $aii->get_vmtemplate($cfg, $oneversion);
 
 my $templatename = "node630.cubone.os";

@@ -24,6 +24,11 @@ use constant MAXITER => 20;
 use constant TIMEOUT => 30;
 use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 
+
+
+use constant BOOT_V4 => [qw(network hd)];
+use constant BOOT_V5 => [qw(nic0 disk0)];
+
 # a config file in .ini style with minmal 
 #   [rpc]
 #   password=secret
@@ -90,8 +95,10 @@ sub process_template
     
     my $tree = $config->getElement('/')->getTree();
     if ((defined $oneversion) and ($oneversion >= version->new("4.9.0"))) {
-        $tree->{system}->{opennebula}->{boot} = "nic0,disk0";
+        $tree->{system}->{opennebula}->{boot} = BOOT_V5;
         $main::this_app->info("BOOT section updated to support OpenNebula version >= 5.0.0");
+    } else {
+        $tree->{system}->{opennebula}->{boot} = BOOT_V4;
     };
 
     my $tpl = CAF::TextRender->new(

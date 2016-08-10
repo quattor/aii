@@ -60,12 +60,8 @@ TYPE = "[% system.opennebula.graphics %]"
 MEMORY = "[% memory %]"
 OS = [
 [%     FILTER indent -%]
-[%         IF system.opennebula.boot.defined -%]
-BOOT = "[% system.opennebula.boot %]"
-[%         ELSE -%]
-BOOT = "network,hd"
-[%         END -%]
-[%     END -%]
+BOOT = "[% system.opennebula.boot.join(',') %]"
+[%    END -%]
 ]
 RAW = [
 [%     FILTER indent -%]
