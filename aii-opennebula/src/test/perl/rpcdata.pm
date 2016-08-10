@@ -604,6 +604,21 @@ RAW = [
     DATA = "<vcpu>4</vcpu><cpu mode='host-passthrough'><topology sockets='2' cores='2' threads='1'/></cpu>",
     TYPE = "kvm"
 ]
+PCI = [
+    CLASS = "0403",
+    DEVICE = "0a0c",
+    VENDOR = "8086"
+]
+PCI = [
+    CLASS = "0c06",
+    DEVICE = "1002",
+    VENDOR = "15b3"
+]
+PCI = [
+    CLASS = "0300",
+    DEVICE = "1616",
+    VENDOR = "8086"
+]
 QUATTOR = 1
 EOF
 $cmds{rpc_create_template}{params} = [$data];

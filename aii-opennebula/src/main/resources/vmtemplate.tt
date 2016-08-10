@@ -69,4 +69,18 @@ DATA = "<vcpu>[% vcpus %]</vcpu><cpu mode='host-passthrough'><topology sockets='
 TYPE = "kvm"
 [%-    END %]
 ]
+[%- FOREACH item IN system.opennebula.pci %]
+PCI = [
+[%    INCLUDE 'aii-opennebula/pci_level1.tt' data=item FILTER indent -%]
+]
+[%- END %]
+[%- FOR device IN hardware.cards.pairs %]
+[%-     FOR pair IN device.value.pairs %]
+[%-         IF pair.value.pci.defined %]
+PCI = [
+[%              INCLUDE 'aii-opennebula/pci_level1.tt' data=pair.value.pci FILTER indent -%]
+]
+[%-         END %]
+[%-     END %]
+[%- END %]
 QUATTOR = 1

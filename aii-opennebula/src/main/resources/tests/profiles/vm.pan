@@ -13,6 +13,28 @@ prefix "/hardware";
         "eth2", dict("boot", "false", "hwaddr", "AA:00:00:80:01:02", "pxe", "true"),
         "eth3", dict("boot", "false", "hwaddr", "AA:00:00:80:01:03", "pxe", "true"),
     ),
+    "ib", dict(
+        "ib0", dict(
+            "media", "infiniband",
+            "name", "My fancy Infiniband",
+            "pci", dict(
+                "vendor", 0x15b3,
+                "device", 0x1002,
+                "class", 0x0c06,
+            ),
+        ),
+    ),
+    "video", dict(
+        "video0", dict(
+            "media", "Integrated Graphics",
+            "name", "Broadwell-U Integrated Graphics",
+            "pci", dict(
+                "vendor", 0x8086,
+                "device", 0x1616,
+                "class", 0x0300,
+            ),
+        ),
+    ),
 );
 
 "cpu" = list(
@@ -136,3 +158,9 @@ prefix "/system/opennebula";
 "permissions/owner" = "lsimngar";
 "permissions/group" = "users";
 "permissions/mode" = 0400;
+
+"pci" = append(dict(
+    "vendor", 0x8086,
+    "device", 0x0a0c,
+    "class", 0x0403,
+));

@@ -120,6 +120,46 @@ type opennebula_permissions = {
     "mode" ? long
 };
 
+@documentation{
+It is possible to discover PCI devices in the hypervisors
+and assign them to Virtual Machines for the KVM hypervisor.
+I/O MMU and SR-IOV must be supported and enabled by the hypervisor OS and BIOS.
+More than one PCI option can be added to attach more than one PCI device to the VM.
+The device can be also specified without all the type values.
+PCI values must be hexadecimal (0xhex)
+If the PCI values are not found in any hypervisor the VM is queued waiting for the
+required resouces.
+
+"onehost show <hypervisor>" command gives us the list
+of PCI devices and "vendor", "device" and "class" values within PCI DEVICES section
+as example:
+
+VM ADDR    TYPE           NAME
+   06:00.1 15b3:1002:0c06 MT25400 Family [ConnectX-2 Virtual Function]
+
+  VM: The VM ID using that specific device. Empty if no VMs are using that device.
+  ADDR: PCI Address.
+  TYPE: Values describing the device. These are VENDOR:DEVICE:CLASS.
+        These values are used when selecting a PCI device do to passthrough.
+  NAME: Name of the PCI device.
+
+In this case to request this IB device we should set:
+  vendor: 0x15b3
+  device: 0x1002
+  class:  0x0c06
+
+For more info:
+http://docs.opennebula.org/5.0/deployment/open_cloud_host_setup/pci_passthrough.html
+}
+type opennebula_vmtemplate_pci = {
+    @{first value from onehost TYPE section}
+    "vendor" ? long
+    @{second value from onehost TYPE section}
+    "device" ? long
+    @{third value from onehost TYPE section}
+    "class" ? long
+};
+
 type opennebula_vmtemplate = {
     "vnet"      : opennebula_vmtemplate_vnet
     "datastore" : opennebula_vmtemplate_datastore
@@ -127,4 +167,5 @@ type opennebula_vmtemplate = {
     "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
     "permissions" ? opennebula_permissions
+    "pci" ? opennebula_vmtemplate_pci[]
 } = dict();

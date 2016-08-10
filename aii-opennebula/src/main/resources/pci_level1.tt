@@ -1,0 +1,4 @@
+[%- FOR pair IN data.pairs -%]
+[%    pair.key FILTER upper %] = "[% pair.value FILTER format("%04x") %]"
+[%-    data.pairs.last.key == pair.key ? "" : "," %]
+[%  END -%]

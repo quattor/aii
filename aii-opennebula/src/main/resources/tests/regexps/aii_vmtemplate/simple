@@ -31,4 +31,8 @@ multiline
 ^RAW\s?=\s?\[$
 ^\s*DATA\s?=\s*".+",\s*$
 ^\s*TYPE\s?=\s*".+"\s*$
+^PCI\s?=\s?\[$
+^\s*CLASS\s?=\s*".+",\s*$
+^\s*DEVICE\s?=\s*".+",\s*$
+^\s*VENDOR\s?=\s*".+"\s*$
 ^QUATTOR\s?=\s?\d+\s*$
