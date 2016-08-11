@@ -94,10 +94,11 @@ sub process_template
     my ($self, $config, $tt_name, $oneversion) = @_;
     
     my $tree = $config->getElement('/')->getTree();
-    if ((defined $oneversion) and ($oneversion >= version->new("4.9.0"))) {
+    if ((defined $oneversion) and ($oneversion >= version->new("5.0.0"))) {
         $tree->{system}->{opennebula}->{boot} = BOOT_V5;
-        $main::this_app->info("BOOT section updated to support OpenNebula version >= 5.0.0");
+        $main::this_app->info("BOOT section set to support OpenNebula versions >= 5.0.0");
     } else {
+        $main::this_app->info("BOOT section set to support OpenNebula versions < 5.0.0");
         $tree->{system}->{opennebula}->{boot} = BOOT_V4;
     };
 
