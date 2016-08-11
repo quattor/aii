@@ -27,7 +27,7 @@ multiline
 ^\s*TYPE\s?=\s*".+"\s*$
 ^MEMORY\s?=\s*"\d+"\s*$
 ^OS\s?=\s?\[$
-^\s*BOOT\s?=\s*".+"\s*$
+^\s*BOOT\s?=\s*""\s*$
 ^RAW\s?=\s?\[$
 ^\s*DATA\s?=\s*".+",\s*$
 ^\s*TYPE\s?=\s*".+"\s*$

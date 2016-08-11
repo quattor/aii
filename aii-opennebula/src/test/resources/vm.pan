@@ -108,6 +108,9 @@ prefix "/system/network";
     ),
 );
 
+include 'quattor/aii/opennebula/schema';
+
+bind "/system/opennebula" = opennebula_vmtemplate;
 
 prefix "/system/opennebula";
 "vnet" = dict(

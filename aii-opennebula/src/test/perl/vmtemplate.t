@@ -7,6 +7,7 @@
 
 use strict;
 use warnings;
+use version;
 use Test::More;
 use AII::opennebula;
 use Test::MockModule;
@@ -19,12 +20,16 @@ $opennebulaaii->mock('make_one', Net::OpenNebula->new(url  => "http://localhost/
                                                       user => "oneadmin",));
 
 my $aii = AII::opennebula->new();
+my $oneversion = version->new("5.0.0");
 
-my $ttout = $aii->process_template($cfg, "vmtemplate");
+my $ttout = $aii->process_template($cfg, "vmtemplate", $oneversion);
 
 like($ttout, qr{^NAME\s+=\s+}m, "Found template NAME");
 
-my $vmtemplate = $aii->get_vmtemplate($cfg);
+# ONEv5 BOOT section was changed, the BOOT section should be tested here
+like($ttout, qr{^\s*BOOT\s?=\s*"nic0,disk0"\s*$}m, "Found template v5 BOOT");
+
+my $vmtemplate = $aii->get_vmtemplate($cfg, $oneversion);
 
 my $templatename = "node630.cubone.os";
 

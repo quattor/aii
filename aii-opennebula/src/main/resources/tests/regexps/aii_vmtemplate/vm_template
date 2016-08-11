@@ -56,7 +56,7 @@ multiline
 ^\]$
 ^MEMORY\s?=\s?"4096"$
 ^OS\s?=\s?\[$
-^\s{4}BOOT\s?=\s?"network,hd"$
+^\s{4}BOOT\s?=\s?""$
 ^\]$
 ^RAW\s?=\s?\[$
 ^\s{4}DATA\s?=\s?"\<vcpu\>4\<\/vcpu\>\<cpu\s{1}mode\=\'host-passthrough\'\>\<topology\s{1}sockets\=\'2\'\s{1}cores\=\'2\'\s{1}threads\=\'1\'\/\>\<\/cpu\>",$
