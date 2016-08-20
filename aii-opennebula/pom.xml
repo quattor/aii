@@ -8,7 +8,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.49</version>
+    <version>1.50</version>
     <relativePath />
   </parent>
   <licenses>
