@@ -1,8 +1,4 @@
-# ${license-info}
-# ${developer-info}
-# ${author-info}
-# ${build-info}
-################################################################################
+#${PMpre} AII::Shellfe${PMpost}
 
 # This is the shellfe module for aii-shellfe
 
@@ -20,14 +16,7 @@ Check aii-shellfe for option documentation
 
 =cut
 
-package AII::Shellfe;
-
-use strict;
-use warnings;
-
-use CAF::Application;
 use CAF::FileWriter;
-use CAF::Reporter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
 use LC::Exception qw (SUCCESS throw_error);
@@ -40,6 +29,7 @@ use File::Path qw(mkpath rmtree);
 use File::Basename qw(basename);
 use DB_File;
 use Readonly;
+
 our $profiles_info = undef;
 
 use constant MODULEBASE => 'NCM::Component::';
@@ -85,8 +75,6 @@ use constant MAC       => '--mac';
 Readonly our $PROTECTED_COMMANDS   => 'remove|configure|(re)?install';
 Readonly our $PROTECTED_OPTION   => 'confirm';
 
-
-#our @ISA = qw (CAF::Application CAF::Reporter);
 use parent qw (CAF::Application CAF::Reporter);
 
 our $ec = LC::Exception::Context->new->will_store_errors;
@@ -306,9 +294,6 @@ sub _initialize
     $self->{VERSION} = '2.0';
     $self->{USAGE} = "Usage: $0 [options]\n";
 
-# removing the global lock
-#    ($self->{lock} = CAF::Lock->new (LOCKFILE)) &&
-#      $self->{lock}->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
     $self->{LOG_APPEND} = 1;
     $self->{LOG_TSTAMP} = 1;
     $self->{status} = 0;
@@ -333,7 +318,7 @@ sub lock_node
     # /var/lock could be volatile, and the default lockdir depends on it
     mkdir($self->option("lockdir"));
     my $lockfile = $self->option("lockdir") . "/$node";
-    my $lock = CAF::Lock->new ($lockfile);
+    my $lock = CAF::Lock->new ($lockfile, log => $self);
     if ($lock) {
         $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
     } else {
@@ -357,7 +342,7 @@ sub report
 sub plugin_handler {
     my ($self, $plugin, $ec, $e) = @_;
     $self->error("$plugin: $e");
-    $self->{STATUS} = PARTERR_ST;
+    $self->{status} = PARTERR_ST;
     $e->has_been_reported(1);
     return;
 }
@@ -433,22 +418,26 @@ sub dhcpcfg
 
     my @dhcpop = (DHCPCFG, MAC, $mac);
     if ("$cmd" eq CONFIGURE) {
-       my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
-       ## check for tftpserver option
-       push(@dhcpop,'--tftpserver',$opts->{tftpserver})
-         if (exists($opts->{tftpserver}));
-       ## check for addoptions
-       ## addoptions is a single string
-       push(@dhcpop,'--addoptions',$opts->{addoptions})
-         if (exists($opts->{addoptions}));
-       push(@dhcpop, "--$cmd", $node);
+        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
+        # check for tftpserver option
+        push(@dhcpop,'--tftpserver',$opts->{tftpserver})
+            if (exists($opts->{tftpserver}));
+        # check for addoptions
+        # addoptions is a single string
+        push(@dhcpop,'--addoptions',$opts->{addoptions})
+            if (exists($opts->{addoptions}));
+        push(@dhcpop, "--$cmd", $node);
     } elsif ("$cmd" eq REMOVEMETHOD) {
         push(@dhcpop, "--remove", $node);
     }
+
     # Pass debug option
     if (my $dbg = $self->option('debug') ) {
-        $dbg =~ m{^(\d+)$};
-        push(@dhcpop,'--debug', $1);
+        if($dbg =~ m{^(\d+)$}) {
+            push(@dhcpop, '--debug', $1);
+        } else {
+            $self->warn("Invalid debug value $dbg passed (should be integer)");
+        };
     }
     return @dhcpop;
 }
@@ -460,6 +449,7 @@ sub dhcp
     my ($self, $node, $st, $cmd) = @_;
 
     return unless $st->{configuration}->elementExists (DHCPPATH);
+
     my $mac;
     my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
     foreach my $cfg (values (%$cards)) {
@@ -476,13 +466,15 @@ sub dhcp
     $output = CAF::Process->new(\@commands, log => $self)->output();
     if ($?) {
        $self->error("Error when configuring $node: $output");
-    }
-    $self->debug(4,"Output: $output");
-    $self->debug(4,"End output");
+    } else {
+        $self->debug(4, "Output: $output");
+    };
+    $self->debug(4, "End output");
 }
 
 
-sub iter_plugins {
+sub iter_plugins
+{
     my ($self, $st, $hook) = @_;
     foreach my $plug (qw(osinstall nbp discovery)) {
         my $path = "/system/aii/$plug";
@@ -490,7 +482,6 @@ sub iter_plugins {
             $self->run_plugin($st, $path, $hook);
         }
     }
-
 }
 
 
@@ -639,8 +630,8 @@ sub fetch_profiles
         $self->debug (1, "Fetching profile: $url");
 
         if ((!-d $ccmdir) && !mkpath($ccmdir)) {
-                $self->error("failed to create directory $ccmdir: $!");
-                next;
+            $self->error("failed to create directory $ccmdir: $!");
+            next;
         }
         my $config = "$ccmdir/ccm.conf";
 
@@ -673,9 +664,11 @@ sub fetch_profiles
         my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT}, $config);
         if ($cm) {
             my $cfg = $cm->getLockedConfiguration (0);
-            $h{$node} = { fetch        => $fh,
-                          cachemanager => $cm,
-                          configuration=> $cfg};
+            $h{$node} = {
+                fetch        => $fh,
+                cachemanager => $cm,
+                configuration=> $cfg,
+            };
         } else {
             $self->error ("Failed to create CacheManager ",
                           "object for node $node");
@@ -686,143 +679,113 @@ sub fetch_profiles
     return %h;
 }
 
+
+# Wrapper to execute the commands in sorted manner
+no strict 'refs';
+foreach my $cmd (COMMANDS) {
+    *{$cmd} = sub {
+        my ($self, %node_states) = @_;
+        my $method = "_$cmd";
+        foreach my $node (sort keys %node_states) {
+            $self->debug (2, "$cmd: $node");
+            if ($cmd ne 'status') {
+                my $lock = $self->lock_node($node);
+                if (! $lock) {
+                    $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
+                    next;
+                };
+            };
+            $self->$method($node, $node_states{$node});
+        };
+    }
+}
+use strict 'refs';
+
+
 # Runs the Install method of the NBP plugins of the nodes given as
 # arguments.
-sub install
+sub _install
 {
-    my ($self, %nl) = @_;
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (1, "Installing: $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for install");
-            exit(1);
-        }
-        $self->run_plugin ($st, NBP, INSTALLMETHOD);
-    }
+    my ($self, $node, $st) = @_;
+    $self->run_plugin ($st, NBP, INSTALLMETHOD);
 }
 
 # Runs the Status method of the NBP plugins of the nodes given as
 # arguments.
-sub status
+sub _status
 {
-    my ($self, %nl) = @_;
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (1, "Showing the state of $node");
-        $self->run_plugin ($st, NBP, STATUSMETHOD);
-    }
+    my ($self, $node, $st) = @_;
+
+    $self->debug (1, "Showing the state of $node");
+    $self->run_plugin ($st, NBP, STATUSMETHOD);
 }
 
 # Runs the Boot method of the NBP plugins of the nodes given as
 # arguments.
-sub boot
+sub _boot
 {
-    my ($self, %nl) = @_;
-
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (1, "Booting: $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for boot");
-            exit(1);
-        }
-        $self->run_plugin ($st, NBP, BOOTMETHOD);
-    }
+    my ($self, $node, $st) = @_;
+    $self->run_plugin ($st, NBP, BOOTMETHOD);
 }
 
 # Runs the Firmware method of the NBP plugins of the nodes given as
 # arguments.
-sub firmware
+sub _firmware
 {
-    my ($self, %nl) = @_;
-
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (1, "Updating firmware of $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for firmware");
-            exit(1);
-        }
-        $self->run_plugin ($st, NBP, FIRMWAREMETHOD);
-    }
+    my ($self, $node, $st) = @_;
+    $self->run_plugin ($st, NBP, FIRMWAREMETHOD);
 }
 
 # Runs the Livecd method of the NBP plugins of the nodes given as
 # arguments
-sub livecd
+sub _livecd
 {
-    my ($self, %nl) = @_;
-    while (my ($node, $st) = each (%nl))  {
-        $self->debug(1, "Setting to livecd: $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for livecd");
-            exit(1);
-        }
-        $self->run_plugin($st, NBP, LIVECDMETHOD);
-    }
+    my ($self, $node, $st) = @_;
+    $self->run_plugin($st, NBP, LIVECDMETHOD);
 }
 
 # Runs the Remove method of the NBP plugins of the nodes given as
 # arguments.
-sub remove
+sub _remove
 {
-    my ($self, %nl) = @_;
+    my ($self, $node, $st) = @_;
 
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (1, "Removing $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for remove");
-            exit(1);
-        }
+    $self->iter_plugins($st, REMOVEMETHOD);
 
-        $self->iter_plugins($st, REMOVEMETHOD);
+    if ($st->{reinstall}) {
+        $self->debug(3, "No dhcp and cache removal with reinstall set for $node");
+    } else {
         if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
             $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
         }
         $self->remove_cache_node($node) unless $self->option('noaction');
-    }
+    };
 }
 
 # Runs the Rescue method of the NBP plugins of the nodes given as
 # arguments.
-sub rescue
+sub _rescue
 {
-    my ($self, %nl) = @_;
+    my ($self, $node, $st) = @_;
 
-    while (my ($node, $st) = each (%nl)) {
-        $self->debug (2, "Rescueing $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for rescue");
-            exit(1);
-        }
-        $self->run_plugin ($st, NBP, RESCUEMETHOD);
-    }
+    $self->run_plugin ($st, NBP, RESCUEMETHOD);
 }
 
 # Configures DISCOVERY, OSINSTALL and NBP on the nodes received as
 # arguments.
-sub configure
+sub _configure
 {
-    my ($self, %nl) = @_;
+    my ($self, $node, $st) = @_;
 
-    while (my ($node, $st) = each (%nl)) {
-        my $when = time();
-        $self->debug (2, "Configuring $node");
-        my $lock = $self->lock_node($node);
-        if (! $lock) {
-            $self->error("aii-shellfe: couldn't acquire lock on $node for configure");
-            next;
-        }
-        $self->iter_plugins($st, CONFIGURE);
-        if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-            $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
-        }
-        $self->set_cache_time($node, $when) unless $self->option('noaction');
+    my $when = time();
+
+    $self->iter_plugins($st, CONFIGURE);
+    if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
+        $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
     }
+    $self->set_cache_time($node, $when) unless $self->option('noaction');
 }
+
 
 sub get_cache_time {
     my ($self, $node) = @_;
@@ -912,40 +875,47 @@ sub cmds
 
     foreach my $cmd (COMMANDS) {
         my $rx;
-        my @nl = ();
+        my @nodelist = ();
+        my @reinstall_list = (); # Kept in seperate list to set reinstall bit
 
         if ($cmd =~ m/^(remove|configure|install)$/ &&
             $self->option ("reinstall")) {
             $self->info("$cmd step for reinstall option.");
 
-            @nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
+            @reinstall_list = $self->nodelist ($rx, $self->option ('use_fqdn'))
                 if ($rx = $self->option ('reinstall'));
+            push(@nodelist, @reinstall_list);
         }
 
-        @nl = $self->nodelist ($rx, $self->option ('use_fqdn'))
-          if ($rx = $self->option ($cmd));
+        @nodelist = $self->nodelist ($rx, $self->option ('use_fqdn'))
+            if ($rx = $self->option ($cmd));
 
         if (exists $filecmds->{$cmd}) {
-            push(@nl, keys %{$filecmds->{$cmd}});
+            push(@nodelist, sort keys %{$filecmds->{$cmd}});
         }
-        $self->debug (2, "Nodes for $cmd: ", join ("\t", @nl));
+        $self->debug (2, "Nodes for $cmd: ", join (", ", @nodelist));
 
-        push (@nl, $self->filenodelist ($rx, $self->option ('use_fqdn')))
-          if ($rx = $self->option ($cmd."list"));
-        $self->debug (2, $cmd."list: ", join ("\t", @nl));
+        push (@nodelist, $self->filenodelist ($rx, $self->option ('use_fqdn')))
+            if ($rx = $self->option ($cmd."list"));
+        $self->debug (2, $cmd."list: ", join (", ", @nodelist));
 
-        if (@nl) {
-            my %h = $self->fetch_profiles (@nl);
+        if (@nodelist) {
+            my %nodes = $self->fetch_profiles (@nodelist);
+
             if ($cmd =~ m/^($PROTECTED_COMMANDS)$/) {
-                %h = $self->check_protected(%h);
-                if (!(%h)) {
+                %nodes = $self->check_protected(%nodes);
+                if (!(%nodes)) {
                     $self->error('No nodes left to process after checking for protected hosts');
                     return ;
                 }
-
             }
-            $self->$cmd (%h);
-            $self->info (scalar (keys (%h)) . " to $cmd");
+            # Set the reinstall bit
+            foreach my $node (@reinstall_list) {
+                $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
+            }
+
+            $self->$cmd (%nodes);
+            $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
         }
     }
 
