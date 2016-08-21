@@ -752,6 +752,9 @@ sub _remove
 
     $self->iter_plugins($st, REMOVEMETHOD);
 
+    if ($st->{reinstall}) {
+        $self->debug(3, "No dhcp and cache removal with reinstall set for $node");
+    } else {
         if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
             $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
         }
@@ -881,6 +884,7 @@ sub cmds
 
             @reinstall_list = $self->nodelist ($rx, $self->option ('use_fqdn'))
                 if ($rx = $self->option ('reinstall'));
+            push(@nodelist, @reinstall_list);
         }
 
         @nodelist = $self->nodelist ($rx, $self->option ('use_fqdn'))
@@ -905,6 +909,11 @@ sub cmds
                     return ;
                 }
             }
+            # Set the reinstall bit
+            foreach my $node (@reinstall_list) {
+                $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
+            }
+
             $self->$cmd (%nodes);
             $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
         }
