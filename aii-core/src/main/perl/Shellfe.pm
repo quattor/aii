@@ -318,7 +318,7 @@ sub lock_node
     # /var/lock could be volatile, and the default lockdir depends on it
     mkdir($self->option("lockdir"));
     my $lockfile = $self->option("lockdir") . "/$node";
-    my $lock = CAF::Lock->new ($lockfile);
+    my $lock = CAF::Lock->new ($lockfile, log => $self);
     if ($lock) {
         $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
     } else {

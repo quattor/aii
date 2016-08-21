@@ -283,7 +283,7 @@ sub update_dhcp_config
 
     # Lock and load the current dhcp configuration file
     my $lockfile = $filename . ".lock";
-    my $lock = CAF::Lock->new ($lockfile);
+    my $lock = CAF::Lock->new ($lockfile, log => $self);
     unless ($lock && $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE)) {
         $self->error("dhcp: couldn't acquire lock on $lockfile");
         return(1, 0);
