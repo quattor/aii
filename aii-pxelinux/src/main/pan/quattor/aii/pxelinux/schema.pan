@@ -2,9 +2,14 @@
 # ${developer-info}
 # ${author-info}
 # ${build-info}
-unique template quattor/aii/pxelinux/schema;
 
-# PXE configuration.
+declaration template quattor/aii/pxelinux/schema;
+
+include 'pan/types';
+
+@documentation{
+    PXE configuration
+}
 type structure_pxelinux_pxe_info = {
     "initrd"	: string
     "kernel"	: string
@@ -18,5 +23,3 @@ type structure_pxelinux_pxe_info = {
     "setifnames" ? boolean
     "updates" ? type_absoluteURI
 };
-
-bind "/system/aii/nbp/pxelinux" = structure_pxelinux_pxe_info;
