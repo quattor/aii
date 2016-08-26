@@ -221,10 +221,11 @@ sub ksnetwork_get_dev_net
         push(@networkopts, "--bondslaves=".join(',', @slaves));
 
         # gather the options
-        if ($net->{bonding_opts}) {
+        my $bond_opts = $net->{bonding_opts};
+        if ($bond_opts) {
             my @opts;
-            while (my ($k, $v) = each(%{$net->{bonding_opts}})) {
-                push(@opts, "$k=$v");
+            foreach my $key (sort keys %$bond_opts) {
+                push(@opts, "$key=".$bond_opts->{$key});
             }
             push(@networkopts, "--bondopts=".join(',', @opts));
         }
@@ -554,7 +555,7 @@ EOF
         if ($version >= ANACONDA_VERSION_EL_7_0) {
              $fstree->{useexisting_md} = 1;
         }
-  
+
         $fstree->print_ks;
     }
 }
@@ -832,7 +833,7 @@ EOF
     # mdadm devices should be stopped at the end of the pre-ks phase on EL7
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         print "mdadm --stop --scan\n";
-    } 
+    }
 
     print <<EOF;
 
