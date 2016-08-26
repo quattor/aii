@@ -24,6 +24,10 @@ prefix "/software/packages";
 prefix "/system/aii/nbp/pxelinux";
 "ksdevice" = "eth0";
 
+include 'quattor/aii/ks/schema';
+
+bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
+
 prefix "/system/aii/osinstall/ks";
 "bootproto" = "dhcp"; 
 "keyboard" = "us";

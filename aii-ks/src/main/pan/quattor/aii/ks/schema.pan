@@ -2,15 +2,20 @@
 # ${developer-info}
 # ${author-info}
 # ${build-info}
-# Structure for the component generating kickstart files.
 
-unique template quattor/aii/ks/schema;
+@{Structure for the component generating kickstart files.}
 
-# X configuration on the KS file. Might deserve a component for
-# itself.
+declaration template quattor/aii/ks/schema;
+
+include 'pan/types';
+
+@documentation{
+    X configuration on the KS file.
+}
 type structure_ks_ksxinfo = {
-    "card"		? string # Graphics card driver
-    "monitor"	? string #
+    @{Graphics card driver}
+    "card"		? string
+    "monitor"	? string
     "noprobe"	? string
     "vsync"		? long
     "hsync"		? long
@@ -23,7 +28,9 @@ type structure_ks_ksxinfo = {
 
 type string_ksservice = string with match (SELF, "^(ssh|telnet|smtp|http|ftp)$");
 
-# Information needed for configuring the firewall at installation-time.
+@documentation{
+    Configure the firewall at installation-time.
+}
 type structure_ks_ksfirewall = {
     "enabled"	: boolean = true
     "trusted"	? string []
@@ -31,29 +38,32 @@ type structure_ks_ksfirewall = {
     "ports"		: long[] = list (7777)
 };
 
-# Information needed for logging into syslog
-# Anaconda syslog uses UDP
+@documentation{
+    Log to syslog. Anaconda syslog uses UDP
+}
 type structure_ks_logging = {
-    # when host is defined, anaconda syslog will be configured
-    "host" ? type_hostname 
+    @{when host is defined, anaconda syslog will be configured}
+    "host" ? type_hostname
     "port" : type_port = 514
     "level" ? string with match(SELF, "^(debug|warning|error|critical|info)$")
-
-    "console" : boolean = true # redirect AII ks logfile to console 
-    
-    # send AII ks logfile to host/port 
+    @{redirect AII ks logfile to console }
+    "console" : boolean = true
+    @{send AII ks logfile to host/port}
     "send_aiilogs" : boolean = false
-
-    # use legacy defaults 
-    # via bash or netcat
-    "method" : string = 'netcat' with match(SELF, '^(bash|netcat)$') 
-    # via tcp or udp
+    # use legacy defaults
+    @{send_aiilogs via bash or netcat}
+    "method" : string = 'netcat' with match(SELF, '^(bash|netcat)$')
+    @{send_aiilogs via tcp or udp}
     "protocol" : string = 'udp' with match(SELF, '^(tcp|udp)$')
 } with {
     (! SELF['send_aiilogs']) || is_defined(SELF['host'])
 };
 
-# Information needed for creating the Kickstart file
+@documentation{
+    Information needed for creating the Kickstart file
+    Optional hooks pre_install, post_install, post_reboot and install
+    for user customization are under /system/ks/hooks/.
+}
 type structure_ks_ks_info = {
     "ackurl"	: type_absoluteURI
     "acklist"	? type_absoluteURI[]
@@ -72,7 +82,8 @@ type structure_ks_ks_info = {
     "installtype"	: string
     "installnumber" ? string
     "lang"		: string = "en_US.UTF-8"
-    # If you use more than one languages, mark the default one with "--default=your_lang"
+    # TODO: how would you set --default=your_lang in ks?
+    @{If you use more than one language, mark the default one with --default your_lang}
     "langsupport"	? string [] = list ("en_US.UTF-8")
     "logging"	? structure_ks_logging
     "mouse"		? string
@@ -91,26 +102,24 @@ type structure_ks_ks_info = {
     "xwindows"	? structure_ks_ksxinfo
     "disable_service" ? string[]
     "ignoredisk"    ? string[]
-    # Base packages needed for a Quattor client to run (CAF, CCM...)
+    @{Base packages needed for a Quattor client to run (CAF, CCM...)}
     "base_packages" : string[]
-    # Repositories to disable while SPMA is not available
+    @{Repositories to disable while SPMA is not available}
     "disabled_repos" : string[] = list()
-    # Hooks for user customization are under: /system/ks/hooks/{pre_install,
-    # post_install, post_reboot and install}. They
-    # are optional.
     "packages_args" : string[] = list("--ignoremissing","--resolvedeps")
     "end_script" :  string = ""
     "part_label" : boolean = false # Does the "part" stanza support the --label option?
-    # Set to true if volgroup statement is required in KS config file (must not be present for SL6+)
+    @{Set to true if volgroup statement is required in KS config file (must not be present for SL6+)}
     'volgroup_required' : boolean = false
-    
-    'version' : string = '11.1' # anaconda version, default is for EL5.0 support 
-    'cmdline' ? boolean # use cmdline instead of text mode
-    'eula' ? boolean # agree with EULA (EL7+)
+    @{anaconda version, default is for EL5.0 support}
+    'version' : string = '11.1'
+    @{use cmdline instead of text mode}
+    'cmdline' ? boolean
+    @{agree with EULA (EL7+)}
+    'eula' ? boolean
     'packagesinpost' ? boolean
-    'bonding' : boolean = true # support network bonding
+    @{configure bonding}
+    'bonding' : boolean = true
     'lvmforce' ? boolean
     'init_spma_ignore_deps' ? boolean
 };
-
-bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
