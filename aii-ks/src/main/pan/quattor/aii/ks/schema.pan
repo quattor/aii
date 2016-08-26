@@ -118,8 +118,8 @@ type structure_ks_ks_info = {
     @{agree with EULA (EL7+)}
     'eula' ? boolean
     'packagesinpost' ? boolean
-    @{configure bonding}
-    'bonding' : boolean = true
+    @{configure bonding (when not defined, it will be tried best-effort depending on OS version and configuration)}
+    'bonding' ? boolean
     'lvmforce' ? boolean
     'init_spma_ignore_deps' ? boolean
 };
