@@ -319,44 +319,71 @@ EOF
 }
 
 # Instantiates and executes the user hooks for a given path.
+# The module is first tried with prefixed AII:: namespace, then on its own
 sub ksuserhooks
 {
     my ($config, $path) = @_;
 
-    return unless $config->elementExists ($path);
+    my $hooks = $config->getTree($path);
+    return unless defined($hooks);
 
     $this_app->debug (5, "User defined hooks for $path");
-    my $el = $config->getElement ($path);
-    $path =~ m(/system/aii/hooks/([^/]+));
-    my $method = $1;
-    while ($el->hasNextElement) {
-        my $nel = $el->getNextElement;
-        my $tree = $nel->getTree;
-        my $nelpath = $nel->getPath->toString;
-        # Catch bad guys
-        if ($tree->{module} !~ m/^[_a-zA-Z]\w+$/) {
-            $this_app->error ("Invalid identifier specified as a hook module. ",
-                              "Skipping");
+
+    my $method;
+    if ($path =~ m(/system/aii/hooks/([^/]+))) {
+        $method = $1;
+    } else {
+        $this_app->error("No method for user defined hooks for $path");
+        return;
+    };
+
+    my $idx = -1;
+    foreach my $hook (@$hooks) {
+        $idx++;
+
+        my $shortname;
+        if ($hook->{module} =~ m/^(?:[_a-zA-Z]\w+::)*([_a-zA-Z]\w+)$/) {
+            $shortname = $1;
+        } else {
+            $this_app->error ("Invalid identifier $hook->{module} specified as a hook module. Skipping");
             next;
         }
-        my $modulename = MODULEBASE . $tree->{module};
-        $this_app->debug (5, "Loading " . $modulename);
-        eval ("use " . $modulename);
+
+        my $modulename = MODULEBASE . $hook->{module};
+        $this_app->debug (5, "Loading hook module $modulename");
+
+        eval ("use $modulename");
         if ($@) {
             # Fallback: try without the AII:: prefix
             my $orig_error = $@;
-            $modulename = $tree->{module};
-            $this_app->debug (5, "Loading " . $modulename);
-            eval ("use " . $modulename);
-            # Report the original error message if the fallback failed
-            throw_error ("Couldn't load module $tree->{module}: $orig_error")
-                if $@;
+
+            $this_app->debug (5, "Loading fallback hook module $hook->{module}");
+            eval ("use $hook->{module}");
+            if ($@) {
+                # Report the original error message if the fallback failed
+                throw_error ("Couldn't load hook module $hook->{module} ($modulename): $orig_error");
+            } else {
+                $modulename = $hook->{module};
+            }
         }
-        my $hook = eval ($modulename . "->new");
-        throw_error ("Couldn't instantiate object of class $tree->{module}")
-          if $@;
-        $this_app->debug (5, "Running $tree->{module}->$method");
-        $hook->$method ($config, $nelpath);
+
+        my @args;
+        if ($modulename =~ m/^NCM::Component::/) {
+            # pass name and logger
+            push(@args, $shortname, $this_app);
+        };
+
+        my $hook_inst = eval { $modulename->new(@args) };
+        if ($@) {
+            throw_error ("Couldn't instantiate object of hook class $hook->{module} ($modulename): $@");
+        } else {
+            if ($hook_inst->can($method)) {
+                $this_app->debug (5, "Running hook $hook->{module} method $method ($modulename->$method)");
+                $hook_inst->$method ($config, "$path/$idx");
+            } else {
+                throw_error ("Hook instance class $hook->{module} ($modulename) has no $method method");
+            }
+        }
     }
 }
 

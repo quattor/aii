@@ -358,54 +358,56 @@ sub run_plugin
     my ($self, $st, $path, $method) = @_;
 
     return unless $st->{configuration}->elementExists ($path);
+
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
     my %rm = $st->{configuration}->getElement ($path)->getHash;
-    my $modulename = (keys (%rm))[0];
-    if ($modulename !~ m/^[a-zA-Z_]\w+$/) {
-        $self->error ("Invalid Perl identifier specified as a plug-in. ",
-                      "Skipping.");
+    my $modulename = (sort keys (%rm))[0];
+    if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
+        $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
         $self->{status} = PARTERR_ST;
         return;
     }
 
     if (!exists $self->{plugins}->{$modulename}) {
-        $self->debug (4, "Loading module $modulename");
+        $self->debug (4, "Loading plugin module $modulename");
         eval (USEMODULE .  $modulename);
         if ($@) {
-            $self->error ("Couldn't load $modulename for path $path: $@");
+            $self->error ("Couldn't load plugin module $modulename for path $path: $@");
             $self->{status} = PARTERR_ST;
             return;
         }
         $self->debug (4, "Instantiating $modulename");
         my $class = MODULEBASE.$modulename;
+        # Plugins as derived from NCM::Component, so they need a name argument
         my $module = eval { $class->new($modulename) };
         if ($@) {
-            $self->error ("Couldn't call 'new' on $modulename: $@");
+            $self->error ("Couldn't call 'new' on plugin module $modulename: $@");
             $self->{status} = PARTERR_ST;
             return;
         }
         $self->{plugins}->{$modulename} = $module;
     }
+
     my $plug = $self->{plugins}->{$modulename};
     if ($plug->can($method)) {
-        $self->debug (4, "Running $modulename -> $method");
+        $self->debug (4, "Running plugin module $modulename -> $method");
         $aii_shellfev2::__EC__ = LC::Exception::Context->new;
         $aii_shellfev2::__EC__->error_handler(sub {
             $self->plugin_handler($modulename, @_);
         });
 
         if (!eval { $plug->$method ($st->{configuration}) }) {
-            $self->error ("Failed to execute module's $modulename $method method");
+            $self->error ("Failed to execute plugin module's $modulename $method method");
             $self->{status} = PARTERR_ST;
         }
         if ($@) {
-            $self->error ("Errors running module $modulename $method method: $@");
+            $self->error ("Errors running plugin module $modulename $method method: $@");
             $self->{status} = PARTERR_ST;
         }
         return;
     } else {
-        $self->debug(4, "no method $method available for plugin $modulename");
+        $self->debug(4, "no method $method available for plugin module $modulename");
     }
 }
 
