@@ -31,7 +31,7 @@ Modify your machine template to:
 =item * Include 'metaconfig/opennebula/schema'
 
 =item * Set the OpenNebula opennebula/datastore name for each vdx
-      
+
 =item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
 
 =item * (Optional) Set /system/opennebula/ignoremac tree to avoid to include MAC values within AR/VM templates
@@ -51,7 +51,7 @@ Modify your machine template to:
 =item * (Optional) Set OPENNEBULA_AII_REPLACE_MAC and MAC_PREFIX variables to replace VM MACs to use OpenNebula style
 
 =back
-        
+
 =item * enable acpid service
 
 =back
@@ -139,13 +139,13 @@ as example:
 
     [rpc]
     password=
-    host=
+    url=https://localhost
 
     [example.com]
     password=
     user=
-    host=
-    port=
+    host=localhost
+    port=2633
 
     [myhosts]
     pattern=myhos\d+.example.com

@@ -29,10 +29,10 @@ use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 use constant BOOT_V4 => [qw(network hd)];
 use constant BOOT_V5 => [qw(nic0 disk0)];
 
-# a config file in .ini style with minmal 
+# a config file in .ini style with minmal
 #   [rpc]
 #   password=secret
-sub make_one 
+sub make_one
 {
     my ($self, $data) = @_;
     my $filename = AII_OPENNEBULA_CONFIG;
@@ -62,18 +62,22 @@ sub make_one
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
-    my $port = $config->{$rpc}->{port} || 2633;
-    my $host = $config->{$rpc}->{host} || "localhost";
+    my $port = $config->{$rpc}->{port};
+    my $host = $config->{$rpc}->{host}; #Deprecated
+    my $url = $config->{$rpc}->{url} || "http://localhost:2633";
     my $user = $config->{$rpc}->{user} || "oneadmin";
     my $password = $config->{$rpc}->{password};
+
+    $url = "http://$host:2633" if ($host);
+
 
     if (! $password ) {
         $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
         return;
     }
-    
+
     my $one = Net::OpenNebula->new(
-        url      => "http://$host:$port/RPC2",
+        url      => "$url/RPC2",
         user     => $user,
         password => $password,
         log => $main::this_app,
@@ -92,7 +96,7 @@ sub make_one
 sub process_template
 {
     my ($self, $config, $tt_name, $oneversion) = @_;
-    
+
     my $tree = $config->getElement('/')->getTree();
     if ((defined $oneversion) and ($oneversion >= version->new("5.0.0"))) {
         $tree->{system}->{opennebula}->{boot} = BOOT_V5;
@@ -142,8 +146,8 @@ sub get_fqdn
 }
 
 # It gets the image template from tt file
-# and gathers image names format: <fqdn>_<vdx> 
-# and datastore names to store the new images 
+# and gathers image names format: <fqdn>_<vdx>
+# and datastore names to store the new images
 sub get_images
 {
     my ($self, $config) = @_;
@@ -280,12 +284,12 @@ sub remove_and_create_vm_images
     # Check created/removed image lists
     if ($remove) {
         my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
-        if ($diff) { 
+        if ($diff) {
             $main::this_app->error("Removing these VM images: ", join(', ', @qimages));
         }
     } else {
         my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
-        if ($diff) { 
+        if ($diff) {
             $main::this_app->error("Creating these VM images: ", join(', ', @qimages));
         }
     }
@@ -386,7 +390,7 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
                 $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
-            } else { 
+            } else {
                 $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
        }
@@ -472,7 +476,7 @@ sub stop_and_remove_one_vms
 sub remove_and_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $permissions, $remove) = @_;
-    
+
     # Check if the vm template already exists
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
@@ -496,7 +500,7 @@ sub remove_and_create_vm_template
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
     }
-    
+
     if ($createvmtemplate && !$remove) {
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
@@ -604,7 +608,7 @@ sub install
     my $onhold = $tree->{onhold};
     $main::this_app->info("Start VM onhold flag is set to: $onhold");
     my $permissions = $self->get_permissions($config);
-        
+
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
@@ -661,7 +665,7 @@ sub install
 }
 
 # Performs Quattor post_reboot
-# ACPID service is mandatory for ONE VMs 
+# ACPID service is mandatory for ONE VMs
 sub post_reboot
 {
     my ($self, $config, $path) = @_;
