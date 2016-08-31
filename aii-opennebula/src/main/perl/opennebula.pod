@@ -62,7 +62,7 @@ The next paths are relative to /system/aii/hooks/configure
 
 =item * image : boolean
 
-Create VM images. Note: if this hook is set the current VM images will be overwritten (also stop/delete VM)
+Create VM images. Note: VM images are not updated, if you want to resize or modify an available image from scratch use remove hook first.
 
 =item * template : boolean
 
@@ -131,6 +131,9 @@ Following package dependencies should be installed to run the AII:
 Set OpenNebula endpoints RPC connector /etc/aii/opennebula.conf
 
 It must include at least one RPC endpoint and password.
+
+To set an https endpoint for example you can use:
+ url=https://host.example.com:2633
 
 By default ONE AII uses oneadmin user and port 2633.
 

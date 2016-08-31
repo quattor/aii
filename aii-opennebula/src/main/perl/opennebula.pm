@@ -63,7 +63,7 @@ sub make_one
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
     my $port = $config->{$rpc}->{port};
-    my $host = $config->{$rpc}->{host}; #Deprecated
+    my $host = $config->{$rpc}->{host};
     my $url = $config->{$rpc}->{url} || "http://localhost:2633";
     my $user = $config->{$rpc}->{user} || "oneadmin";
     my $password = $config->{$rpc}->{password};
@@ -271,15 +271,18 @@ sub get_resource_instance
 
 sub remove_and_create_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagesref, $permissions, $remove) = @_;
+    my ($self, $one, $createimage, $imagesref, $permissions, $remove) = @_;
     my (@rimages, @nimages, @qimages, $newimage, $count);
 
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
-        $self->remove_vm_images($one, $forcecreateimage, $imagename, \@rimages);
-        $self->create_vm_images($one, $imagename, $imagedata, $remove, $permissions, \@nimages);
+        if ($remove) {
+            $self->remove_vm_images($one, $imagename, \@rimages);
+        } elsif ($createimage) {
+            $self->create_vm_images($one, $imagename, $imagedata, $permissions, \@nimages);
+        };
     }
     # Check created/removed image lists
     if ($remove) {
@@ -298,36 +301,35 @@ sub remove_and_create_vm_images
 # Create new VM images
 sub create_vm_images
 {
-    my ($self, $one, $imagename, $imagedata, $remove, $permissions, $ref_nimages) = @_;
+    my ($self, $one, $imagename, $imagedata, $permissions, $ref_nimages) = @_;
 
     my $newimage;
-    if (!$remove) {
-        if ($self->is_one_resource_available($one, "image", $imagename)) {
-            $main::this_app->error("Image: $imagename is already used and AII hook: image is not set. ",
-                                    "Please remove this image first.");
-        } else {
+    if ($self->is_one_resource_available($one, "image", $imagename)) {
+        $main::this_app->warn("Image: $imagename is already available from OpenNebula. ",
+                              "Please remove this image first if you want to generate a new one from scratch.");
+        return;
+    } else {
             $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-        }
-        if ($newimage) {
-            $main::this_app->info("Created new VM image ID: ", $newimage->id);
-            if ($permissions) {
-                $self->change_permissions($one, "image", $newimage, $permissions);
-            };
-            push(@{$ref_nimages}, $imagename);
-        } else {
-            $main::this_app->error("VM image: $imagename is not available");
-        }
+    }
+    if ($newimage) {
+        $main::this_app->info("Created new VM image ID: ", $newimage->id);
+        if ($permissions) {
+            $self->change_permissions($one, "image", $newimage, $permissions);
+        };
+        push(@{$ref_nimages}, $imagename);
+    } else {
+        $main::this_app->error("VM image: $imagename is not available");
     }
 }
 
 # Removes current VM images
 sub remove_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagename, $ref_rimages) = @_;
+    my ($self, $one, $imagename, $ref_rimages) = @_;
 
     my @existimage = $one->get_images(qr{^$imagename$});
     foreach my $t (@existimage) {
-        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+        if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
             # It's safe, we can remove the image
             $main::this_app->info("Removing VM image: $imagename");
             my $id = $t->delete();
@@ -466,7 +468,8 @@ sub stop_and_remove_one_vms
             $main::this_app->info("Running VM will be removed: ",$t->name);
             $t->delete();
         } else {
-            $main::this_app->info("No QUATTOR flag found for Running VM: ",$t->name);
+            $main::this_app->info("No QUATTOR flag found for Running VM: ", $t->name);
+            return;
         }
     }
 }
@@ -482,14 +485,14 @@ sub remove_and_create_vm_template
 
     foreach my $t (@existtmpls) {
         if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
-            if ($createvmtemplate) {
+            if ($remove) {
                 # force to remove and create the template again
                 $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
                 $t->delete();
             } else {
                 # Update the current template
                 $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
-                $self->debug(1, "New $fqdn template : $vmtemplate");
+                $main::this_app->debug(1, "New $fqdn template : $vmtemplate");
                 my $update = $t->update($vmtemplate, 0);
                 if ($permissions) {
                     $self->change_permissions($one, "template", $t, $permissions);
@@ -560,8 +563,8 @@ sub configure
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
-    my $forcecreateimage = $tree->{image};
-    $main::this_app->info("Forcecreate image flag is set to: $forcecreateimage");
+    my $createimage = $tree->{image};
+    $main::this_app->info("Create VM image flag is set to: $createimage");
     my $createvmtemplate = $tree->{template};
     $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
     my $permissions = $self->get_permissions($config);
@@ -579,12 +582,8 @@ sub configure
     my $oneversion = $self->is_supported_one_version($one);
     return 0 if !$oneversion;
 
-    if ($forcecreateimage || $createvmtemplate) {
-        $self->stop_and_remove_one_vms($one, $fqdn);
-    }
-
     my %images = $self->get_images($config);
-    $self->remove_and_create_vm_images($one, $forcecreateimage, \%images, $permissions);
+    $self->remove_and_create_vm_images($one, $createimage, \%images, $permissions);
 
     my %ars = $self->get_vnetars($config);
     $self->remove_and_create_vn_ars($one, \%ars);
@@ -709,19 +708,19 @@ sub remove
         $self->stop_and_remove_one_vms($one,$fqdn);
     }
 
+    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
+    if ($vmtemplatetxt) {
+        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
+    }
+
     my %images = $self->get_images($config);
     if (%images) {
-        $self->remove_and_create_vm_images($one, 1, \%images, undef, $rmimage);
+        $self->remove_and_create_vm_images($one, undef, \%images, undef, $rmimage);
     }
 
     my %ars = $self->get_vnetars($config);
     if (%ars) {
         $self->remove_and_create_vn_ars($one, \%ars, $rmvmtemplate);
-    }
-
-    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
-    if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }
 }
 
