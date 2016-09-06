@@ -271,6 +271,8 @@ sub get_resource_instance
     return;
 }
 
+# Create new VM images and it detects if the image is already available
+# it removes images if remove flag is set
 sub remove_or_create_vm_images
 {
     my ($self, $one, $createimage, $imagesref, $permissions, $remove) = @_;
@@ -476,8 +478,9 @@ sub stop_and_remove_one_vms
     }
 }
 
-# Creates and removes VM templates
-# $createvmtemplate hook forces to remove/create
+# Creates or removes VM templates
+# $createvmtemplate flag forces to create
+# $remove flag forces to remove
 sub remove_or_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $permissions, $remove) = @_;
