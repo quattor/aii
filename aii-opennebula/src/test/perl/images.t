@@ -43,20 +43,20 @@ my $one = $aii->make_one();
 
 # Check image creation
 rpc_history_reset;
-$aii->remove_and_create_vm_images($one, 1, \%images);
+$aii->remove_or_create_vm_images($one, 1, \%images);
 ok(rpc_history_ok(["one.imagepool.info",
                    "one.imagepool.info",
                    "one.datastorepool.info",
                    "one.image.allocate",
                    "one.image.info"]),
-                   "remove_and_create_vm_images install rpc history ok");
+                   "remove_or_create_vm_images install rpc history ok");
 
 # Check image remove
 rpc_history_reset;
-$aii->remove_and_create_vm_images($one, undef, \%images, undef, 1);
+$aii->remove_or_create_vm_images($one, undef, \%images, undef, 1);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.imagepool.info",
                    "one.image.delete"]),
-                   "remove_and_create_vm_images remove rpc history ok");
+                   "remove_or_create_vm_images remove rpc history ok");
 
 done_testing();

@@ -142,18 +142,17 @@ as example:
 
     [rpc]
     password=
-    url=https://localhost
+    url=https://localhost/RPC2
 
     [example.com]
     password=
     user=
-    host=localhost
-    port=2633
 
     [myhosts]
     pattern=myhos\d+.example.com
     password=
-    host=
+    url=http://example.com:2633/RPC2
+
 
 =head2 AUTHOR
 

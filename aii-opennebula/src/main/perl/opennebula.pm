@@ -29,8 +29,10 @@ use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 use constant BOOT_V4 => [qw(network hd)];
 use constant BOOT_V5 => [qw(nic0 disk0)];
 
-# a config file in .ini style with minmal
+# a config file in .ini style with a minimal 
+# RPC endpoint setup
 #   [rpc]
+#   url=http://example.com:2633/RPC2
 #   password=secret
 sub make_one
 {
@@ -62,14 +64,14 @@ sub make_one
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
-    my $port = $config->{$rpc}->{port};
+    my $port = $config->{$rpc}->{port} || 2633;
     my $host = $config->{$rpc}->{host};
-    my $url = $config->{$rpc}->{url} || "http://localhost:2633";
+    my $url = $config->{$rpc}->{url} || "http://localhost:2633/RPC2";
     my $user = $config->{$rpc}->{user} || "oneadmin";
     my $password = $config->{$rpc}->{password};
 
-    $url = "http://$host:2633" if ($host);
-
+    # Keep backwards compatibility
+    $url = "http://$host:$port/RPC2" if ($host);
 
     if (! $password ) {
         $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
@@ -77,7 +79,7 @@ sub make_one
     }
 
     my $one = Net::OpenNebula->new(
-        url      => "$url/RPC2",
+        url      => "$url",
         user     => $user,
         password => $password,
         log => $main::this_app,
@@ -269,7 +271,7 @@ sub get_resource_instance
     return;
 }
 
-sub remove_and_create_vm_images
+sub remove_or_create_vm_images
 {
     my ($self, $one, $createimage, $imagesref, $permissions, $remove) = @_;
     my (@rimages, @nimages, @qimages, $newimage, $count);
@@ -476,7 +478,7 @@ sub stop_and_remove_one_vms
 
 # Creates and removes VM templates
 # $createvmtemplate hook forces to remove/create
-sub remove_and_create_vm_template
+sub remove_or_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $permissions, $remove) = @_;
 
@@ -486,7 +488,7 @@ sub remove_and_create_vm_template
     foreach my $t (@existtmpls) {
         if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
             if ($remove) {
-                # force to remove and create the template again
+                # force to remove
                 $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
                 $t->delete();
             } else {
@@ -583,13 +585,13 @@ sub configure
     return 0 if !$oneversion;
 
     my %images = $self->get_images($config);
-    $self->remove_and_create_vm_images($one, $createimage, \%images, $permissions);
+    $self->remove_or_create_vm_images($one, $createimage, \%images, $permissions);
 
     my %ars = $self->get_vnetars($config);
     $self->remove_and_create_vn_ars($one, \%ars);
 
     my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
-    my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
+    my $vmtemplate = $self->remove_or_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
 }
 
 # Based on Quattor template this function:
@@ -709,13 +711,13 @@ sub remove
     }
 
     my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
-    if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
+    if ($vmtemplatetxt && $rmvmtemplate) {
+        $self->remove_or_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }
 
     my %images = $self->get_images($config);
-    if (%images) {
-        $self->remove_and_create_vm_images($one, undef, \%images, undef, $rmimage);
+    if (%images && $rmimage) {
+        $self->remove_or_create_vm_images($one, undef, \%images, undef, $rmimage);
     }
 
     my %ars = $self->get_vnetars($config);

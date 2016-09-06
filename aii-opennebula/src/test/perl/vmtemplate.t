@@ -39,17 +39,17 @@ my $one = $aii->make_one();
 
 # Check VM template creation
 rpc_history_reset;
-$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate);
+$aii->remove_or_create_vm_template($one, $templatename, 1, $vmtemplate);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.update"]),
-                   "remove_and_create_vm_template update rpc history ok");
+                   "remove_or_create_vm_template update rpc history ok");
 
 # Check VM template remove
 rpc_history_reset;
-$aii->remove_and_create_vm_template($one, $templatename, 1, $vmtemplate, undef, 1);
+$aii->remove_or_create_vm_template($one, $templatename, 1, $vmtemplate, undef, 1);
 ok(rpc_history_ok(["one.templatepool.info",
                    "one.template.delete"]),
-                   "remove_and_create_vm_template remove rpc history ok");
+                   "remove_or_create_vm_template remove rpc history ok");
 
 done_testing();
