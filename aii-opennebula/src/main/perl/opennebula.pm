@@ -24,7 +24,8 @@ use constant MAXITER => 20;
 use constant TIMEOUT => 30;
 use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
 use constant ONE_DEFAULT_URL => 'http://localhost:2633/RPC2';
-
+use constant ONE_DEFAULT_PORT => 2633;
+use constant ONE_DEFAULT_USER => "oneadmin";
 
 
 use constant BOOT_V4 => [qw(network hd)];
@@ -65,10 +66,10 @@ sub make_one
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
-    my $port = $config->{$rpc}->{port} || 2633;
+    my $port = $config->{$rpc}->{port} || ONE_DEFAULT_PORT;
     my $host = $config->{$rpc}->{host};
     my $url = $config->{$rpc}->{url} || ONE_DEFAULT_URL;
-    my $user = $config->{$rpc}->{user} || "oneadmin";
+    my $user = $config->{$rpc}->{user} || ONE_DEFAULT_USER;
     my $password = $config->{$rpc}->{password};
 
     # Keep backwards compatibility
