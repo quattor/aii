@@ -23,6 +23,7 @@ use constant DOMAINNAME => "/system/network/domainname";
 use constant MAXITER => 20;
 use constant TIMEOUT => 30;
 use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
+use constant ONE_DEFAULT_URL => 'http://localhost:2633/RPC2';
 
 
 
@@ -66,12 +67,17 @@ sub make_one
     };
     my $port = $config->{$rpc}->{port} || 2633;
     my $host = $config->{$rpc}->{host};
-    my $url = $config->{$rpc}->{url} || "http://localhost:2633/RPC2";
+    my $url = $config->{$rpc}->{url} || ONE_DEFAULT_URL;
     my $user = $config->{$rpc}->{user} || "oneadmin";
     my $password = $config->{$rpc}->{password};
 
     # Keep backwards compatibility
-    $url = "http://$host:$port/RPC2" if ($host);
+    if ($host) {
+        $main::this_app->warn("RPC old host section detected: $host. ",
+                              "Please use metaconfig to generate a proper OpenNebula aii configuration.",
+                              "ONE aii will replace the RPC url by the assigned host at this point.");
+        $url = "http://$host:$port/RPC2";
+    };
 
     if (! $password ) {
         $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
@@ -79,7 +85,7 @@ sub make_one
     }
 
     my $one = Net::OpenNebula->new(
-        url      => "$url",
+        url      => $url,
         user     => $user,
         password => $password,
         log => $main::this_app,
