@@ -479,7 +479,6 @@ sub stop_and_remove_one_vms
             $t->delete();
         } else {
             $main::this_app->info("No QUATTOR flag found for Running VM: ", $t->name);
-            return;
         }
     }
 }
