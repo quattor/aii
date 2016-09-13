@@ -15,21 +15,19 @@ use Template;
 use Config::Tiny;
 use Net::OpenNebula 0.307.0;
 use Data::Dumper;
+use Readonly;
 
-use constant TEMPLATEPATH => "/usr/share/templates/quattor";
-use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
-use constant HOSTNAME => "/system/network/hostname";
-use constant DOMAINNAME => "/system/network/domainname";
-use constant MAXITER => 20;
-use constant TIMEOUT => 30;
-use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
-use constant ONE_DEFAULT_URL => 'http://localhost:2633/RPC2';
-use constant ONE_DEFAULT_PORT => 2633;
-use constant ONE_DEFAULT_USER => "oneadmin";
-
-
-use constant BOOT_V4 => [qw(network hd)];
-use constant BOOT_V5 => [qw(nic0 disk0)];
+Readonly my $AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
+Readonly my $HOSTNAME => "/system/network/hostname";
+Readonly my $DOMAINNAME => "/system/network/domainname";
+Readonly my $MAXITER => 20;
+Readonly my $TIMEOUT => 30;
+Readonly my $MINIMAL_ONE_VERSION => version->new("4.8.0");
+Readonly my $ONE_DEFAULT_URL => 'http://localhost:2633/RPC2';
+Readonly my $ONE_DEFAULT_PORT => 2633;
+Readonly my $ONE_DEFAULT_USER => "oneadmin";
+Readonly my $BOOT_V4 => [qw(network hd)];
+Readonly my $BOOT_V5 => [qw(nic0 disk0)];
 
 # a config file in .ini style with a minimal 
 # RPC endpoint setup
@@ -39,7 +37,7 @@ use constant BOOT_V5 => [qw(nic0 disk0)];
 sub make_one
 {
     my ($self, $data) = @_;
-    my $filename = AII_OPENNEBULA_CONFIG;
+    my $filename = $AII_OPENNEBULA_CONFIG;
     my $rpc = "rpc";
 
     if (! -f $filename) {
@@ -48,8 +46,8 @@ sub make_one
     }
 
     my $config = Config::Tiny->new;
-    my $domainname = $data->getElement (DOMAINNAME)->getValue;
-    my $hostname = $data->getElement (HOSTNAME)->getValue;
+    my $domainname = $data->getElement ($DOMAINNAME)->getValue;
+    my $hostname = $data->getElement ($HOSTNAME)->getValue;
     my $fqdn = "${hostname}.${domainname}";
 
     $config = Config::Tiny->read($filename);
@@ -66,10 +64,10 @@ sub make_one
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
-    my $port = $config->{$rpc}->{port} || ONE_DEFAULT_PORT;
+    my $port = $config->{$rpc}->{port} || $ONE_DEFAULT_PORT;
     my $host = $config->{$rpc}->{host};
-    my $url = $config->{$rpc}->{url} || ONE_DEFAULT_URL;
-    my $user = $config->{$rpc}->{user} || ONE_DEFAULT_USER;
+    my $url = $config->{$rpc}->{url} || $ONE_DEFAULT_URL;
+    my $user = $config->{$rpc}->{user} || $ONE_DEFAULT_USER;
     my $password = $config->{$rpc}->{password};
 
     # Keep backwards compatibility
@@ -108,11 +106,11 @@ sub process_template
 
     my $tree = $config->getElement('/')->getTree();
     if ((defined $oneversion) and ($oneversion >= version->new("5.0.0"))) {
-        $tree->{system}->{opennebula}->{boot} = BOOT_V5;
+        $tree->{system}->{opennebula}->{boot} = $BOOT_V5;
         $main::this_app->verbose("BOOT section set to support OpenNebula versions >= 5.0.0");
     } else {
         $main::this_app->verbose("BOOT section set to support OpenNebula versions < 5.0.0");
-        $tree->{system}->{opennebula}->{boot} = BOOT_V4;
+        $tree->{system}->{opennebula}->{boot} = $BOOT_V4;
     };
 
     my $tpl = CAF::TextRender->new(
@@ -149,8 +147,8 @@ sub get_permissions
 sub get_fqdn
 {
     my ($self,$config) = @_;
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
-    my $domainname = $config->getElement (DOMAINNAME)->getValue;
+    my $hostname = $config->getElement ($HOSTNAME)->getValue;
+    my $domainname = $config->getElement ($DOMAINNAME)->getValue;
     return "${hostname}.${domainname}";
 }
 
@@ -364,7 +362,7 @@ sub is_timeout
     my ($self, $one, $resource, $name) = @_;
     eval {
         local $SIG{ALRM} = sub { die "alarm\n" };
-        alarm TIMEOUT;
+        alarm $TIMEOUT;
         do {
             sleep(2);
         } while($self->is_one_resource_available($one, $resource, $name));
@@ -540,12 +538,12 @@ sub is_supported_one_version
         return;
     }
 
-    my $res= $oneversion >= MINIMAL_ONE_VERSION;
+    my $res= $oneversion >= $MINIMAL_ONE_VERSION;
     if ($res) {
         $main::this_app->verbose("Version $oneversion is ok.");
         return $oneversion;
     } else {
-        $main::this_app->error("OpenNebula AII requires ONE v".MINIMAL_ONE_VERSION." or higher (found $oneversion).");
+        $main::this_app->error("OpenNebula AII requires ONE v$MINIMAL_ONE_VERSION or higher (found $oneversion).");
     }
     return;
 }
@@ -649,7 +647,7 @@ sub install
 
         # Check that image is in READY state.
         my @myimages = $one->get_images(qr{^${fqdn}\_vd[a-z]$});
-        $opts{max_iter} = MAXITER;
+        $opts{max_iter} = $MAXITER;
         foreach my $t (@myimages) {
             # If something wrong happens set a timeout
             my $imagestate = $t->wait_for_state("READY", %opts);
