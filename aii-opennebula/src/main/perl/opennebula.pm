@@ -13,7 +13,7 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.307.0;
+use Net::OpenNebula 0.308.0;
 use Data::Dumper;
 use Readonly;
 
