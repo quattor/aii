@@ -19,6 +19,7 @@ Check aii-shellfe for option documentation
 use CAF::FileWriter;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
+use EDG::WP4::CCM::Fetch::ProfileCache qw($ERROR);
 use LC::Exception qw (SUCCESS throw_error);
 use CAF::Process;
 use LWP::UserAgent;
@@ -656,11 +657,20 @@ sub fetch_profiles
             $self->{status} = PARTERR_ST;
             next;
         }
-        my @err = $fh->fetchProfile();
-        if ($err[0] != SUCCESS) {
-            $self->error("Impossible to fetch profile for $node. Skipping: $err[1]");
+
+        my $res = $fh->fetchProfile();
+        if (! $res || $res == $ERROR) {
+            my $msg;
+            if (defined($res)) {
+                $msg = "something went wrong, see previous error";
+            } else {
+                $msg = "failed to download";
+            }
+
+            $self->error("Impossible to fetch profile for $node: $msg. Skipping.");
             next;
         }
+
         my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT}, $config);
         if ($cm) {
             my $cfg = $cm->getLockedConfiguration (0);
