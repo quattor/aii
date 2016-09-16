@@ -55,6 +55,7 @@ type opennebula_vmtemplate_vnet = string{} with {
     # check if all entries in the map have a network interface
     foreach (k;v;SELF) {
         if (! exists("/system/network/interfaces/"+k)) {
+            error(format("entry: %s in the vnet map is not available from /system/network/interfaces tree", k));
             return(false);
         };
     };
@@ -65,6 +66,7 @@ type opennebula_vmtemplate_vnet = string{} with {
              (! match('^(Bridge|OVSBridge)$', v['type'])) # these special types are OK 
              )
             ) {
+            error(format("/system/network/interfaces/%s has no entry in the vnet map", k));
             return(false);
         };
     };
@@ -75,12 +77,14 @@ type opennebula_vmtemplate_datastore = string{} with {
     # check is all entries in the map have a hardrive
     foreach (k;v;SELF) {
         if (! exists("/hardware/harddisks/"+k)) {
+            error(format("/hardware/harddisks/%s has no entry in the datastores map", k));
             return(false);
         };
     };
     # check if all interfaces have an entry in the map
     foreach (k;v;value("/hardware/harddisks")) {
         if (! exists(SELF[k])) {
+            error(format("entry: %s in the datastore map is not available from /hardware/harddisks tree", k));
             return(false);
         };
     };
