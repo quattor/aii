@@ -570,6 +570,11 @@ sub run_plugin
                 $self->plugin_handler($modulename, @_);
             });
 
+            # Set active config
+            if ($plug->can('set_active_config')) {
+                $plug->set_active_config($st->{configuration});
+            }
+
             # The plugin method has to return success
             my $res = eval { $plug->$method ($st->{configuration}) };
             if ($@) {
