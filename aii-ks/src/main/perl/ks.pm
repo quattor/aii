@@ -378,6 +378,10 @@ sub ksuserhooks
             throw_error ("Couldn't instantiate object of hook class $hook->{module} ($modulename): $@");
         } else {
             if ($hook_inst->can($method)) {
+                if ($hook_inst->can('set_active_config')) {
+                    $hook_inst->set_active_config($config);
+                }
+
                 $this_app->debug (5, "Running hook $hook->{module} method $method ($modulename->$method)");
                 $hook_inst->$method ($config, "$path/$idx");
             } else {
