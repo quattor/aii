@@ -1,9 +1,13 @@
-@{ 
+@{
 Base pxelinux without append data
 @}
 template pxelinux_no_append;
 
-prefix "/system/network"; 
+include 'quattor/aii/pxelinux/schema';
+
+bind "/system/aii/nbp/pxelinux" = structure_pxelinux_pxe_info;
+
+prefix "/system/network";
 "hostname" = 'x';
 "domainname" = 'y';
 "nameserver/0" = 'nm1';
@@ -13,8 +17,8 @@ prefix "/system/network";
 "interfaces/eth0/netmask" = "255.255.255.0";
 
 prefix "/hardware/cards/nic";
-"eth0/hwaddr" = "00:11:22:33:44:55"; 
-"eth1/hwaddr" = "00:11:22:33:44:66"; 
+"eth0/hwaddr" = "00:11:22:33:44:55";
+"eth1/hwaddr" = "00:11:22:33:44:66";
 
 
 prefix "/system/aii/nbp/pxelinux";

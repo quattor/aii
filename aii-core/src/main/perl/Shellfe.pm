@@ -14,9 +14,14 @@ specified in the profile.
 
 Check aii-shellfe for option documentation
 
+=head1 FUNCTIONS
+
+=over
+
 =cut
 
 use CAF::FileWriter;
+use CAF::FileReader;
 use CAF::Lock qw (FORCE_IF_STALE);
 use EDG::WP4::CCM::CacheManager;
 use EDG::WP4::CCM::Fetch::ProfileCache qw($ERROR);
@@ -36,9 +41,9 @@ our $profiles_info = undef;
 use constant MODULEBASE => 'NCM::Component::';
 use constant USEMODULE  => "use " . MODULEBASE;
 use constant PROFILEINFO => 'profiles-info.xml';
+
 use constant NODHCP     => 'nodhcp';
-use constant NONBP      => 'nonbp';
-use constant NOOSINSTALL=> 'noosinstall';
+
 use constant OSINSTALL  => '/system/aii/osinstall';
 use constant NBP        => '/system/aii/nbp';
 use constant CDBURL     => 'cdburl';
@@ -75,12 +80,24 @@ use constant MAC       => '--mac';
 # Keep in sync with the help string of $PROTECTED_OPTION
 Readonly our $PROTECTED_COMMANDS   => 'remove|configure|(re)?install';
 Readonly our $PROTECTED_OPTION   => 'confirm';
+# Keep this list in sync with the options list (to support no<pluginname>)
+# this is also the order in which the plugins run (in iter_plugins)
+# TODO: no dhcp? (but there's a nodhcp option)
+Readonly::Array my @PLUGIN_NAMES => qw(osinstall nbp discovery);
+
+Readonly my $STATE_FILENAME => 'aii-configured';
+
 
 use parent qw (CAF::Application CAF::Reporter);
 
 our $ec = LC::Exception::Context->new->will_store_errors;
 
-# List of options for this application.
+=item app_options
+
+List of options for this application (extends L< CAF::Applcation > default list).
+
+=cut
+
 sub app_options
 {
 
@@ -134,13 +151,12 @@ sub app_options
          HELP    => 'File with the nodes to be booted in rescue mode',
          DEFAULT => undef },
 
-       { NAME    => 'include=s',
-         HELP    => 'Directories to add to include path',
+       { NAME    => INCLUDE.'=s',
+         HELP    => 'Directories to add to include path (: delimited list)',
          DEFAULT => '' },
 
        { NAME    => 'status=s',
-         HELP    => 'Report current boot/install status for the node ' .
-         '(can be a regexp)',
+         HELP    => 'Report current boot/install status for the node (can be a regexp)',
          DEFAULT => undef },
 
        { NAME    => 'statuslist=s',
@@ -177,18 +193,24 @@ sub app_options
          HELP    => 'File with the nodes and the actions to perform',
          DEFAULT => undef },
 
-         # aii-* parameters
+       # aii-* parameters
 
-       { NAME    => 'nodiscovery|nodhcp',
-         HELP    => 'Do not update discovery (e.g. dhcp) configuration',
+       # Disbaple plugins
+       { NAME    => 'nodiscovery',
+         HELP    => 'Do not update discovery configuration via discovery plugin',
          DEFAULT => undef },
 
        { NAME    => 'nonbp',
-         HELP    => 'Do not update Network Boot Protocol (e.g. pxe) configuration',
+         HELP    => 'Do not update Network Boot Protocol (e.g. pxe) configuration via nbp plugin',
          DEFAULT => undef },
 
        { NAME    => 'noosinstall',
-         HELP    => 'Do not update OS installer (e.g. kickstart) configuration',
+         HELP    => 'Do not update OS installer (e.g. kickstart) configuration via osinstall plugin',
+         DEFAULT => undef },
+
+       # DHCP option, not a plugin
+       { NAME    => NODHCP,
+         HELP    => 'Do not update DHCP configuration',
          DEFAULT => undef },
 
        { NAME    => "$PROTECTED_OPTION=s",
@@ -234,16 +256,16 @@ sub app_options
          HELP    => 'Directory where Kickstart files will be installed',
          DEFAULT => '/osinstall/ks' },
 
-         # Options for DISCOVERY plug-ins
-         { NAME => 'dhcpconf=s',
-           HELP => 'name of dhcp configuration file',
-           DEFAULT => '/etc/dhcpd.conf' },
+       # Options for DISCOVERY plug-ins
+       { NAME    => 'dhcpconf=s',
+         HELP    => 'name of dhcp configuration file',
+         DEFAULT => '/etc/dhcpd.conf' },
 
-         { NAME => 'restartcmd=s',
-           HELP => 'how to restart the dhcp daemon',
-           DEFAULT => 'service dhcpd restart' },
+       { NAME    => 'restartcmd=s',
+         HELP    => 'how to restart the dhcp daemon',
+         DEFAULT => 'service dhcpd restart' },
 
-         # Options for NBP plug-ins
+       # Options for NBP plug-ins
        { NAME    => 'nbpdir=s',
          HELP    => 'Directory where files for NBP should be stored',
          DEFAULT => '/osinstall/nbp/pxelinux.cfg' },
@@ -252,33 +274,26 @@ sub app_options
          HELP    => 'Generic "boot from local disk" file',
          DEFAULT => 'localboot.cfg' },
 
-       { NAME   => 'rescueconfig=s',
-         HELP   => 'Generic "boot from rescue image" file',
-         DEFAULT        => 'rescue.cfg' },
-         # Options for HTTPS
-       { NAME   => CAFILE.'=s',
-         HELP   => 'Certificate file for the CA' },
+       { NAME    => 'rescueconfig=s',
+         HELP    => 'Generic "boot from rescue image" file',
+         DEFAULT => 'rescue.cfg' },
 
-       { NAME   => CADIR.'=s',
-         HELP   => 'Directory where allCA certificates can be found' },
+       # Options for HTTPS
+       { NAME    => CAFILE.'=s',
+         HELP    => 'Certificate file for the CA' },
 
-       { NAME   => KEY.'=s',
-         HELP   => 'Private key for the certificate' },
+       { NAME    => CADIR.'=s',
+         HELP    => 'Directory where allCA certificates can be found' },
 
-       { NAME   => CERT.'=s',
-         HELP   => 'Certificate file to be used' },
+       { NAME    => KEY.'=s',
+         HELP    => 'Private key for the certificate' },
 
-       { NAME => "template-path=s",
-         HELP => 'store for Template Toolkit files',
-         DEFAULT => '/usr/share/templates/quattor'
-        },
+       { NAME    => CERT.'=s',
+         HELP    => 'Certificate file to be used' },
 
-         # options inherited from CAF
-         #   --help
-         #   --version
-         #   --verbose
-         #   --debug
-         #   --quiet
+       { NAME    => "template-path=s",
+         HELP    => 'store for Template Toolkit files',
+         DEFAULT => '/usr/share/templates/quattor' },
 
         );
 
@@ -286,8 +301,13 @@ sub app_options
 
 }
 
-# Initializes the application object. Creates the lock and locks the
-# application.
+=item _initialize
+
+Initializes the application object. Creates the lock and locks the
+application.
+
+=cut
+
 sub _initialize
 {
     my $self = shift;
@@ -299,48 +319,70 @@ sub _initialize
     $self->{LOG_TSTAMP} = 1;
     $self->{status} = 0;
     $self->SUPER::_initialize (@_) or return undef;
+
     $self->set_report_logfile ($self->{LOG});
+
     my $f;
     $ENV{HTTPS_CA_FILE} = $f if $f = $self->option (CAFILE);
     $ENV{HTTPS_CA_DIR} = $f  if $f = $self->option (CADIR);
     $ENV{HTTPS_KEY_FILE} = $f if $f = $self->option (KEY);
     $ENV{HTTPS_CERT_FILE} = $f if $f = $self->option (CERT);
+
     if ($self->option(INCLUDE)) {
         unshift(@INC, split(/:+/, $self->option(INCLUDE)));
     }
+
     return $self;
 }
 
-# Lock a node being configured, needs to be called in every method that contains
-# node operations (ie configure etc)
+=item lock_node
+
+Lock a node being configured, needs to be called in every method that contains
+node operations (ie configure etc)
+
+=cut
+
 sub lock_node
 {
     my ($self, $node) = @_;
+
     # /var/lock could be volatile, and the default lockdir depends on it
     mkdir($self->option("lockdir"));
     my $lockfile = $self->option("lockdir") . "/$node";
     my $lock = CAF::Lock->new ($lockfile, log => $self);
-    if ($lock) {
-        $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE) or return undef;
+    if ($lock && $lock->set_lock(RETRIES, TIMEOUT, FORCE_IF_STALE)) {
+        $self->debug(3, "aii-shellfe: locked node $node (lockfile $lockfile)");
+        return $lock;
     } else {
-        return undef;
+        $self->debug(3, "aii-shellfe: failed to lock node $node (lockfile $lockfile)");
+        return;
     }
-    $self->debug(3, "aii-shellfe: locked node $node");
-    return $lock;
 }
 
-# Overwrite the report method to allow the KS plug-in to print
-# debugging output. See CAF::Reporter (8) for more information.
+=item report
+
+Overwrite the report method to allow the KS plug-in to print
+debugging output. See L<CAF::Reporter> for more information.
+
+=cut
+
 sub report
 {
     my $self = shift;
-    my $st = join ('', @_);
-    print STDOUT "$st\n" unless $SUPER::_REP_SETUP->{QUIET};
+    my $msg = join ('', @_);
+    print STDOUT "$msg\n" unless $SUPER::_REP_SETUP->{QUIET};
     $self->log (@_);
     return SUCCESS;
 }
 
-sub plugin_handler {
+=item plugin_handler
+
+Handler for exceptions during plugin run
+
+=cut
+
+sub plugin_handler
+{
     my ($self, $plugin, $ec, $e) = @_;
     $self->error("$plugin: $e");
     $self->{status} = PARTERR_ST;
@@ -348,74 +390,111 @@ sub plugin_handler {
     return;
 }
 
-# Runs $method on the plug-in given at $path for $node. Arguments:
-# $_[1]: the name of the host being configured.
-# $_[2]: the PAN path of the plug-in to be run. If the path does not
-# exist, nothing will be done.
-# $_[3]: the method to be run.
+=item run_plugin
+
+Runs C<method> on the plug-in given at C<path> for node state C<st>.
+
+C<path> is the PAN path of the plug-in to be run. If the path does not
+exist, nothing will be done.
+
+=cut
+
 sub run_plugin
 {
     my ($self, $st, $path, $method) = @_;
 
-    return unless $st->{configuration}->elementExists ($path);
-    # This is here because CacheManager and Fetch objects may have
-    # problems when they get out of scope.
-    my %rm = $st->{configuration}->getElement ($path)->getHash;
-    my $modulename = (keys (%rm))[0];
-    if ($modulename !~ m/^[a-zA-Z_]\w+$/) {
-        $self->error ("Invalid Perl identifier specified as a plug-in. ",
-                      "Skipping.");
+    my $name = $st->{name};
+
+    my $tree = $st->{configuration}->getTree($path);
+
+    if (! $tree) {
+        $self->verbose("No configuration for plugin path $path for $name. Skipping");
+        return;
+    }
+
+    my @modulenames = sort keys %$tree;
+    if (scalar @modulenames > 1) {
+        $self->verbose("More then one modulename found for plugin path $path for $name. ",
+                       "Using first one of ", join(", ", @modulenames));
+    }
+
+    my $modulename = $modulenames[0];
+    if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
+        $self->error ("Invalid Perl identifier $modulename specified as a plug-in path $path for $name. Skipping.");
         $self->{status} = PARTERR_ST;
         return;
     }
 
-    if (!exists $self->{plugins}->{$modulename}) {
-        $self->debug (4, "Loading module $modulename");
+    local $@;
+
+    my $plug = $self->{plugins}->{$modulename};
+
+    if (! defined $plug) {
+        $self->debug (4, "Loading plugin module $modulename");
         eval (USEMODULE .  $modulename);
         if ($@) {
-            $self->error ("Couldn't load $modulename for path $path: $@");
+            $self->error ("Couldn't load plugin module $modulename for path $path: $@");
             $self->{status} = PARTERR_ST;
             return;
         }
+
         $self->debug (4, "Instantiating $modulename");
         my $class = MODULEBASE.$modulename;
-        my $module = eval { $class->new($modulename) };
+
+        # Plugins as derived from NCM::Component, so they need a name argument
+        $plug = eval { $class->new($modulename) };
         if ($@) {
-            $self->error ("Couldn't call 'new' on $modulename: $@");
+            $self->error ("Couldn't call 'new' on plugin module $modulename: $@");
             $self->{status} = PARTERR_ST;
             return;
         }
-        $self->{plugins}->{$modulename} = $module;
+
+        $self->{plugins}->{$modulename} = $plug;
     }
-    my $plug = $self->{plugins}->{$modulename};
+
+
     if ($plug->can($method)) {
-        $self->debug (4, "Running $modulename -> $method");
+        $self->debug (4, "Running plugin module $modulename -> $method for $name");
+
         $aii_shellfev2::__EC__ = LC::Exception::Context->new;
         $aii_shellfev2::__EC__->error_handler(sub {
             $self->plugin_handler($modulename, @_);
         });
 
-        if (!eval { $plug->$method ($st->{configuration}) }) {
-            $self->error ("Failed to execute module's $modulename $method method");
-            $self->{status} = PARTERR_ST;
+        # Set active config
+        if ($plug->can('set_active_config')) {
+            $plug->set_active_config($st->{configuration});
         }
+
+        # The plugin method has to return success
+        my $res = eval { $plug->$method ($st->{configuration}) };
         if ($@) {
-            $self->error ("Errors running module $modulename $method method: $@");
+            $self->error ("Errors running plugin module $modulename $method method for $name: $@");
+            $self->{status} = PARTERR_ST;
+        } elsif (! $res) {
+            $self->error ("Failed to execute plugin module $modulename $method method for $name");
             $self->{status} = PARTERR_ST;
         }
-        return;
     } else {
-        $self->debug(4, "no method $method available for plugin $modulename");
+        # TODO: should be warn or error? it's configured, but the code doesn't allow it do anything
+        $self->info("no method $method available for plugin module $modulename for $name");
     }
+
+    return;
 }
 
-# Adds extra options to aii-dhcp configuration. This is the only part
-# of the core AII that has to explicitly look at the profile's values.
-# This part may be removed at a later version, when we have a proper
-# DHCP plug-in or component.
+=item dhcpcfg
+
+Adds extra options to aii-dhcp configuration. This is the only part
+of the core AII that has to explicitly look at the profile's values.
+This part may be removed at a later version, when we have a proper
+discovery plug-in for DHCP (or a component).
+
+=cut
+
 sub dhcpcfg
 {
-    my ($self, $node, $cmd, $st, $mac) = @_;
+    my ($self, $cmd, $st, $mac) = @_;
 
     my @dhcpop = (DHCPCFG, MAC, $mac);
     if ("$cmd" eq CONFIGURE) {
@@ -427,9 +506,9 @@ sub dhcpcfg
         # addoptions is a single string
         push(@dhcpop,'--addoptions',$opts->{addoptions})
             if (exists($opts->{addoptions}));
-        push(@dhcpop, "--$cmd", $node);
+        push(@dhcpop, "--$cmd", $st->{name});
     } elsif ("$cmd" eq REMOVEMETHOD) {
-        push(@dhcpop, "--remove", $node);
+        push(@dhcpop, "--remove", $st->{name});
     }
 
     # Pass debug option
@@ -443,30 +522,44 @@ sub dhcpcfg
     return @dhcpop;
 }
 
-# Runs aii-dhcp on the configuration object received as argument. It
-# uses the MAC of the first card marked with "boot"=true.
+=item dhcp
+
+Runs aii-dhcp on the configuration object received as argument. It
+uses the MAC of the first card marked with C<<"boot"=true>>.
+
+=cut
+
 sub dhcp
 {
-    my ($self, $node, $st, $cmd) = @_;
+    my ($self, $st, $cmd) = @_;
 
-    return unless $st->{configuration}->elementExists (DHCPPATH);
+    my $name = $st->{name};
+    my $tree = $st->{configuration}->getTree(DHCPPATH);
+
+    if (! $tree) {
+        $self->verbose("No configuration for DHCP path ".DHCPPATH." for $name. Skipping");
+        return;
+    }
 
     my $mac;
-    my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
-    foreach my $cfg (values (%$cards)) {
+    my $cards = $st->{configuration}->getTree(HWCARDS);
+    foreach my $cfg (sort values (%$cards)) {
        if ($cfg->{boot}) {
-           $cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i;
-           $mac = $1;
-           last;
+           if ($cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i) {
+               $mac = $1;
+               $self->verbose("Using macaddress from (first) boot nic");
+               last;
+           };
        }
     }
 
-    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
-    $self->debug (4, "Going to run: " .join (" ",@commands));
-    my $output;
-    $output = CAF::Process->new(\@commands, log => $self)->output();
+    my @commands = $self->dhcpcfg ($cmd, $st, $mac);
+    my $proc = CAF::Process->new(\@commands, log => $self);
+    $self->debug (4, "Going to run: $proc");
+
+    my $output = $proc->output();
     if ($?) {
-       $self->error("Error when configuring $node: $output");
+       $self->error("Error when configuring dhcp for $name with $proc: $output");
     } else {
         $self->debug(4, "Output: $output");
     };
@@ -474,62 +567,87 @@ sub dhcp
 }
 
 
+=item iter_plugins
+
+Given node state and optional hook, iterate over all plugins in PLUGIN_NAMES.
+
+=cut
+
 sub iter_plugins
 {
     my ($self, $st, $hook) = @_;
-    foreach my $plug (qw(osinstall nbp discovery)) {
-        my $path = "/system/aii/$plug";
-        if (!$self->option("no$plug")) {
+
+    foreach my $pluginname (@PLUGIN_NAMES) {
+        my $path = "/system/aii/$pluginname";
+
+        if ($self->option("no$pluginname")) {
+            $self->verbose("no$pluginname option set, skipping $pluginname plugin");
+        } else {
             $self->run_plugin($st, $path, $hook);
         }
     }
 }
 
 
-# Returns an array with the list of nodes specified in the file given
-# as an argument. Arguments:
-#
-# $_[1]: file name containing the list of nodes. Each element of the
-# list can be a regular expression!
-# $_[2]: whether or not the fully qualified domain name should be used
-# in the profile name.
+=item filenodelist
+
+Returns an array with the list of nodes specified in the filename given
+as an argument. Each element of the list can be a regular expression.
+
+The second argument is a boolean whether or not the
+fully qualified domain name should be used in the profile name.
+
+=cut
+
 sub filenodelist
 {
-    my ($self, $rx, $fqdn) = @_;
+    my ($self, $filename, $fqdn) = @_;
 
     my @nl;
 
-    open (FH, "<$rx") or throw_error ("Couldn't open file: $rx");
+    my $fh = CAF::FileReader->new($filename, log => $self);
 
-    while (my $l = <FH>) {
+    while (my $l = <$fh>) {
         next if $l =~ m/^#/;
         chomp ($l);
         $self->debug (3, "Evaluating regexp $l");
-        push (@nl, $self->nodelist ($l, $fqdn));
+        push (@nl, $self->nodelist($l, $fqdn));
     }
-    close (FH);
-    $self->debug (1, "Node list: " . join ("\t", @nl));
+
+    $self->debug (1, "Node list from $filename: " . join (", ", @nl));
+
     return @nl;
 }
 
-# Returns the list of profiles on the CDB server that match a given
-# regular expression.
-#
-# Arguments:
-# $_[1]: the regular expression.
-# $_[2]: whether or not to use fully qualified domain names in the
-# profiles names.
+=item nodelist
+
+Returns the list of profiles that match a given regular expression.
+
+The second argument is a boolean whether or not the
+fully qualified domain name should be used in the profile name.
+
+The original list of all known profiles is determined once
+based on the C<cdburl> option.
+
+=cut
+
 sub nodelist
 {
-    my ($self, $rx, $fqdn) = @_;
+    my ($self, $pattern, $fqdn) = @_;
+
+    my $orig_pattern = $pattern;
     # allow the nodename to be specified as either simple nodename, or
-    # as filename (i.e. .xml). However, to make sure our regexes make
+    # as filename (e.g. .xml or .json.gz).
+    # However, to make sure our regexes make
     # sense, we normalize to forget about the .xml for now.
+    # TODO: we are actually normalizing a regex pattern, which is insane
+
     my $extension = '\.(?:xml|json)(?:\.gz)?$';
-    $rx =~ s{$extension}{};
-    my $prefix = $self->option (PREFIX) || '';
+    $pattern =~ s{$extension}{};
+    my $prefix = $self->option(PREFIX) || '';
 
     if (!$profiles_info) {
+        # Populate the module variable profiles_info with all known profile names
         if ($self->option (CDBURL) =~ m{^dir://(.*)$} ) {
             my $dir = $1;
             $self->debug (4, "Creating profiles-info from local directory $dir");
@@ -554,24 +672,36 @@ sub nodelist
         };
     }
 
-    $rx =~ m{^([^.]*)(.*)};
-    $rx = $1;
-    $rx .= "($2)" if $fqdn;
+    if ($pattern =~ m{^([^.]*)(.*)}) {
+        $pattern = $1;
+        $pattern .= "($2)" if $fqdn;
+    };
+
     my @nl;
-    foreach (@{$profiles_info->{profile}}) {
-        if ($_->{content} =~ m/$prefix($rx)\.(?:xml|json)\b/) {
+    foreach my $profile (@{$profiles_info->{profile}}) {
+        if ($profile->{content} =~ m/$prefix($pattern)$extension\b/) {
             my $host = $1;
             $self->debug (4, "Added $host to the list");
             push (@nl, $host);
         }
     }
 
-    $self->error ("No node matches $rx") unless (@nl);
+    $self->error ("No node matches $pattern (original $orig_pattern)") unless (@nl);
     return @nl;
 }
 
-sub cachedir {
+=item cachedir
+
+Generate the name of the node cachedir from the node name and the C<cachedir> option.
+
+If the C<use_fqdn> opion is used, and additional subdirectory is used (with domainname as value).
+
+=cut
+
+sub cachedir
+{
     my ($self, $node) = @_;
+
     my $basedir = $self->option("cachedir");
     my $cachedir = $basedir;
     if ($self->option('use_fqdn') and $node =~ m{\.(.*)}) {
@@ -585,13 +715,19 @@ sub cachedir {
     return $cachedir;
 }
 
-# Returns a hash with the node names given as arguments as keys and
-# the pair { fetch, cachemanager } objects associated to their
-# profiles as values.
+=item fetch_profiles
+
+Returns a hash with the node names given as arguments as keys and
+a hashref with the C<name> and C<fetch>, C<cachemanager> and C<configuration> instances
+associated to their profiles as values.
+
+(This hashref is sometimes referred to as the node state in this code).
+
+=cut
+
 sub fetch_profiles
 {
     my ($self, @nl) = @_;
-    my %h;
 
     my $cdb = $self->option (CDBURL);
     my $prefix = $self->option (PREFIX) || '';
@@ -600,9 +736,9 @@ sub fetch_profiles
     if ($suffix =~ m{^([-\w\.]*)$}) {
         $suffix = $1;
     } else {
-        $self->error ("Invalid suffix for profiles. Leaving");
+        $self->error ("Invalid suffix $suffix for profiles.");
         $self->{status} = PARTERR_ST;
-        return ();
+        return;
     }
 
     if ($cdb =~ m{([\w\-\.+]+://[+\w\.\-%?=/:]+)}) {
@@ -610,9 +746,9 @@ sub fetch_profiles
         # All profiles from dir:// can be accessed as file://
         $cdb =~ s{^dir://}{file://};
     } else {
-        $self->error ("Invalid base URL. Leaving");
+        $self->error ("Invalid base URL $cdb");
         $self->{status} = PARTERR_ST;
-        return ();
+        return;
     }
 
     # Read the config of the current host
@@ -624,8 +760,11 @@ sub fetch_profiles
     # for each foreign profile
     EDG::WP4::CCM::CCfg::resetCfg();
 
+    my %node_states;
     foreach my $node (@nl) {
-        next if exists $h{$node};
+        # ignore duplicate entries
+        next if exists $node_states{$node};
+
         my $ccmdir = $self->cachedir($node);
         my $url = "$cdb/$prefix$node.$suffix";
         $self->debug (1, "Fetching profile: $url");
@@ -650,8 +789,12 @@ sub fetch_profiles
             $self->debug(1, "config file $config $changed changed.");
         };
 
-        # we use CDB_File, since it's the fastest
-        my  $fh = EDG::WP4::CCM::Fetch->new ({PROFILE_URL => $url, FOREIGN => 1, CONFIG => $config, DBFORMAT => 'CDB_File'});
+        my $fh = EDG::WP4::CCM::Fetch->new({
+            PROFILE_URL => $url,
+            FOREIGN => 1,
+            CONFIG => $config,
+            DBFORMAT => 'CDB_File', # CDB_File is the fastest
+        });
         unless ($fh) {
             $self->error ("Error creating Fetch object for $url");
             $self->{status} = PARTERR_ST;
@@ -671,22 +814,22 @@ sub fetch_profiles
             next;
         }
 
-        my $cm = EDG::WP4::CCM::CacheManager->new ($fh->{CACHE_ROOT}, $config);
+        my $cm = EDG::WP4::CCM::CacheManager->new($fh->{CACHE_ROOT}, $config);
         if ($cm) {
-            my $cfg = $cm->getLockedConfiguration (0);
-            $h{$node} = {
+            my $cfg = $cm->getLockedConfiguration(0);
+            $node_states{$node} = {
+                name         => $node,
                 fetch        => $fh,
                 cachemanager => $cm,
                 configuration=> $cfg,
             };
         } else {
-            $self->error ("Failed to create CacheManager ",
-                          "object for node $node");
+            $self->error ("Failed to create CacheManager object for node $node. Skipping node.");
             $self->{status} = PARTERR_ST;
         }
-        $self->debug (1, "Inserted structure for $node on fetching structure");
     }
-    return %h;
+
+    return %node_states;
 }
 
 
@@ -712,16 +855,24 @@ foreach my $cmd (COMMANDS) {
 use strict 'refs';
 
 
-# Runs the Install method of the NBP plugins of the nodes given as
-# arguments.
+=item _install
+
+Runs the Install method of the NBP plugins of the node.
+
+=cut
+
 sub _install
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin ($st, NBP, INSTALLMETHOD);
 }
 
-# Runs the Status method of the NBP plugins of the nodes given as
-# arguments.
+=item _status
+
+Runs the Status method of the NBP plugins of the node.
+
+=cut
+
 sub _status
 {
     my ($self, $node, $st) = @_;
@@ -730,32 +881,51 @@ sub _status
     $self->run_plugin ($st, NBP, STATUSMETHOD);
 }
 
-# Runs the Boot method of the NBP plugins of the nodes given as
-# arguments.
+=item _boot
+
+Runs the Boot method of the NBP plugins of the node.
+
+=cut
+
 sub _boot
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin ($st, NBP, BOOTMETHOD);
 }
 
-# Runs the Firmware method of the NBP plugins of the nodes given as
-# arguments.
+=item _firmware
+
+Runs the Firmware method of the NBP plugins of the node.
+
+=cut
+
 sub _firmware
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin ($st, NBP, FIRMWAREMETHOD);
 }
 
-# Runs the Livecd method of the NBP plugins of the nodes given as
-# arguments
+=item _livecd
+
+Runs the Livecd method of the NBP plugins of the node.
+
+=cut
+
 sub _livecd
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin($st, NBP, LIVECDMETHOD);
 }
 
-# Runs the Remove method of the NBP plugins of the nodes given as
-# arguments.
+=item _remove
+
+Runs the Unconfigure method of all plugins of the node.
+
+If the node is not being reinstalled, also runs dhcp
+and removes the cache dir (unless noaction is set).
+
+=cut
+
 sub _remove
 {
     my ($self, $node, $st) = @_;
@@ -766,14 +936,18 @@ sub _remove
         $self->debug(3, "No dhcp and cache removal with reinstall set for $node");
     } else {
         if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-            $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
+            $self->dhcp($st, REMOVEMETHOD) unless $self->option (NODHCP);
         }
         $self->remove_cache_node($node) unless $self->option('noaction');
     };
 }
 
-# Runs the Rescue method of the NBP plugins of the nodes given as
-# arguments.
+=item _rescue
+
+Runs the Rescue method of the NBP plugins of the node.
+
+=cut
+
 sub _rescue
 {
     my ($self, $node, $st) = @_;
@@ -781,8 +955,12 @@ sub _rescue
     $self->run_plugin ($st, NBP, RESCUEMETHOD);
 }
 
-# Configures DISCOVERY, OSINSTALL and NBP on the nodes received as
-# arguments.
+=item _configure
+
+Runs the Configure method of all plugins and dhcp of the node.
+
+=cut
+
 sub _configure
 {
     my ($self, $node, $st) = @_;
@@ -791,36 +969,68 @@ sub _configure
 
     $self->iter_plugins($st, CONFIGURE);
     if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-        $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
+        $self->dhcp($st, CONFIGURE) unless $self->option(NODHCP);
     }
     $self->set_cache_time($node, $when) unless $self->option('noaction');
 }
 
+=item get_cache_time
 
-sub get_cache_time {
+Return the mtime of the C<node> AII statefile.
+
+=cut
+
+sub get_cache_time
+{
     my ($self, $node) = @_;
 
     my $cachedir = $self->cachedir($node);
-    return (stat("$cachedir/aii-configured"))[9] || 0;
+    return (stat("$cachedir/$STATE_FILENAME"))[9] || 0;
 }
 
-sub set_cache_time {
+=item get_cache_time
+
+Set the mtime of the C<node> AII statefile to C<when>.
+
+=cut
+
+sub set_cache_time
+{
     my ($self, $node, $when) = @_;
+
     my $cachedir = $self->cachedir($node);
-    if (!open(TOUCH, ">$cachedir/aii-configured")) {
-        $self->error("aii-shellfe: failed to update state for $node: $!");
-    }
-    close(TOUCH);
+    my $filename = "$cachedir/$STATE_FILENAME";
+
+    my $fh = CAF::FileWriter->new($filename, mtime => $when, log => $self);
+    print $fh '';
+    $fh->close();
 }
 
-sub remove_cache_node {
+=item remove_cache_node
+
+Remove the C<node> cachedir.
+(Does not check the noaction option)
+
+=cut
+
+sub remove_cache_node
+{
     my ($self, $node) = @_;
     my $cachedir = $self->cachedir($node);
     rmtree($cachedir);
 }
 
-# If a host is protected, check the protectid is correct, else don't include to process further
-sub check_protected {
+
+=item check_protected
+
+Given a hash with node states (as returned by C<fetch_profiles>),
+remove all protected hosts whose C</system/aii/protected> value does
+not match the confirm option.
+
+=cut
+
+sub check_protected
+{
     my ($self, %hash) = @_;
     my @to_delete;
 
@@ -847,7 +1057,12 @@ sub check_protected {
     return %hash;
 }
 
-# Runs all the commands
+=item cmds
+
+Runs all the commands
+
+=cut
+
 sub cmds
 {
     my $self = shift;
@@ -931,15 +1146,30 @@ sub cmds
 
 }
 
-sub finish {
+=item finish
+
+Run the finish method of all plugins
+
+=cut
+
+sub finish
+{
     my ($self) = @_;
+
     $self->debug(5, "closing down");
-    foreach my $plugin (keys %{$self->{plugins}}) {
-        if ($self->{plugins}->{$plugin}->can("finish")) {
-            $self->debug(5, "invoking finish for $plugin");
-            $self->{plugins}->{$plugin}->finish();
+    foreach my $pluginname (@PLUGIN_NAMES) {
+        my $plugin = $self->{plugins}->{$pluginname};
+        if ($plugin && $plugin->can('finish')) {
+            $self->debug(5, "invoking finish for $pluginname");
+            $plugin->finish();
         }
     }
 }
+
+=pod
+
+=back
+
+=cut
 
 1;
