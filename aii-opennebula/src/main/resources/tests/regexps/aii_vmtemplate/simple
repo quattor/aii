@@ -29,7 +29,9 @@ multiline
 ^OS\s?=\s?\[$
 ^\s*BOOT\s?=\s*""\s*$
 ^RAW\s?=\s?\[$
-^\s*DATA\s?=\s*".+",\s*$
+^\s*DATA\s?=\s*".+$
+^\s*\<.+\>$
+^\s*\<.+\>",$
 ^\s*TYPE\s?=\s*".+"\s*$
 ^PCI\s?=\s?\[$
 ^\s*CLASS\s?=\s*".+",\s*$
