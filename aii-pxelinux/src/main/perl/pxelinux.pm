@@ -332,9 +332,13 @@ sub pxe_ks_append
             push(@append,"nameserver=$ns");
         }
     }
-        
-    push(@append, $t->{append}) if $t->{append};
 
+    my $custom_append = $t->{append};
+    if ($custom_append) {
+	    $custom_append =~ s/LOCALHOST/$server/g;
+	    push @append, $custom_append;
+    }
+    
     return @append;    
 }
 
