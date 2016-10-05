@@ -8,18 +8,6 @@
     <artifactId>oss-parent</artifactId>
     <version>7</version>
   </parent>
-  <distributionManagement>
-    <repository>
-      <id>quattor.releases</id>
-      <name>Releases</name>
-      <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-releases/</url>
-    </repository>
-    <snapshotRepository>
-      <id>quattor.snapshots</id>
-      <name>Snapshots</name>
-      <url>http://stratuslab-srv01.lal.in2p3.fr:8081/content/repositories/quattor-snapshots/</url>
-    </snapshotRepository>
-  </distributionManagement>
   <version>16.8.1-SNAPSHOT</version>
   <name>AII</name>
   <scm>
