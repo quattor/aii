@@ -37,11 +37,10 @@ Readonly my $BOOT_V5 => [qw(nic0 disk0)];
 sub make_one
 {
     my ($self, $data) = @_;
-    my $filename = $AII_OPENNEBULA_CONFIG;
     my $rpc = "rpc";
 
-    if (! -f $filename) {
-        $main::this_app->error("No configfile $filename.");
+    if (! -f $AII_OPENNEBULA_CONFIG) {
+        $main::this_app->error("No configfile $AII_OPENNEBULA_CONFIG.");
         return;
     }
 
@@ -50,7 +49,7 @@ sub make_one
     my $hostname = $data->getElement ($HOSTNAME)->getValue;
     my $fqdn = "${hostname}.${domainname}";
 
-    $config = Config::Tiny->read($filename);
+    $config = Config::Tiny->read($AII_OPENNEBULA_CONFIG);
     foreach my $section (sort keys %{$config}) {
         $main::this_app->verbose("Found RPC section: $section");
         my $pattern = $config->{$section}->{pattern};
@@ -79,7 +78,7 @@ sub make_one
     };
 
     if (! $password ) {
-        $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
+        $main::this_app->error("No password set in configfile $AII_OPENNEBULA_CONFIG. Section [$rpc]");
         return;
     }
 

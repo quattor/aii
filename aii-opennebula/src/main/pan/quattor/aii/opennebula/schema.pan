@@ -56,7 +56,6 @@ type opennebula_vmtemplate_vnet = string{} with {
     foreach (k;v;SELF) {
         if (! exists("/system/network/interfaces/"+k)) {
             error(format("entry: %s in the vnet map is not available from /system/network/interfaces tree", k));
-            return(false);
         };
     };
     # check if all interfaces have an entry in the map
