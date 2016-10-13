@@ -3,6 +3,8 @@
 # ${author-info}
 # ${build-info}
 
+=encoding utf8
+
 =pod
 
 =head1 AII-update
@@ -94,7 +96,7 @@ It is not possible to have concurrent installations of AII versions
 
 =head3 Configuration files
 
-All AII-related configuration files are now found under /etc/aii/ instead of 
+All AII-related configuration files are now found under /etc/aii/ instead of
 directly under /etc.
 
 =head3 Schema changes
@@ -105,25 +107,25 @@ Pan configuration for AII version to version 2.
 1. Define the required Pan variables for AII, and define any of the optional
 variables to use another value than the default.
 
-2. Use ncm-lib-blockdevices in favor of the Pan function set_partitions(). 
+2. Use ncm-lib-blockdevices in favor of the Pan function set_partitions().
 See the documentation in L<ncm-lib-blockdevices(8)> for details.
 
-3. Ensure that there are no remaining entries C</system/aii/osinstall/options> 
-and C</system/aii/nbp/options> in the Pan hierarchy. The presence of these 
+3. Ensure that there are no remaining entries C</system/aii/osinstall/options>
+and C</system/aii/nbp/options> in the Pan hierarchy. The presence of these
 branches will make AII believe that there are OS installation and network boot
 plugins called C<options>. Since those plugins are probably not defined, a
-run-time error will occur. 
+run-time error will occur.
 
 
 =head2 Contributing plugins or hooks
 
 As mentioned above, it is possible to develop your own plugin or hooks.
 If you write a plugin or hook that might be of interest for other users,
-please share it! 
+please share it!
 
 If you have write access to Quattor's CVS repository at CERN, you can
-add your component in a new directory under 
-C<quattor/aii/plug-ins/contrib/plugins> or 
+add your component in a new directory under
+C<quattor/aii/plug-ins/contrib/plugins> or
 C<quattor/aii/plug-ins/contrib/hooks>.
 If you do no have write access, or for other questions, please contact the
 maintainers of AII.

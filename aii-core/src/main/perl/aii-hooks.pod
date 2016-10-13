@@ -3,13 +3,15 @@
 # ${author-info}
 # ${build-info}
 
+=encoding utf8
+
 =pod
 
 =head1 Hooks for customizing kickstart creation on AII
 
 The generation of the Kickstart configuration file may be customized
 via C<hooks>. Hooks are a sort of components which are executed from
-the Kickstart plugin. 
+the Kickstart plugin.
 
 Using hooks allows for extending the default generation of the
 Kickstart file. It offers flexibility to implement new features or
@@ -62,10 +64,14 @@ basic services that will make Quattor work. This includes CCM and
 installing Quattor base packages. Hooks can be run after all the base
 Quattor packages have ben installed and before CCM is configured.
 
+=back
+
 =head2 NBP hooks
 
 Hooks can be placed to run on network boot actions. Currently provided
 hooks are run:
+
+=over
 
 =item When marking a node for installation
 
