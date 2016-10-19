@@ -45,7 +45,7 @@ use constant KS => "/system/aii/osinstall/ks";
 # Lowest supported version is EL 5.0
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
 use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
-use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31"); 
+use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 our @ISA = qw (NCM::Component);
@@ -53,12 +53,12 @@ our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
 
 # Return the fqdn of the node
-sub get_fqdn 
+sub get_fqdn
 {
     my $cfg = shift;
     my $h = $cfg->getElement (HOSTNAME)->getValue;
     my $d = $cfg->getElement (DOMAINNAME)->getValue;
-    return "$h.$d";    
+    return "$h.$d";
 }
 
 # return the anaconda version instance as specified in the kickstart (if at all)
@@ -72,9 +72,9 @@ sub get_anaconda_version
             # TODO is this ok, or should we stop?
             $this_app->error("Version $version < lowest supported ".ANACONDA_VERSION_LOWEST.", continuing with lowest");
             $version = ANACONDA_VERSION_LOWEST;
-        }        
+        }
     };
-    return $version;    
+    return $version;
 }
 
 # Returns the absolute path where the PXE file must be written.
@@ -115,27 +115,27 @@ sub link_filepath
 }
 
 
-# Configure the ksdevice with static IP 
+# Configure the ksdevice with static IP
 # (EL7+ only)
 sub pxe_ks_static_network
 {
     my ($config, $dev) = @_;
 
     my $fqdn = get_fqdn($config);
-    
+
     my $bootdev = $dev;
 
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
-    # check for bridge: if $dev is a bridge interface, 
+    # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
     if ($net->{bridge}) {
-        my $brdev = $net->{bridge}; 
+        my $brdev = $net->{bridge};
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
-        # warning: $dev is changed here to the bridge device to create correct log 
-        # messages in remainder of this method. as there is not bridge device 
+        # warning: $dev is changed here to the bridge device to create correct log
+        # messages in remainder of this method. as there is not bridge device
         # in anaconda phase, the new value of $dev is not an actual network device!
         $dev = $brdev;
     }
@@ -145,7 +145,7 @@ sub pxe_ks_static_network
                               "but no IP given to the interface $dev");
             return;
     }
-    
+
     # can't set MTU with static ip via PXE
 
     my $gw;
@@ -158,7 +158,7 @@ sub pxe_ks_static_network
         # No best guess here
         $this_app->error ("No gateway defined for dev $dev and ",
                           " using static network description.");
-        return;                
+        return;
     };
 
     return "$net->{ip}::$gw:$net->{netmask}:$fqdn:$bootdev:none";
@@ -175,36 +175,38 @@ sub pxe_network_bonding {
     my $bonding_disabled = exists($tree->{bonding}) && (! $tree->{bonding});
 
     my $logerror = "error";
-    my $bonding_disabled_msg = "";
-    if ($bonding_disabled) {
-        $bonding_disabled_msg = "Bonding config generation explicitly disabled";
+    my $bonding_cfg_msg = "";
+    if (! exists($tree->{bonding})) {
+        $bonding_cfg_msg = "Bonding config generation not defined, continuing best-effort";
         $logerror = "verbose";
-        $this_app->$logerror($bonding_disabled_msg);
+    } elsif ($bonding_disabled) {
+        $bonding_cfg_msg = "Bonding config generation explicitly disabled";
+        $logerror = "verbose";
+        $this_app->$logerror($bonding_cfg_msg);
     }
-    
+
     if (! $dev_exists) {
         if ($dev_invalid) {
-            $this_app->$logerror("Invalid ksdevice $dev for bonding network configuration. $bonding_disabled_msg");
-            return;
+            $this_app->$logerror("Invalid ksdevice $dev for bonding network configuration. $bonding_cfg_msg");
         } else {
-            $this_app->$logerror("ksdevice $dev for bonding network configuration has matching no interface. $bonding_disabled_msg");
-            return;
+            $this_app->$logerror("ksdevice $dev for bonding network configuration has no matching interface. $bonding_cfg_msg");
         }
+        return;
     }
-    
+
     my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
 
-    # check for bonding 
+    # check for bonding
     # if bonding not defined, assume it's allowed
     my $bonddev = $net->{master};
 
     # check the existence to deal with older profiles
     if ($bonding_disabled) {
         # lets hope you know what you are doing
-        $this_app->warn ("$bonding_disabled_msg for dev $dev, with master $bonddev set.") if ($bonddev);
+        $this_app->warn ("$bonding_cfg_msg for dev $dev, with master $bonddev set.") if ($bonddev);
         return;
    } elsif ($bonddev) {
-        # this is the dhcp code logic; adding extra error here. 
+        # this is the dhcp code logic; adding extra error here.
         if (!($net->{bootproto} && $net->{bootproto} eq "none")) {
             $this_app->error("Pretending this a bonded setup with bonddev $bonddev (and ksdevice $dev).",
                              "But bootproto=none is missing, so ncm-network will not treat it as one.");
@@ -214,12 +216,12 @@ sub pxe_network_bonding {
         # bond network config
         $net = $config->getElement("/system/network/interfaces/$bonddev")->getTree;
 
-        # gather the slaves, the ksdevice is put first 
+        # gather the slaves, the ksdevice is put first
         my @slaves;
         push(@slaves, $dev);
         my $intfs = $config->getElement("/system/network/interfaces")->getTree;
         for my $intf (sort keys %$intfs) {
-            push (@slaves, $intf) if ($intfs->{$intf}->{master} && 
+            push (@slaves, $intf) if ($intfs->{$intf}->{master} &&
                                       $intfs->{$intf}->{master} eq $bonddev &&
                                       !(grep { $_ eq $intf } @slaves));
         };
@@ -233,28 +235,28 @@ sub pxe_network_bonding {
             }
             $bondtxt .= ":". join(',', @opts);
         }
-        
+
         return ($bonddev, $bondtxt);
-        
+
     }
-    
+
 }
 
 
 # create a list with all append options for kickstart installations
-sub pxe_ks_append 
+sub pxe_ks_append
 {
     my $cfg = shift;
 
     my $t = $cfg->getElement (PXEROOT)->getTree;
-    
+
     my $kst = {}; # empty hashref in case no kickstart is defined
     $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
 
     my $version = get_anaconda_version($kst);
 
     my $keyprefix = "";
-    my $ksdevicename = "ksdevice";  
+    my $ksdevicename = "ksdevice";
     if($version >= ANACONDA_VERSION_EL_7_0) {
         $keyprefix="inst.";
 
@@ -262,9 +264,9 @@ sub pxe_ks_append
             ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
             $this_app->warn("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
-            $ksdevicename = "bootdev";  
+            $ksdevicename = "bootdev";
         }
-    }  
+    }
 
     my $ksloc = $t->{kslocation};
     my $server = hostname();
@@ -275,11 +277,11 @@ sub pxe_ks_append
          "ramdisk=32768",
          "initrd=$t->{initrd}",
          "${keyprefix}ks=$ksloc",
-         );         
+         );
 
     my $ksdev = $t->{ksdevice};
     if ($version >= ANACONDA_VERSION_EL_6_0) {
-        # bond support in pxelinunx config 
+        # bond support in pxelinunx config
         # (i.e using what device will the ks file be retrieved).
         my ($bonddev, $bondingtxt) = pxe_network_bonding($cfg, $kst, $ksdev);
         if ($bonddev) {
@@ -295,19 +297,19 @@ sub pxe_ks_append
     };
 
     if ($kst->{logging} && $kst->{logging}->{host}) {
-        push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}"); 
+        push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}");
         push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
-    
+
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         if ($kst->{enable_sshd}) {
             push(@append, "${keyprefix}sshd");
         };
-        
+
         if ($kst->{cmdline}) {
             push(@append, "${keyprefix}cmdline");
         };
-        
+
         if ($t->{setifnames}) {
             # set all interfaces names to the configured macaddress
             my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
@@ -320,13 +322,13 @@ sub pxe_ks_append
             if ($ksdev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
                 $this_app->error("Invalid ksdevice $ksdev for static ks configuration.");
             } else {
-                my $static = pxe_ks_static_network($cfg, $ksdev);            
+                my $static = pxe_ks_static_network($cfg, $ksdev);
                 push(@append,"ip=$static") if ($static);
             }
         } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
             push(@append,"ip=$kst->{bootproto}");
         }
-        
+
         my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
         foreach my $ns (@$nms) {
             push(@append,"nameserver=$ns");
@@ -343,7 +345,7 @@ sub pxe_ks_append
 }
 
 # create a list with all append options
-sub pxe_append 
+sub pxe_append
 {
     my $cfg = shift;
 
@@ -534,4 +536,3 @@ foreach my $i (qw(configure boot rescue livecd firmware install)) {
 use strict 'refs';
 
 1;
-
