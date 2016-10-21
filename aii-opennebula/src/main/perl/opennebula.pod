@@ -18,6 +18,7 @@ This AII hook generates the required resources and templates to instantiate/crea
 
 =head3 configure
 
+Generates VM images, generates/updates VM templates and AR Virtual Networks. 
 Modify your machine template to:
 
 =over 4
@@ -31,7 +32,7 @@ Modify your machine template to:
 =item * Include 'metaconfig/opennebula/schema'
 
 =item * Set the OpenNebula opennebula/datastore name for each vdx
-      
+
 =item * Set the VNETs opennebula/vnet (bridges) required by each VM network interface
 
 =item * (Optional) Set /system/opennebula/ignoremac tree to avoid to include MAC values within AR/VM templates
@@ -51,7 +52,7 @@ Modify your machine template to:
 =item * (Optional) Set OPENNEBULA_AII_REPLACE_MAC and MAC_PREFIX variables to replace VM MACs to use OpenNebula style
 
 =back
-        
+
 =item * enable acpid service
 
 =back
@@ -62,7 +63,7 @@ The next paths are relative to /system/aii/hooks/configure
 
 =item * image : boolean
 
-Create VM images. Note: if this hook is set the current VM images will be overwritten (also stop/delete VM)
+Create VM images. Note: VM images are not updated, if you want to resize or modify an available image from scratch use remove hook first.
 
 =item * template : boolean
 
@@ -72,6 +73,7 @@ Create VM template.
 
 =head3 install
 
+Instantiates the required VM. 
 The next paths are relative to /system/aii/hooks/install
 
 =over 4
@@ -88,6 +90,7 @@ The VM is instantiated but onhold status instead of running
 
 =head3 remove
 
+Removes the VM resources (template/images/network). 
 All these paths are relative to /system/aii/hooks/remove
 
 =over 4
@@ -96,8 +99,6 @@ All these paths are relative to /system/aii/hooks/remove
 
 Stop running VM
 
-=over 4
-
 =item * image : boolean
 
 Remove image/s
@@ -105,8 +106,6 @@ Remove image/s
 =item * template : boolean
 
 Remove VM templates
-
-=back
 
 =back
 
@@ -132,6 +131,9 @@ Set OpenNebula endpoints RPC connector /etc/aii/opennebula.conf
 
 It must include at least one RPC endpoint and password.
 
+To set an https endpoint for example you can use:
+ url=https://host.example.com:2633
+
 By default ONE AII uses oneadmin user and port 2633.
 
 It is also possible to set a different endpoint for each VM domain or use a fqdn pattern
@@ -139,18 +141,17 @@ as example:
 
     [rpc]
     password=
-    host=
+    url=https://localhost/RPC2
 
     [example.com]
     password=
     user=
-    host=
-    port=
 
     [myhosts]
     pattern=myhos\d+.example.com
     password=
-    host=
+    url=http://example.com:2633/RPC2
+
 
 =head2 AUTHOR
 

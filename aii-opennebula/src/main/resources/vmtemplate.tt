@@ -65,7 +65,9 @@ BOOT = "[% system.opennebula.boot.join(',') %]"
 ]
 RAW = [
 [%     FILTER indent -%]
-DATA = "<vcpu>[% vcpus %]</vcpu><cpu mode='host-passthrough'><topology sockets='[% sockets %]' cores='[% cores %]' threads='1'/></cpu>",
+DATA = "<vcpu>[% vcpus %]</vcpu><cpu mode='host-passthrough'>
+<topology sockets='[% sockets %]' cores='[% cores %]' threads='1'/></cpu>
+<devices><video><model type='qxl'/></video></devices>",
 TYPE = "kvm"
 [%-    END %]
 ]

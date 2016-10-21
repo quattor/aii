@@ -13,42 +13,43 @@ use Set::Scalar;
 use Template;
 
 use Config::Tiny;
-use Net::OpenNebula 0.307.0;
+use Net::OpenNebula 0.308.0;
 use Data::Dumper;
+use Readonly;
 
-use constant TEMPLATEPATH => "/usr/share/templates/quattor";
-use constant AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
-use constant HOSTNAME => "/system/network/hostname";
-use constant DOMAINNAME => "/system/network/domainname";
-use constant MAXITER => 20;
-use constant TIMEOUT => 30;
-use constant MINIMAL_ONE_VERSION => version->new("4.8.0");
+Readonly my $AII_OPENNEBULA_CONFIG => "/etc/aii/opennebula.conf";
+Readonly my $HOSTNAME => "/system/network/hostname";
+Readonly my $DOMAINNAME => "/system/network/domainname";
+Readonly my $MAXITER => 20;
+Readonly my $TIMEOUT => 30;
+Readonly my $MINIMAL_ONE_VERSION => version->new("4.8.0");
+Readonly my $ONE_DEFAULT_URL => 'http://localhost:2633/RPC2';
+Readonly my $ONE_DEFAULT_PORT => 2633;
+Readonly my $ONE_DEFAULT_USER => "oneadmin";
+Readonly my $BOOT_V4 => [qw(network hd)];
+Readonly my $BOOT_V5 => [qw(nic0 disk0)];
 
-
-
-use constant BOOT_V4 => [qw(network hd)];
-use constant BOOT_V5 => [qw(nic0 disk0)];
-
-# a config file in .ini style with minmal 
+# a config file in .ini style with a minimal 
+# RPC endpoint setup
 #   [rpc]
+#   url=http://example.com:2633/RPC2
 #   password=secret
-sub make_one 
+sub make_one
 {
     my ($self, $data) = @_;
-    my $filename = AII_OPENNEBULA_CONFIG;
     my $rpc = "rpc";
 
-    if (! -f $filename) {
-        $main::this_app->error("No configfile $filename.");
+    if (! -f $AII_OPENNEBULA_CONFIG) {
+        $main::this_app->error("No configfile $AII_OPENNEBULA_CONFIG.");
         return;
     }
 
     my $config = Config::Tiny->new;
-    my $domainname = $data->getElement (DOMAINNAME)->getValue;
-    my $hostname = $data->getElement (HOSTNAME)->getValue;
+    my $domainname = $data->getElement ($DOMAINNAME)->getValue;
+    my $hostname = $data->getElement ($HOSTNAME)->getValue;
     my $fqdn = "${hostname}.${domainname}";
 
-    $config = Config::Tiny->read($filename);
+    $config = Config::Tiny->read($AII_OPENNEBULA_CONFIG);
     foreach my $section (sort keys %{$config}) {
         $main::this_app->verbose("Found RPC section: $section");
         my $pattern = $config->{$section}->{pattern};
@@ -62,18 +63,27 @@ sub make_one
         $rpc = $domainname;
         $main::this_app->info ("Detected configfile RPC section: [$rpc]");
     };
-    my $port = $config->{$rpc}->{port} || 2633;
-    my $host = $config->{$rpc}->{host} || "localhost";
-    my $user = $config->{$rpc}->{user} || "oneadmin";
+    my $port = $config->{$rpc}->{port} || $ONE_DEFAULT_PORT;
+    my $host = $config->{$rpc}->{host};
+    my $url = $config->{$rpc}->{url} || $ONE_DEFAULT_URL;
+    my $user = $config->{$rpc}->{user} || $ONE_DEFAULT_USER;
     my $password = $config->{$rpc}->{password};
 
+    # Keep backwards compatibility
+    if ($host) {
+        $main::this_app->warn("RPC old host section detected: $host. ",
+                              "Please use metaconfig to generate a proper OpenNebula aii configuration.",
+                              "ONE aii will replace the RPC url by the assigned host at this point.");
+        $url = "http://$host:$port/RPC2";
+    };
+
     if (! $password ) {
-        $main::this_app->error("No password set in configfile $filename. Section [$rpc]");
+        $main::this_app->error("No password set in configfile $AII_OPENNEBULA_CONFIG. Section [$rpc]");
         return;
     }
-    
+
     my $one = Net::OpenNebula->new(
-        url      => "http://$host:$port/RPC2",
+        url      => $url,
         user     => $user,
         password => $password,
         log => $main::this_app,
@@ -92,14 +102,14 @@ sub make_one
 sub process_template
 {
     my ($self, $config, $tt_name, $oneversion) = @_;
-    
+
     my $tree = $config->getElement('/')->getTree();
     if ((defined $oneversion) and ($oneversion >= version->new("5.0.0"))) {
-        $tree->{system}->{opennebula}->{boot} = BOOT_V5;
+        $tree->{system}->{opennebula}->{boot} = $BOOT_V5;
         $main::this_app->verbose("BOOT section set to support OpenNebula versions >= 5.0.0");
     } else {
         $main::this_app->verbose("BOOT section set to support OpenNebula versions < 5.0.0");
-        $tree->{system}->{opennebula}->{boot} = BOOT_V4;
+        $tree->{system}->{opennebula}->{boot} = $BOOT_V4;
     };
 
     my $tpl = CAF::TextRender->new(
@@ -136,14 +146,14 @@ sub get_permissions
 sub get_fqdn
 {
     my ($self,$config) = @_;
-    my $hostname = $config->getElement (HOSTNAME)->getValue;
-    my $domainname = $config->getElement (DOMAINNAME)->getValue;
+    my $hostname = $config->getElement ($HOSTNAME)->getValue;
+    my $domainname = $config->getElement ($DOMAINNAME)->getValue;
     return "${hostname}.${domainname}";
 }
 
 # It gets the image template from tt file
-# and gathers image names format: <fqdn>_<vdx> 
-# and datastore names to store the new images 
+# and gathers image names format: <fqdn>_<vdx>
+# and datastore names to store the new images
 sub get_images
 {
     my ($self, $config) = @_;
@@ -265,27 +275,32 @@ sub get_resource_instance
     return;
 }
 
-sub remove_and_create_vm_images
+# Create new VM images and it detects if the image is already available
+# it removes images if remove flag is set
+sub remove_or_create_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagesref, $permissions, $remove) = @_;
+    my ($self, $one, $createimage, $imagesref, $permissions, $remove) = @_;
     my (@rimages, @nimages, @qimages, $newimage, $count);
 
     foreach my $imagename (sort keys %{$imagesref}) {
         my $imagedata = $imagesref->{$imagename};
         $main::this_app->info ("Checking ONE image: $imagename");
         push(@qimages, $imagename);
-        $self->remove_vm_images($one, $forcecreateimage, $imagename, \@rimages);
-        $self->create_vm_images($one, $imagename, $imagedata, $remove, $permissions, \@nimages);
+        if ($remove) {
+            $self->remove_vm_images($one, $imagename, \@rimages);
+        } elsif ($createimage) {
+            $self->create_vm_images($one, $imagename, $imagedata, $permissions, \@nimages);
+        };
     }
     # Check created/removed image lists
     if ($remove) {
         my $diff = $self->check_vm_images_list(\@rimages, \@qimages);
-        if ($diff) { 
+        if ($diff) {
             $main::this_app->error("Removing these VM images: ", join(', ', @qimages));
         }
     } else {
         my $diff = $self->check_vm_images_list(\@nimages, \@qimages);
-        if ($diff) { 
+        if ($diff) {
             $main::this_app->error("Creating these VM images: ", join(', ', @qimages));
         }
     }
@@ -294,36 +309,35 @@ sub remove_and_create_vm_images
 # Create new VM images
 sub create_vm_images
 {
-    my ($self, $one, $imagename, $imagedata, $remove, $permissions, $ref_nimages) = @_;
+    my ($self, $one, $imagename, $imagedata, $permissions, $ref_nimages) = @_;
 
     my $newimage;
-    if (!$remove) {
-        if ($self->is_one_resource_available($one, "image", $imagename)) {
-            $main::this_app->error("Image: $imagename is already used and AII hook: image is not set. ",
-                                    "Please remove this image first.");
-        } else {
+    if ($self->is_one_resource_available($one, "image", $imagename)) {
+        $main::this_app->warn("Image: $imagename is already available from OpenNebula. ",
+                              "Please remove this image first if you want to generate a new one from scratch.");
+        return;
+    } else {
             $newimage = $one->create_image($imagedata->{image}, $imagedata->{datastore});
-        }
-        if ($newimage) {
-            $main::this_app->info("Created new VM image ID: ", $newimage->id);
-            if ($permissions) {
-                $self->change_permissions($one, "image", $newimage, $permissions);
-            };
-            push(@{$ref_nimages}, $imagename);
-        } else {
-            $main::this_app->error("VM image: $imagename is not available");
-        }
+    }
+    if ($newimage) {
+        $main::this_app->info("Created new VM image ID: ", $newimage->id);
+        if ($permissions) {
+            $self->change_permissions($one, "image", $newimage, $permissions);
+        };
+        push(@{$ref_nimages}, $imagename);
+    } else {
+        $main::this_app->error("VM image: $imagename is not available");
     }
 }
 
 # Removes current VM images
 sub remove_vm_images
 {
-    my ($self, $one, $forcecreateimage, $imagename, $ref_rimages) = @_;
+    my ($self, $one, $imagename, $ref_rimages) = @_;
 
     my @existimage = $one->get_images(qr{^$imagename$});
     foreach my $t (@existimage) {
-        if (($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) && ($forcecreateimage)) {
+        if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
             # It's safe, we can remove the image
             $main::this_app->info("Removing VM image: $imagename");
             my $id = $t->delete();
@@ -347,7 +361,7 @@ sub is_timeout
     my ($self, $one, $resource, $name) = @_;
     eval {
         local $SIG{ALRM} = sub { die "alarm\n" };
-        alarm TIMEOUT;
+        alarm $TIMEOUT;
         do {
             sleep(2);
         } while($self->is_one_resource_available($one, $resource, $name));
@@ -386,7 +400,7 @@ sub remove_and_create_vn_ars
             my $arinfo = $t->get_ar(%ar_opts);
             if ($remove) {
                 $self->remove_vn_ars($one, $arinfo, $vnet, $ardata, $t);
-            } else { 
+            } else {
                 $self->create_vn_ars($one, $vnet, $ardata, $t);
             }
        }
@@ -462,30 +476,31 @@ sub stop_and_remove_one_vms
             $main::this_app->info("Running VM will be removed: ",$t->name);
             $t->delete();
         } else {
-            $main::this_app->info("No QUATTOR flag found for Running VM: ",$t->name);
+            $main::this_app->info("No QUATTOR flag found for Running VM: ", $t->name);
         }
     }
 }
 
-# Creates and removes VM templates
-# $createvmtemplate hook forces to remove/create
-sub remove_and_create_vm_template
+# Creates or removes VM templates
+# $createvmtemplate flag forces to create
+# $remove flag forces to remove
+sub remove_or_create_vm_template
 {
     my ($self, $one, $fqdn, $createvmtemplate, $vmtemplate, $permissions, $remove) = @_;
-    
+
     # Check if the vm template already exists
     my @existtmpls = $one->get_templates(qr{^$fqdn$});
 
     foreach my $t (@existtmpls) {
         if ($t->{extended_data}->{TEMPLATE}->[0]->{QUATTOR}->[0]) {
-            if ($createvmtemplate) {
-                # force to remove and create the template again
+            if ($remove) {
+                # force to remove
                 $main::this_app->info("QUATTOR VM template, going to delete: ",$t->name);
                 $t->delete();
             } else {
                 # Update the current template
                 $main::this_app->info("QUATTOR VM template, going to update: ",$t->name);
-                $self->debug(1, "New $fqdn template : $vmtemplate");
+                $main::this_app->debug(1, "New $fqdn template : $vmtemplate");
                 my $update = $t->update($vmtemplate, 0);
                 if ($permissions) {
                     $self->change_permissions($one, "template", $t, $permissions);
@@ -496,7 +511,7 @@ sub remove_and_create_vm_template
             $main::this_app->info("No QUATTOR flag found for VM template: ",$t->name);
         }
     }
-    
+
     if ($createvmtemplate && !$remove) {
         my $templ = $one->create_template($vmtemplate);
         $main::this_app->debug(1, "New ONE VM template name: ",$templ->name);
@@ -522,12 +537,12 @@ sub is_supported_one_version
         return;
     }
 
-    my $res= $oneversion >= MINIMAL_ONE_VERSION;
+    my $res= $oneversion >= $MINIMAL_ONE_VERSION;
     if ($res) {
         $main::this_app->verbose("Version $oneversion is ok.");
         return $oneversion;
     } else {
-        $main::this_app->error("OpenNebula AII requires ONE v".MINIMAL_ONE_VERSION." or higher (found $oneversion).");
+        $main::this_app->error("OpenNebula AII requires ONE v$MINIMAL_ONE_VERSION or higher (found $oneversion).");
     }
     return;
 }
@@ -556,8 +571,8 @@ sub configure
 {
     my ($self, $config, $path) = @_;
     my $tree = $config->getElement($path)->getTree();
-    my $forcecreateimage = $tree->{image};
-    $main::this_app->info("Forcecreate image flag is set to: $forcecreateimage");
+    my $createimage = $tree->{image};
+    $main::this_app->info("Create VM image flag is set to: $createimage");
     my $createvmtemplate = $tree->{template};
     $main::this_app->info("Create VM template flag is set to: $createvmtemplate");
     my $permissions = $self->get_permissions($config);
@@ -575,18 +590,14 @@ sub configure
     my $oneversion = $self->is_supported_one_version($one);
     return 0 if !$oneversion;
 
-    if ($forcecreateimage || $createvmtemplate) {
-        $self->stop_and_remove_one_vms($one, $fqdn);
-    }
-
     my %images = $self->get_images($config);
-    $self->remove_and_create_vm_images($one, $forcecreateimage, \%images, $permissions);
+    $self->remove_or_create_vm_images($one, $createimage, \%images, $permissions);
 
     my %ars = $self->get_vnetars($config);
     $self->remove_and_create_vn_ars($one, \%ars);
 
     my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
-    my $vmtemplate = $self->remove_and_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
+    my $vmtemplate = $self->remove_or_create_vm_template($one, $fqdn, $createvmtemplate, $vmtemplatetxt, $permissions);
 }
 
 # Based on Quattor template this function:
@@ -604,7 +615,7 @@ sub install
     my $onhold = $tree->{onhold};
     $main::this_app->info("Start VM onhold flag is set to: $onhold");
     my $permissions = $self->get_permissions($config);
-        
+
     my $fqdn = $self->get_fqdn($config);
 
     # Set one endpoint RPC connector
@@ -635,7 +646,7 @@ sub install
 
         # Check that image is in READY state.
         my @myimages = $one->get_images(qr{^${fqdn}\_vd[a-z]$});
-        $opts{max_iter} = MAXITER;
+        $opts{max_iter} = $MAXITER;
         foreach my $t (@myimages) {
             # If something wrong happens set a timeout
             my $imagestate = $t->wait_for_state("READY", %opts);
@@ -661,7 +672,7 @@ sub install
 }
 
 # Performs Quattor post_reboot
-# ACPID service is mandatory for ONE VMs 
+# ACPID service is mandatory for ONE VMs
 sub post_reboot
 {
     my ($self, $config, $path) = @_;
@@ -705,19 +716,19 @@ sub remove
         $self->stop_and_remove_one_vms($one,$fqdn);
     }
 
+    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
+    if ($vmtemplatetxt && $rmvmtemplate) {
+        $self->remove_or_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
+    }
+
     my %images = $self->get_images($config);
-    if (%images) {
-        $self->remove_and_create_vm_images($one, 1, \%images, undef, $rmimage);
+    if (%images && $rmimage) {
+        $self->remove_or_create_vm_images($one, undef, \%images, undef, $rmimage);
     }
 
     my %ars = $self->get_vnetars($config);
     if (%ars) {
         $self->remove_and_create_vn_ars($one, \%ars, $rmvmtemplate);
-    }
-
-    my $vmtemplatetxt = $self->get_vmtemplate($config, $oneversion);
-    if ($vmtemplatetxt) {
-        $self->remove_and_create_vm_template($one, $fqdn, 1, $vmtemplatetxt, undef, $rmvmtemplate);
     }
 }
 

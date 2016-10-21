@@ -38,14 +38,14 @@ $path = "/system/aii/hooks/remove/0";
 $aii->remove($cfg, $path);
 #diag_rpc_history;
 ok(rpc_history_ok(["one.vmpool.info",
+                   "one.templatepool.info",
+                   "one.template.delete",
                    "one.imagepool.info",
                    "one.image.delete",
                    "one.imagepool.info",
                    "one.vnpool.info",
                    "one.vn.rm_ar",
-                   "one.vnpool.info",
-                   "one.templatepool.info",
-                   "one.template.delete"]),
+                   "one.vnpool.info"]),
                    "remove rpc history ok");
 # test configure
 rpc_history_reset;
@@ -53,11 +53,7 @@ rpc_history_reset;
 $path = "/system/aii/hooks/configure/0";
 $aii->configure($cfg, $path);
 #diag_rpc_history;
-ok(rpc_history_ok(["one.vmpool.info",
-                   "one.imagepool.info",
-                   "one.image.delete",
-                   "one.imagepool.info",
-                   "one.imagepool.info",
+ok(rpc_history_ok(["one.imagepool.info",
                    "one.imagepool.info",
                    "one.datastorepool.info",
                    "one.image.allocate",
@@ -68,10 +64,10 @@ ok(rpc_history_ok(["one.vmpool.info",
                    "one.image.chown",
                    "one.vnpool.info",
                    "one.vn.add_ar",
+                   "one.vnpool.info",
+                   "one.vn.add_ar",
                    "one.templatepool.info",
-                   "one.template.delete",
-                   "one.template.allocate",
-                   "one.template.info",
+                   "one.template.update",
                    "one.template.chmod",
                    "one.userpool.info",
                    "one.grouppool.info",
