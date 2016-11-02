@@ -21,7 +21,7 @@ specified in the profile.
 
 =head1 SYNOPSIS
 
- aii-shellfev2 --cdburl URL [options]
+ aii-shellfe --cdburl URL [options]
                        <--boot <hostname|regexp>      |
                         --bootlist <filename>         |
                         --configure <hostname|regexp> |
@@ -309,12 +309,6 @@ return value 1.  When non-fatal errors occur, aii-shellfe returns
 
 L<aii-components(8)>, L<aii-hooks(8)>,
 L<aii(8)>
-
-=head1 AUTHORS
-
-Luis Fernando Muñoz Mejías <luisf.munnoz@uam.es>
-
-Ronald Starink <ronalds@nikhef.nl>
 
 =cut
 
