@@ -300,6 +300,12 @@ sub _initialize
     $self->{status} = 0;
     $self->SUPER::_initialize (@_) or return undef;
     $self->set_report_logfile ($self->{LOG});
+
+    # Log all warnings
+    $SIG{__WARN__} = sub {
+        $self->verbose("Perl warning: $_[0]");
+    };
+
     my $f;
     $ENV{HTTPS_CA_FILE} = $f if $f = $self->option (CAFILE);
     $ENV{HTTPS_CA_DIR} = $f  if $f = $self->option (CADIR);
