@@ -637,7 +637,7 @@ sub install
         $vmtemplate = $vmtpl[0];
         $main::this_app->info("Found VM template from ONE database: ", $vmtemplate->name);
     } else {
-        $main::this_app->error("VM template is not available to be instantiated: ", $vmtemplate->name);
+        $main::this_app->error("VM template is not available to instantiate VM: $fqdn");
         return 0;
     }
 
