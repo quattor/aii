@@ -39,6 +39,8 @@ Modify your machine template to:
 
 =item * (Optional) Set /system/opennebula/graphics to export VM graphical display (VNC is used by default)
 
+=item * (Optional) Set /system/opennebula/labels list to include OpenNebula search labels
+
 =item * (Optional) Set /system/opennebula/pci list values to enable PCI Passthrough
 
 =over 6
