@@ -16,10 +16,11 @@
     <url>https://github.com/quattor/aii</url>
   </scm>
   <modules>
+    <!-- aii-pxelinux must be built first as aii-core has a dependency on its contants -->
+    <module>aii-pxelinux</module>
     <module>aii-core</module>
     <module>aii-dhcp</module>
     <module>aii-ks</module>
-    <module>aii-pxelinux</module>
   </modules>
   <build>
     <pluginManagement>
