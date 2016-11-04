@@ -85,4 +85,7 @@ PCI = [
 [%-         END %]
 [%-     END %]
 [%- END %]
+[%- IF system.opennebula.labels.defined %]
+LABELS = "[% system.opennebula.labels.join(',') %]"
+[%- END %]
 QUATTOR = 1

@@ -37,4 +37,5 @@ multiline
 ^\s*CLASS\s?=\s*".+",\s*$
 ^\s*DEVICE\s?=\s*".+",\s*$
 ^\s*VENDOR\s?=\s*".+"\s*$
+^LABELS\s?=\s*".+"$
 ^QUATTOR\s?=\s?\d+\s*$

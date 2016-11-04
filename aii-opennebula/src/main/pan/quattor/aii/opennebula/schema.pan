@@ -171,4 +171,9 @@ type opennebula_vmtemplate = {
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
     "permissions" ? opennebula_permissions
     "pci" ? opennebula_vmtemplate_pci[]
+    @{labels is a string list to group the VMs under a given name and filter them 
+    in the admin and cloud views. It is also possible to include in the list 
+    sub-labels using a common slash "Name, Name/SubName". This feature is available 
+    since OpenNebula 5.x, below this version the change does take any effect.}
+    "labels" ? string[]
 } = dict();

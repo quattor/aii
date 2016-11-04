@@ -164,3 +164,8 @@ prefix "/system/opennebula";
     "device", 0x0a0c,
     "class", 0x0403,
 ));
+
+"labels" = list (
+    "quattor",
+    "quattor/CE",
+);

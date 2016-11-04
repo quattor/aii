@@ -490,6 +490,7 @@ NAME = "node630.cubone.os_vda"
 TARGET = "vda"
 SIZE = 20480
 DESCRIPTION = "QUATTOR image for node630.cubone.os: vda"
+LABELS = "quattor,quattor/CE"
 QUATTOR = 1
 EOF
 $cmds{rpc_create_image}{params} = [$data, 102];
@@ -505,6 +506,7 @@ NAME = "node630.cubone.os_vdb"
 TARGET = "vdb"
 SIZE = 10480
 DESCRIPTION = "QUATTOR image for node630.cubone.os: vdb"
+LABELS = "quattor,quattor/CE"
 QUATTOR = 1
 EOF
 $cmds{rpc_create_image2}{params} = [$data, 102];
@@ -621,6 +623,7 @@ PCI = [
     DEVICE = "1616",
     VENDOR = "8086"
 ]
+LABELS = "quattor,quattor/CE"
 QUATTOR = 1
 EOF
 $cmds{rpc_create_template}{params} = [$data];

@@ -64,4 +64,5 @@ multiline
 ^\s{4}\<devices\>\<video\>\<model\s{1}type\=\'qxl\'\/\>\<\/video\>\<\/devices\>",$
 ^\s{4}TYPE\s?=\s?"kvm"$
 ^\]$
+^LABELS\s?=\s?"quattor,quattor/CE"$
 ^QUATTOR\s?=\s?1$

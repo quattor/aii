@@ -9,5 +9,6 @@ multiline
 ^TARGET\s?=\s*".+"\s*$
 ^SIZE\s?=\s*\d+\s*$
 ^DESCRIPTION\s?=\s*".+"\s*$
+^LABELS\s?=\s?".+"$
 ^QUATTOR\s?=\s?\d?\s*$
 ^DATASTORE\s?=\s*".+"\s*$
