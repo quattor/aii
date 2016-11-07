@@ -6,3 +6,9 @@ target
 .prove
 cover_db
 junit_output.xml
+
+# Eclipse
+.project
+
+# JetBrains IDEs
+.idea/
