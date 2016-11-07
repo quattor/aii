@@ -596,6 +596,7 @@ DISK = [
 ]
 GRAPHICS = [
     LISTEN = "0.0.0.0",
+    RANDOM_PASSWD = "YES",
     TYPE = "SPICE"
 ]
 MEMORY = "4096"

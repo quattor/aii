@@ -24,6 +24,7 @@ multiline
 ^\s*IMAGE_UNAME\s?=\s*".+"\s*$
 ^GRAPHICS\s?=\s?\[$
 ^\s*LISTEN\s?=\s*".+",\s*$
+^\s*RANDOM_PASSWD\s?=\s*".+",\s*$
 ^\s*TYPE\s?=\s*".+"\s*$
 ^MEMORY\s?=\s*"\d+"\s*$
 ^OS\s?=\s?\[$
