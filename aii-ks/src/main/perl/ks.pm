@@ -692,8 +692,14 @@ sub log_action {
     }
 
     if ($consolelogging) {
+        # In EL7, /dev/console doesn't add the carriage return for each line feed (new line)
+        # resulting in unreadable messages on the console. /dev/pts/0 must be used instead.
+        # But on prior versions, /dev/pts/0 doesn't exist at installation time and cannot be used.
+        # The following code allows to use /dev/pts/0 if it exists else to revert to /dev/console.
+        push(@logactions, "console='/dev/console'");
+        push(@logactions, "[ -c /dev/pts/0 ] && console='/dev/pts/0'");
         push(@logactions, '# Make sure messages show up on the serial console',
-                          "tail -f $logfile > /dev/console &");
+                          "tail -f $logfile > \$console &");
     }
 
     push(@logactions,"drainsleep=$drainsleep"); # add trailing newline

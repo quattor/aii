@@ -2,8 +2,10 @@ Test the logging in the pre section
 ---
 ---
 ^exec >/tmp/pre-log.log 2>&1$
+^console='/dev/console'$
+^\[ -c /dev/pts/0 \] && console='/dev/pts/0'$
 ^\# Make sure messages show up on the serial console$
-^tail -f /tmp/pre-log.log > /dev/console &$
+^tail -f /tmp/pre-log.log > \$console &$
 ^drainsleep=0$
 ^$
 ^echo 'Begin of pre section'$

@@ -33,8 +33,8 @@ my $logaction = NCM::Component::ks::log_action($cfg, 'mylogfile', 1);
 like($logaction, qr{^exec\s>mylogfile\s2>&1}, 'start with exec redirection'); # no multiline search!
 
 # hmm, first test might be too specific in case of subtle changes
-unlike($logaction, qr{^tail\s-f\smylogfile\s>\s/dev/console\s&}m, 'no console logging enabled');
-unlike($logaction, qr{/dev/console}, 'no /dev/console at all');
+unlike($logaction, qr{^tail\s-f\smylogfile\s>\s\$console\s&}m, 'no console logging enabled');
+unlike($logaction, qr{\$console}, 'console not defined');
 
 unlike($logaction, qr{^\(tail\s-f\smylogfile.*?usleep.*\)\s&$}m, 'no logsending');
 unlike($logaction, qr{usleep}, 'no usleep at all');
