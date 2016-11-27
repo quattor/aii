@@ -1,23 +1,12 @@
-# ${license-info}
-# ${developer-info}
-# ${author-info}
-# ${build-info}
+#${PMpre} NCM::Component::pxelinux${PMpost}
 
-package NCM::Component::pxelinux;
-
-use strict;
-use warnings;
-use version;
-use NCM::Component;
-use EDG::WP4::CCM::Property;
-use NCM::Check;
 use Sys::Hostname;
 use CAF::FileWriter;
+use CAF::Object;
 use NCM::Component::ks qw (ksuserhooks);
 use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
-use Readonly;
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant NBPDIR => 'nbpdir';
@@ -48,7 +37,8 @@ use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
-our @ISA = qw (NCM::Component);
+use parent qw (NCM::Component);
+
 our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
 
@@ -433,7 +423,7 @@ sub pxelink
         my $dir = $this_app->option (NBPDIR);
         my $lnname = "$dir/".hexip ($st->{ip});
         if ($cmd || ! -l $lnname) {
-            if ($NoAction) {
+            if ($CAF::Object::NoAction) {
                 $this_app->info ("Would symlink $path to $lnname");
             } else {
                 unlink ($lnname);
@@ -498,7 +488,7 @@ sub Unconfigure
 {
     my ($self, $cfg) = @_;
 
-    if ($NoAction) {
+    if ($CAF::Object::NoAction) {
         $self->info ("Would remove " . ref ($self));
         return 1;
     }
@@ -529,7 +519,7 @@ foreach my $i (qw(configure boot rescue livecd firmware install)) {
             $self->error ("Failed to change the status of $fqdn to $i");
             return 0;
         }
-        ksuserhooks ($cfg, HOOK_PATH.$i) unless $NoAction;
+        ksuserhooks ($cfg, HOOK_PATH.$i) unless $CAF::Object::NoAction;
         return 1;
     };
 };
