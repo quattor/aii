@@ -1,34 +1,23 @@
-# ${license-info}
-# ${developer-info}
-# ${author-info}
-# ${build-info}
-#
-# Note: all methods in this component are called in a
-# $self->$method ($config) way, unless explicitly stated.
-
-package NCM::Component::dhcp;
+#${PMpre} NCM::Component::dhcp${PMpost}
 
 use Socket;
-use strict;
-use warnings;
-use NCM::Component;
-use NCM::Check;
-use FileHandle;
-use LC::Exception qw (throw_error);
+
 use Exporter;
 use Sys::Hostname;
 use CAF::Lock qw (FORCE_IF_STALE);
 use CAF::FileWriter;
+use CAF::Process;
 
 # locking configuration
 use constant TIMEOUT => 60;
 use constant RETRIES => 6;
 
-our @ISA = qw (NCM::Component Exporter);
+use parent qw(NCM::Component Exporter);
 our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
 
-sub finish {
+sub finish
+{
     my ($self) = @_;
     $self->restart_daemon();
 }
@@ -38,26 +27,27 @@ sub finish {
 #
 # restart dhcp daemon
 #
-sub restart_daemon {
+sub restart_daemon
+{
     my ($self) = @_;
 
     my ($cmd, $output);
     $self->debug(3, "aii-dhcp: restarting daemon dhcpd");
+
     $cmd = $this_app->option('restartcmd');
     if (!$cmd) {
-    $self->verbose("aii-dhcp: no command defined to restart dhcpd");
+        $self->verbose("aii-dhcp: no command defined to restart dhcpd");
     } else {
-    $output = `$cmd 2>&1`;
-    if ($? != 0) {
-        $self->error("aii-dhcp: error restarting dhcp daemon: $output");
-        return(1);
-    } else {
-        $self->verbose("aii-dhcp: daemon restarted: $output");
-    }
+        $output = CAF::Process->new([$cmd], log => $self)->output();
+        if ($? == 0) {
+            $self->verbose("aii-dhcp: daemon restarted: $output");
+        } else {
+            $self->error("aii-dhcp: error restarting dhcp daemon: $output");
+            return 1;
+        }
     }
 
-    return(0);
-
+    return 0;
 }
 
 #
@@ -65,7 +55,8 @@ sub restart_daemon {
 #
 # Remove and add host declarations
 #
-sub update_dhcp_config_file {
+sub update_dhcp_config_file
+{
     my ($self, $text, $ntc, $ntr) = @_;
     my @NTC = @$ntc;
     my @NTR = @$ntr;
@@ -90,25 +81,26 @@ sub update_dhcp_config_file {
     my @netandmasks = ($text =~
                        /\n\s*subnet\s+([\d\.]+)\s+netmask\s+([\d\.]+)/g);
     if ($#netandmasks % 2 == 0) {
-        $self->error("aii-dhcp: syntax error on dhcpd.conf: " . 
+        $self->error("aii-dhcp: syntax error on dhcpd.conf: " .
                     "netmask/network missing in subnet declaration");
         return(1, '');
     }
     my (@subnets, $i);
     for ($i=0 ; $i<$#netandmasks ; $i=$i+2) {
-        push (@subnets,
-                 { NET     => unpack('N',Socket::inet_aton($netandmasks[$i])),
-                   MASK    => unpack('N',Socket::inet_aton($netandmasks[$i+1])),
-                   ST_NET  => $netandmasks[$i],
-                   ST_MASK => $netandmasks[$i+1]});
-        $self->verbose("aii-dhcp: found subnet $netandmasks[$i] " . 
+        push (@subnets, {
+                NET     => unpack('N',Socket::inet_aton($netandmasks[$i])),
+                MASK    => unpack('N',Socket::inet_aton($netandmasks[$i+1])),
+                ST_NET  => $netandmasks[$i],
+                ST_MASK => $netandmasks[$i+1],
+              });
+        $self->verbose("aii-dhcp: found subnet $netandmasks[$i] " .
                        "mask $netandmasks[$i+1]");
     }
     # If subnets are not defined in the DHCP configuration file managed by AII,
     # just add an empty subnet. This will have the effect of disabling all the checks
     # related to subnets.
     if ( @subnets == 0 ) {
-      push (@subnets,{})
+        push (@subnets,{})
     }
 
     #
@@ -118,8 +110,8 @@ sub update_dhcp_config_file {
     my $subnet_defined = 1;
     my $indent = "  "; # from aii-dhcp line 421-424
     if ( @subnets == 0 ) {
-      push (@subnets,{});
-      $subnet_defined = 0;
+        push (@subnets, {});
+        $subnet_defined = 0;
     }
     foreach $net (@subnets) {
         my @newnodes;
@@ -134,11 +126,11 @@ sub update_dhcp_config_file {
 
                 # basic host declaration
                 push @newnodes, "\n".$indent."host $node->{NAME} {  # added by aii-dhcp";
-        
+
                 foreach $mac (split(' ', $node->{MAC})) {
                     push @newnodes, "$indent\t  hardware ethernet $mac;";
                 }
-        
+
                 push @newnodes, "$indent\t  fixed-address $node->{ST_IP};";
 
                 # TFTP server
@@ -150,13 +142,13 @@ sub update_dhcp_config_file {
                 if ($node->{MORE_OPT}) {
                     push @newnodes, "$indent\t  $node->{MORE_OPT}";
                 }
- 
+
                 push @newnodes, "$indent\t}";
-                if ( $subnet_defined ) {   
+                if ( $subnet_defined ) {
                     $self->verbose("aii-dhcp: added node $node->{NAME} ".
                                    "to subnet $net->{ST_NET}");
                 } else {
-                    $self->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");                  
+                    $self->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");
                 }
             }
 
@@ -165,43 +157,43 @@ sub update_dhcp_config_file {
         # Insert the nodes to the current subnet
         if (@newnodes) {
             $self->debug(1,"aii-dhcp: newnodes=|@newnodes|\n");
-        my @text = split /\n/,$text;
-        my $index = 0;
-        my $braces = 0;
-        my $found_net;
-        if ( $subnet_defined ) {
-            $found_net = 0;      
-        } else {
-            $found_net = 1;                
-        }
-
-        for my $line (@text) {
-            $index++;
-            if ($line !~ /\s* subnet \s+/x) {
-                next unless $found_net > 0;
-            }
-            if ($line =~ /\s* subnet \s+ \Q$net->{ST_NET}\E \s+ netmask \s+ \Q$net->{ST_MASK}\E/x ) {
+            my @text = split /\n/,$text;
+            my $index = 0;
+            my $braces = 0;
+            my $found_net;
+            if ( $subnet_defined ) {
+                $found_net = 0;
+            } else {
                 $found_net = 1;
-                $braces++;
-                next;
             }
-            if ($line =~ /\{/x) {
-                $braces++;
-            } elsif ($line =~ /\}/x) {
-                $braces--;
+
+            for my $line (@text) {
+                $index++;
+                if ($line !~ /\s* subnet \s+/x) {
+                    next unless $found_net > 0;
+                }
+                if ($line =~ /\s* subnet \s+ \Q$net->{ST_NET}\E \s+ netmask \s+ \Q$net->{ST_MASK}\E/x ) {
+                    $found_net = 1;
+                    $braces++;
+                    next;
+                }
+                if ($line =~ /\{/x) {
+                    $braces++;
+                } elsif ($line =~ /\}/x) {
+                    $braces--;
+                }
+                if ($braces == 0) {
+                    # we've run out of network definition!
+                    $index--;
+                    last;
+                }
+                if ($line =~ /group\s+\{\s+\#\s+PXE/) {
+                    last;
+                }
             }
-            if ($braces == 0) {
-                # we've run out of network definition!
-                $index--;
-                last;
+            if ($found_net) {
+                splice @text, $index, 0, @newnodes;
             }
-            if ($line =~ /group\s+\{\s+\#\s+PXE/) {
-                last;
-            }
-        }
-        if ($found_net) {
-            splice @text, $index, 0, @newnodes;
-        }
             $text = join("\n", @text);
         }
 
@@ -212,7 +204,7 @@ sub update_dhcp_config_file {
     #
     foreach $node (@NTC) {
         ($node->{OK}) || $self->warn("dhcp: No valid subnet found " .
-                                    "for $node->{FQDN}");
+                                     "for $node->{FQDN}");
     }
 
     return (0, $text);
@@ -232,7 +224,7 @@ sub get_ip {
 
     # Single redirection for bonding devices
     if (defined($tree->{interfaces}->{$iface}->{master})) {
-    $iface = $tree->{interfaces}->{$iface}->{master};
+        $iface = $tree->{interfaces}->{$iface}->{master};
     }
 
     return $tree->{interfaces}->{$iface}->{ip};
@@ -252,20 +244,20 @@ sub update_dhcp_config {
     #
     $filename = $this_app->option('dhcpconf');
     if (!$filename) {
-    $self->error("no dhcp configuration file defined!");
-    return(1);
+        $self->error("no dhcp configuration file defined!");
+        return(1);
     }
     $lockfile = $filename . ".lock";
     my $lock = CAF::Lock->new ($lockfile);
     unless ($lock && $lock->set_lock (RETRIES, TIMEOUT, FORCE_IF_STALE)) {
-    $self->error("dhcp: couldn't acquire lock on $lockfile");
-    return(1);
+        $self->error("dhcp: couldn't acquire lock on $lockfile");
+        return(1);
     }
     $self->debug(3, "Locked dhcp configuration");
     $self->debug(3,"DHCP configuration file : $filename");
     if (!open(FILE, "< $filename")) {
-        $self->error("dhcp: update configuration: ". 
-                         "file access error $filename");
+        $self->error("dhcp: update configuration: ".
+                     "file access error $filename");
         return(1);
     }
     local $/ = undef;
@@ -309,14 +301,14 @@ sub Configure
     my $cards = $config->getElement("/hardware/cards/nic")->getTree();
     my $bootable = undef;
     foreach my $card (keys %$cards) {
-    if ($cards->{$card}->{boot}) {
-        $bootable = $card;
-        last;
-    }
+        if ($cards->{$card}->{boot}) {
+            $bootable = $card;
+            last;
+        }
     }
     if (!$bootable) {
-    $self->debug(2, "aii-dhcp: ignoring $fqdn since there is no bootable interface");
-    return;
+        $self->debug(2, "aii-dhcp: ignoring $fqdn since there is no bootable interface");
+        return;
     }
     my $ip = $self->get_ip($bootable, $tree);
 
@@ -324,30 +316,30 @@ sub Configure
     my $tftpserver = "";
     my $additional = "";
     if ($opts->{tftpserver}) {
-    $tftpserver = $opts->{tftpserver};
+        $tftpserver = $opts->{tftpserver};
     }
     if ($opts->{options}) {
-    foreach my $k (sort keys %{$opts->{options}}) {
-        $additional .= "option $k $opts->{options}->{$k};\n";
-    }
+        foreach my $k (sort keys %{$opts->{options}}) {
+            $additional .= "option $k $opts->{options}->{$k};\n";
+        }
     }
 
     my $nodeconfig = {
-              FQDN       => $fqdn,
-              NAME       => $tree->{hostname},
-              ST_IP      => $ip,
-              IP         => unpack('N', Socket::inet_aton($ip)),
-              MAC        => $cards->{$bootable}->{hwaddr},
-              ST_IP_TFTP => $tftpserver,
-              MORE_OPT   => $additional,
-             };
+        FQDN       => $fqdn,
+        NAME       => $tree->{hostname},
+        ST_IP      => $ip,
+        IP         => unpack('N', Socket::inet_aton($ip)),
+        MAC        => $cards->{$bootable}->{hwaddr},
+        ST_IP_TFTP => $tftpserver,
+        MORE_OPT   => $additional,
+    };
     if ($this_app->option('use_fqdn')) {
-    $nodeconfig->{NAME} = $fqdn;
+        $nodeconfig->{NAME} = $fqdn;
     }
 
-    if ($NoAction) {
-    $self->info ("Would run " . ref ($self) . " on $fqdn");
-    return 1;
+    if ($CAF::Object::NoAction) {
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
+        return 1;
     }
     $self->update_dhcp_config([$nodeconfig], []);
 
@@ -365,26 +357,23 @@ sub Unconfigure
     my $cards = $config->getElement("/hardware/cards/nic")->getTree();
     my $bootable = undef;
     foreach my $card (keys %$cards) {
-    if ($cards->{$card}->{boot}) {
-        $bootable = $card;
-        last;
-    }
+        if ($cards->{$card}->{boot}) {
+            $bootable = $card;
+            last;
+        }
     }
     my $ip = $self->get_ip($bootable, $tree);
-    if ($NoAction) {
-    $self->info ("Would run " . ref ($self) . " on $fqdn");
-    return 1;
+    if ($CAF::Object::NoAction) {
+        $self->info ("Would run " . ref ($self) . " on $fqdn");
+        return 1;
     }
     my $nodeconfig = {
-              FQDN => $fqdn,
-              NAME => $tree->{hostname},
-              IP   => $ip,
-             };
+        FQDN => $fqdn,
+        NAME => $tree->{hostname},
+        IP   => $ip,
+    };
     $self->update_dhcp_config([], [$nodeconfig]);
     return 0;
 }
 
 1;
-
-__END__
-

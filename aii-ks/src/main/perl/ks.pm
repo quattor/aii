@@ -1,29 +1,18 @@
-# ${license-info}
-# ${developer-info}
-# ${author-info}
-# ${build-info}
+#${PMpre} NCM::Component::ks${PMpost}
 
-
-package NCM::Component::ks;
-
-use strict;
-use warnings;
-use version;
-use NCM::Component;
-use EDG::WP4::CCM::Property;
-use EDG::WP4::CCM::Element qw (unescape);
+use EDG::WP4::CCM::Path qw (unescape);
 use NCM::Filesystem;
 use NCM::Partition qw (partition_compare);
 use NCM::BlockdevFactory qw (build);
-use FileHandle;
+
 use LC::Exception qw (throw_error);
-use Data::Dumper;
-use Exporter;
 use CAF::FileWriter;
+use CAF::Object;
 use Sys::Hostname;
 use Text::Glob qw(match_glob);
 
-our @ISA = qw (NCM::Component Exporter);
+use parent qw (NCM::Component Exporter);
+
 our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
@@ -1656,7 +1645,7 @@ sub Configure
     my ($self, $config) = @_;
 
     my $fqdn = get_fqdn($config);
-    if ($NoAction) {
+    if ($CAF::Object::NoAction) {
         $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
@@ -1675,7 +1664,7 @@ sub Unconfigure
     my ($self, $config) = @_;
 
     my $fqdn = get_fqdn($config);
-    if ($NoAction) {
+    if ($CAF::Object::NoAction) {
         $self->info ("Would run " . ref ($self) . " on $fqdn");
         return 1;
     }
