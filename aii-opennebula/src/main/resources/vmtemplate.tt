@@ -54,6 +54,7 @@ IMAGE_UNAME = "oneadmin"
 GRAPHICS = [
 [%     FILTER indent -%]
 LISTEN = "0.0.0.0",
+RANDOM_PASSWD = "YES",
 TYPE = "[% system.opennebula.graphics %]"
 [%-    END %]
 ]
@@ -84,5 +85,8 @@ PCI = [
 ]
 [%-         END %]
 [%-     END %]
+[%- END %]
+[%- IF system.opennebula.labels.defined %]
+LABELS = "[% system.opennebula.labels.join(',') %]"
 [%- END %]
 QUATTOR = 1
