@@ -177,4 +177,16 @@ type opennebula_vmtemplate = {
     This feature is available since OpenNebula 5.x, below this version the change 
     does not take effect.}
     "labels" ? string[]
+    @{Boolean expression that rules out provisioning hosts from list of machines
+    suitable to run this VM.}
+    "sched_requirements" ? string
+    @{This field sets which attribute will be used to sort the suitable hosts for this VM.
+    Basically, it defines which hosts are more suitable than others.}
+    "sched_rank" ? string
+    @{Boolean expression that rules out entries from the pool of datastores suitable
+    to run this VM.}
+    "sched_ds_requirements" ? string
+    @{States which attribute will be used to sort the suitable datastores for this VM.
+    Basically, it defines which datastores are more suitable than others.}
+    "sched_ds_requirements" ? string    
 } = dict();
