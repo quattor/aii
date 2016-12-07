@@ -1,6 +1,6 @@
 #${PMpre} NCM::Component::ks${PMpost}
 
-use EDG::WP4::CCM::Path qw (unescape);
+use EDG::WP4::CCM::Path qw (escape unescape);
 use NCM::Filesystem;
 use NCM::Partition qw (partition_compare);
 use NCM::BlockdevFactory qw (build);
@@ -914,7 +914,7 @@ sub ksprint_filesystems
     # (clearpart_ks wipes disk and sets boot label, any parttion cleanup
     # is useless after that)
     foreach (@$clear) {
-        my $disk = build ($config, "physical_devs/".$self->escape($_));
+        my $disk = build ($config, "physical_devs/".escape($_));
         $disk->clearpart_ks;
     }
 
