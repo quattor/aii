@@ -22,7 +22,7 @@ use EDG::WP4::CCM::CacheManager;
 use EDG::WP4::CCM::Fetch::ProfileCache qw($ERROR);
 use LC::Exception qw (SUCCESS throw_error);
 use CAF::Process;
-use LWP::UserAgent;
+use CAF::Download::LWP;
 use XML::Simple;
 use EDG::WP4::CCM::Fetch;
 use EDG::WP4::CCM::CCfg;
@@ -306,11 +306,6 @@ sub _initialize
         $self->verbose("Perl warning: $_[0]");
     };
 
-    my $f;
-    $ENV{HTTPS_CA_FILE} = $f if $f = $self->option (CAFILE);
-    $ENV{HTTPS_CA_DIR} = $f  if $f = $self->option (CADIR);
-    $ENV{HTTPS_KEY_FILE} = $f if $f = $self->option (KEY);
-    $ENV{HTTPS_CERT_FILE} = $f if $f = $self->option (CERT);
     if ($self->option(INCLUDE)) {
         unshift(@INC, split(/:+/, $self->option(INCLUDE)));
     }
@@ -545,9 +540,18 @@ sub nodelist
             $profiles_info = {profile => [map {{content => basename($_)}} grep {m/$extension/} glob ("$dir/*")]};
         } else {
             my $url = $self->option (CDBURL) . "/" . PROFILEINFO;
-            my $ua = LWP::UserAgent->new;
+
+            my $lwp = CAF::Download::LWP->new(log => $self);
+            my %lwp_opts_map = (
+                CERT() => 'cert',
+                KEY() => 'key',
+                CAFILE() => 'cacert',
+                CADIR() => 'cadir'
+                );
+            my %lwp_opts = map {$lwp_opts_map{$_} => $self->options($_)} grep {$self->options($_)} keys %lwp_opts_map;
+
+            my $rp = $lwp->_do_ua('get', [$url], %lwp_opts);
             $self->debug (4, "Downloading profiles-info: $url");
-            my $rp = $ua->get ($url);
             unless ($rp->is_success) {
                 $self->error ("Couldn't download $url. Aborting ",
                               $rp->status_line());
