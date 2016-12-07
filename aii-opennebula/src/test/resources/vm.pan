@@ -149,3 +149,10 @@ prefix "/system/opennebula";
     "quattor",
     "quattor/CE",
 );
+
+"placements" = dict (
+    "sched_requirements", "CPUSPEED > 1000",
+    "sched_rank", "FREE_CPU",
+    "sched_ds_requirements", "NAME=GoldenCephDS",
+    "sched_ds_rank", "FREE_MB",
+);

@@ -66,4 +66,8 @@ multiline
 ^\s{4}TYPE\s?=\s?"kvm"$
 ^\]$
 ^LABELS\s?=\s?"quattor,quattor/CE"$
+^SCHED_DS_RANK\s?=\s?"FREE_MB"$
+^SCHED_DS_REQUIREMENTS\s?=\s?"NAME=GoldenCephDS"$
+^SCHED_RANK\s?=\s?"FREE_CPU"$
+^SCHED_REQUIREMENTS\s?=\s?"CPUSPEED > 1000"$
 ^QUATTOR\s?=\s?1$

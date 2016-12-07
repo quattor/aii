@@ -625,6 +625,10 @@ PCI = [
     VENDOR = "8086"
 ]
 LABELS = "quattor,quattor/CE"
+SCHED_DS_RANK = "FREE_MB"
+SCHED_DS_REQUIREMENTS = "NAME=GoldenCephDS"
+SCHED_RANK = "FREE_CPU"
+SCHED_REQUIREMENTS = "CPUSPEED > 1000"
 QUATTOR = 1
 EOF
 $cmds{rpc_create_template}{params} = [$data];

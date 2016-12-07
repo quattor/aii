@@ -89,4 +89,7 @@ PCI = [
 [%- IF system.opennebula.labels.defined %]
 LABELS = "[% system.opennebula.labels.join(',') %]"
 [%- END %]
+[%- FOREACH sched IN system.opennebula.placements %]
+[%      sched.key FILTER upper %] = "[% sched.value %]"
+[%- END %]
 QUATTOR = 1

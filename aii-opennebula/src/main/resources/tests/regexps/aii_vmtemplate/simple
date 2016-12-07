@@ -39,4 +39,8 @@ multiline
 ^\s*DEVICE\s?=\s*".+",\s*$
 ^\s*VENDOR\s?=\s*".+"\s*$
 ^LABELS\s?=\s*".+"$
+^SCHED_DS_RANK\s?=\s?".+"\s*$
+^SCHED_DS_REQUIREMENTS\s?=\s?".+"\s*$
+^SCHED_RANK\s?=\s?".+"\s*$
+^SCHED_REQUIREMENTS\s?=\s?".+"\s*$
 ^QUATTOR\s?=\s?\d+\s*$
