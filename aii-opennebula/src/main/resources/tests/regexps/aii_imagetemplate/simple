@@ -10,5 +10,7 @@ multiline
 ^SIZE\s?=\s*\d+\s*$
 ^DESCRIPTION\s?=\s*".+"\s*$
 ^LABELS\s?=\s?".+"$
+^DRIVER\s?=\s?".+"$
+^FSTYPE\s?=\s?".+"$
 ^QUATTOR\s?=\s?\d?\s*$
 ^DATASTORE\s?=\s*".+"\s*$

@@ -14,5 +14,7 @@ multiline
 ^SIZE\s?=\s?10480$
 ^DESCRIPTION\s?=\s?"QUATTOR image for node630.cubone.os: vdb"$
 ^LABELS\s?=\s?"quattor,quattor/CE"$
+^DRIVER\s?=\s?"raw"$
+^FSTYPE\s?=\s?"raw"$
 ^QUATTOR\s?=\s?1$
 ^DATASTORE\s?=\s?"default"$

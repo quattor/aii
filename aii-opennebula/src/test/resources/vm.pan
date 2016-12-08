@@ -127,6 +127,8 @@ prefix "/system/opennebula";
 
 "diskcache" = "default";
 
+"diskdriver" = "raw";
+
 "ignoremac/interface" = list (
     "eth2",
 );

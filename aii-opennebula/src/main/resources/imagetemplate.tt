@@ -11,6 +11,10 @@ DESCRIPTION = "QUATTOR image for [% fqdn %]: [% pair.key %]"
 [%- IF system.opennebula.labels.defined %]
 LABELS = "[% system.opennebula.labels.join(',') %]"
 [%- END %]
+[%- IF system.opennebula.diskdriver.defined %]
+DRIVER = "[% system.opennebula.diskdriver %]"
+FSTYPE = "[% system.opennebula.diskdriver %]"
+[%- END %]
 QUATTOR = 1
 [% # If we have several disks we have to split vmtemplate in several files
    # Using DATASTORE line. THIS MUST BE THE LAST TT FILE LINE-%]
