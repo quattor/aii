@@ -30,7 +30,7 @@ use File::Path qw(mkpath rmtree);
 use File::Basename qw(basename);
 use DB_File;
 use Readonly;
-
+use Parallel::ForkManager 0.7.6;
 our $profiles_info = undef;
 
 use constant MODULEBASE => 'NCM::Component::';
@@ -228,6 +228,10 @@ sub app_options
        { NAME    => 'lockdir=s',
          HELP    => 'where to store lock files',
          DEFAULT => "/var/lock/quattor" },
+
+       { NAME    => 'parallel=i',
+         HELP    => 'run commands on hosts in parallel ',
+         DEFAULT => 0 },
 
          # Options for osinstall plug-ins
        { NAME    => 'osinstalldir=s',
@@ -701,13 +705,38 @@ sub fetch_profiles
     return %h;
 }
 
-
+# Initiate the Parallel:ForkManager with requested threads if option is given
+sub init_pm {
+    my ($self, $cmd, $responses) = @_;
+    if ($self->option('parallel')) {
+        my $pm = Parallel::ForkManager->new($self->option('parallel'));
+        $pm->run_on_finish ( # called before the first call to start()
+            sub {
+                my ($pid, $exit_code, $id, $esignal, $cdump, $data_struct_ref) = @_;
+                if ($exit_code) {
+                    $self->error("Error running $cmd on $id, exitcode $exit_code");
+                };
+                # retrieve data structure from child 
+                if (defined($data_struct_ref)) {
+                    $responses->{$id} = $data_struct_ref;
+                    $self->debug(5, "Running $cmd on $id had output"); 
+                }
+            }
+        );
+        return $pm;
+    } else {
+        return 0;
+    }
+}
+    
 # Wrapper to execute the commands in sorted manner
 no strict 'refs';
 foreach my $cmd (COMMANDS) {
     *{$cmd} = sub {
         my ($self, %node_states) = @_;
         my $method = "_$cmd";
+        my %responses = ();
+        my $pm = $self->init_pm($cmd, \%responses);
         foreach my $node (sort keys %node_states) {
             $self->debug (2, "$cmd: $node");
             if ($cmd ne 'status') {
@@ -717,8 +746,23 @@ foreach my $cmd (COMMANDS) {
                     next;
                 };
             };
-            $self->$method($node, $node_states{$node});
+            $self->debug(5, "Going to start $cmd on node $node");
+            if ($pm) { # start parallel execution in child
+                $pm->start($node) and next;
+            }
+
+            my $ec = $self->$method($node, $node_states{$node}) || 0;
+            my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
+
+            if ($pm) {
+                $pm->finish($ec, $res ); # Terminates the child process
+            } else {
+                $responses{$node} = $res;
+            }
         };
+        $pm->wait_all_children if $pm;
+        $self->debug(2, "Ran $cmd for all requested nodes");
+        return \%responses;
     }
 }
 use strict 'refs';
@@ -935,9 +979,9 @@ sub cmds
             foreach my $node (@reinstall_list) {
                 $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
             }
-
-            $self->$cmd (%nodes);
             $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
+            $self->$cmd (%nodes);
+            $self->info ("ran $cmd on ", scalar (keys (%nodes)), " nodes");
         }
     }
 
