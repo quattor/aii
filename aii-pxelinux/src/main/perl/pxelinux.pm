@@ -7,26 +7,14 @@ use NCM::Component::ks qw (ksuserhooks);
 use LC::Fatal qw (symlink);
 use File::stat;
 use Time::localtime;
+use Readonly;
+
+use parent qw (NCM::Component);
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
-use constant NBPDIR => 'nbpdir';
-use constant LOCALBOOT => 'bootconfig';
 use constant HOSTNAME => "/system/network/hostname";
 use constant DOMAINNAME => "/system/network/domainname";
-use constant ETH => "/system/network/interfaces";
-
-use constant CONFIGURE => undef;
-use constant INSTALL => 'install';
-use constant BOOT => 'boot';
-use constant RESCUE => 'rescue';
-use constant RESCUEBOOT => 'rescueconfig';
-use constant FIRMWARE => 'firmware';
-use constant LIVECD => 'livecd';
-
-# Hooks for NBP plug-in
-use constant HOOK_PATH => '/system/aii/hooks/';
-use constant REMOVE_HOOK_PATH => HOOK_PATH.'remove';
-use constant STATUS_HOOK_PATH => HOOK_PATH.'status';
+use constant INTERFACES => "/system/network/interfaces";
 
 # Kickstart constants (trying to use same name as in ks.pm from aii-ks)
 use constant KS => "/system/aii/osinstall/ks";
@@ -37,10 +25,63 @@ use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
-use parent qw (NCM::Component);
+# Import PXE-related constants shared with other modules
+use NCM::Component::PXELINUX::constants qw(:all);
+
+# Support PXE variants and their parameters (currently PXELINUX and Grub2)
+# 'name' is a descriptive name for information/debugging messages
+Readonly my %GRUB2_VARIANT_PARAMS => (name => 'Grub2',
+                                      nbpdir_opt => NBPDIR_GRUB2,
+                                      kernel_root_path => GRUB2_EFI_KERNEL_ROOT,
+                                      format_method => \&write_grub2_config);
+Readonly my %PXELINUX_VARIANT_PARAMS => (name => 'PXELINUX',
+                                         nbpdir_opt => NBPDIR_PXELINUX,
+                                         kernel_root_path => '',
+                                         format_method => \&write_pxelinux_config);
+# Element in @VARIANT_PARAMS must be in the same order as enum PXE_VARIANT_xxx
+Readonly my @VARIANT_PARAMS => (\%PXELINUX_VARIANT_PARAMS, \%GRUB2_VARIANT_PARAMS);
 
 our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
+
+
+# Check if a configuration option exists
+sub option_exists
+{
+    my ($option) = @_;
+    return $this_app->{CONFIG}->_exists($option);
+}
+
+# Return the value of a variant attribute.
+# Attribute can be any valid key in one of the xxx_VARIANT_PARAMS
+sub variant_attribute
+{
+    my ($attribute, $variant) = @_;
+    return $VARIANT_PARAMS[$variant]->{$attribute};
+}
+
+# Return a configuration option value for a given variant.
+# First argument is a variant attribute that will be interpreted
+# as a configuration option.
+sub variant_option
+{
+    my ($attribute, $variant) = @_;
+    return $this_app->option (variant_attribute($attribute, $variant));
+}
+
+# Test if a variant is enabled
+# A variant is enabled if the configuration option defined in its 'nbpdir' 
+# attribute is defined and is not 'none'
+sub variant_enabled
+{
+    my ($variant) = @_;
+    my $nbpdir = variant_attribute('nbpdir_opt', $variant);
+    $this_app->debug(2, "Using option '$nbpdir' to check if variant ", variant_attribute('name',$variant), " is enabled");
+    my $enabled = option_exists($nbpdir) &&
+                  ($this_app->option($nbpdir) ne NBPDIR_VARIANT_DISABLED);
+    return $enabled;
+}
+
 
 # Return the fqdn of the node
 sub get_fqdn
@@ -67,23 +108,43 @@ sub get_anaconda_version
     return $version;
 }
 
-# Returns the absolute path where the PXE file must be written.
+# Retuns the IP-based PXE file name, based on the PXE variant
+sub hexip_filename
+{
+    my ($ip, $variant) = @_;
+
+    my $hexip_str = '';
+    if ( $ip =~ m/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/ ) {
+        $hexip_str = sprintf ("%02X%02X%02X%02X", $1, $2, $3, $4);
+        if ( $variant eq PXE_VARIANT_GRUB2 ) {
+            $hexip_str = "grub.cfg-$hexip_str";
+        } elsif ( $variant ne PXE_VARIANT_PXELINUX ) {
+            $this_app->error("Internal error: invalid PXE variant ($variant)");
+        }
+    } else {
+        $this_app->error("Invalid IPv4 address ($ip)");
+    }
+
+    return $hexip_str;
+}
+
+# Returns the absolute path where the PXE file must be written, based on the PXE variant
 sub filepath
 {
-    my $cfg = shift;
+    my ($cfg, $variant) = @_;
 
     my $fqdn = get_fqdn($cfg);
-    my $dir = $this_app->option (NBPDIR);
-    $this_app->debug(3, "NBP directory = $dir");
+    my $dir = variant_option('nbpdir_opt', $variant);
+    $this_app->debug(2, "NBP directory (PXE variant=", variant_attribute('name',$variant), ") = $dir");
     return "$dir/$fqdn.cfg";
 }
 
-# Returns the absolute path of the PXE file to link to
+# Returns the absolute path of the PXE file to link to, based on the PXE variant
 sub link_filepath
 {
-    my ($cfg, $cmd) = @_;
+    my ($cfg, $cmd, $variant) = @_;
 
-    my $dir = $this_app->option (NBPDIR);
+    my $dir = variant_option('nbpdir_opt', $variant);
 
     my $cfgpath = PXEROOT . "/" . $cmd;
     if ($cfg->elementExists ($cfgpath)) {
@@ -99,13 +160,13 @@ sub link_filepath
         return "$dir/$1";
     } else {
         my $fqdn = get_fqdn($cfg);
-        $this_app->debug(3, "No $cmd defined for $fqdn");
+        $this_app->debug(2, "No $cmd defined for $fqdn");
     }
     return undef;
 }
 
 
-# Configure the ksdevice with static IP
+# Configure the ksdevice with a static IP
 # (EL7+ only)
 sub pxe_ks_static_network
 {
@@ -121,7 +182,7 @@ sub pxe_ks_static_network
     # continue with network settings on the bridge device
     if ($net->{bridge}) {
         my $brdev = $net->{bridge};
-        $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
+        $this_app->debug (2, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
         # warning: $dev is changed here to the bridge device to create correct log
@@ -347,48 +408,90 @@ sub pxe_append
     }
 }
 
-# Prints the PXE configuration file.
-sub pxeprint
+# Write the PXELINUX configuration file.
+sub write_pxelinux_config
 {
     my $cfg = shift;
-    my $t = $cfg->getElement (PXEROOT)->getTree;
-    my $fh = CAF::FileWriter->open (filepath ($cfg),
-				    log => $this_app, mode => 0644);
+    my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
+    my $fh = CAF::FileWriter->open (filepath ($cfg, PXE_VARIANT_PXELINUX),
+                    log => $this_app, mode => 0644);
 
     my $appendtxt = '';
     my @appendoptions = pxe_append($cfg);
     $appendtxt = join(" ", "append", @appendoptions) if @appendoptions;
 
-    $fh->print (<<EOF
+    my $entry_label = "Install $pxe_config->{label}";
+    print $fh <<EOF;
 # File generated by pxelinux AII plug-in.
 # Do not edit.
-default $t->{label}
-    label $t->{label}
-    kernel $t->{kernel}
+default $entry_label
+    label $entry_label
+    kernel $pxe_config->{kernel}
     $appendtxt
 EOF
-           );
+
     # TODO is ksdevice still mandatory? if not, fix schema (code is already ok)
     # ksdecvice=bootif is an anaconda-ism, but can serve general purpose
-    $fh->print ("    ipappend 2\n") if ($t->{ksdevice} && $t->{ksdevice} eq 'bootif');
+    $fh->print ("    ipappend 2\n") if ($pxe_config->{ksdevice} && $pxe_config->{ksdevice} eq 'bootif');
     $fh->close();
 }
 
-# Prints an IP address in hexadecimal.
-sub hexip
-{
-    my $ip = shift || "";
 
-    return sprintf ("%02X%02X%02X%02X", $1, $2, $3, $4) if ($ip =~ m/^(\d+)\.(\d+)\.(\d+)\.(\d+)$/);
+# Write the Grub2 configuration file.
+# Return 1 if the file was written successfully, 0 otherwise.
+# TODO: handle append options?
+sub write_grub2_config
+{
+    my $cfg = shift;
+    my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
+
+    my $linux_cmd = $this_app->option(GRUB2_EFI_LINUX_CMD);
+    unless ( $linux_cmd ) {
+        $this_app->error("AII option ".GRUB2_EFI_LINUX_CMD." undefined");
+        return 0;
+    };
+    my $initrd_cmd = $this_app->option(GRUB2_EFI_INITRD_CMD);
+    unless ( $initrd_cmd ) {
+        $this_app->error("AII option ".GRUB2_EFI_INITRD_CMD." undefined");
+        return 0;
+    };
+    my $kernel_root = '';
+    if ( option_exists(GRUB2_EFI_KERNEL_ROOT) ) {
+        $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
+    }
+    my $kernel_path = "$kernel_root/$pxe_config->{kernel}";
+    my $initrd_path = "$kernel_root/$pxe_config->{initrd}";
+
+    my $fh = CAF::FileWriter->open (filepath ($cfg, PXE_VARIANT_GRUB2),
+                                    log => $this_app, mode => 0644);
+    print $fh <<EOF;
+# File generated by pxelinux AII plug-in.
+# Do not edit.
+set default=0
+set timeout=2
+menuentry "Install $pxe_config->{label}" {
+    set root=(pxe)
+    $linux_cmd $kernel_path ks=$pxe_config->{kslocation} ksdevice=$pxe_config->{ksdevice}
+    $initrd_cmd $initrd_path
+    }
 }
+EOF
+
+    # TODO: add specific processing of ksdevice=bootif as for PXELINUX?
+    $fh->close();
+
+    return 1;
+}
+
 
 # Creates a symbolic link for PXE. This means creating a symlink named
 # after the node's IP in hexadecimal to a PXE file.
+# Returns 1 on succes, 0 otherwise.
 sub pxelink
 {
-    my ($cfg, $cmd) = @_;
+    my ($cfg, $cmd, $variant) = @_;
 
-    my $t = $cfg->getElement (ETH)->getTree;
+    my $interfaces = $cfg->getElement (INTERFACES)->getTree;
     my $path;
     if (!$cmd) {
         $path = $this_app->option (LOCALBOOT);
@@ -397,93 +500,113 @@ sub pxelink
         $path = $this_app->option (LOCALBOOT);
         unless ($path =~ m{^([-.\w]+)$}) {
             $this_app->error ("Unexpected BOOT configuration file");
-            return -1;
+            return 0;
         }
         $path = $1;
         $this_app->debug (5, "Local booting from $path");
     } elsif ($cmd eq RESCUE || $cmd eq LIVECD || $cmd eq FIRMWARE) {
-        $path = link_filepath($cfg, $cmd);
-        if (! -f $path) {
+        $path = link_filepath($cfg, $cmd, $variant);
+        if (! $self->file_exists($path) ) {
             my $fqdn = get_fqdn($cfg);
             $this_app->error("Missing $cmd config file for $fqdn: $path");
-            return -1;
+            return 0;
         }
         $this_app->debug (5, "Using $cmd from: $path");
     } elsif ($cmd eq INSTALL) {
-        $path = filepath ($cfg);
+        $path = filepath ($cfg, $variant);
         $this_app->debug (5, "Installing on $path");
     } else {
         $this_app->debug (5, "Unknown command");
-        return -1;
+        return 0;
     }
     # Set the same settings for every network interface that has a
     # defined IP address.
-    foreach my $st (values (%$t)) {
+    foreach my $st (values (%$interfaces)) {
         next unless $st->{ip};
-        my $dir = $this_app->option (NBPDIR);
-        my $lnname = "$dir/".hexip ($st->{ip});
+        my $dir = variant_option('nbpdir_opt', $variant);
+        my $lnname = "$dir/".hexip_filename ($st->{ip}, $variant);
         if ($cmd || ! -l $lnname) {
             if ($CAF::Object::NoAction) {
                 $this_app->info ("Would symlink $path to $lnname");
             } else {
                 unlink ($lnname);
-                # This must be stripped to work with chroot'edg
-                # environments.
+                # This must be stripped to work with chroot'ed environments.
                 $path =~ s{$dir/?}{};
                 symlink ($path, $lnname);
             }
         }
     }
-    return 0;
+
+    return 1;
 }
 
+
+# Wrapper function to call ksuserhooks() from aii-ks module.
+# The only role of this function is to ensure that ksuserhooks()
+# is always called the same way (in particular for NoAction
+# handling). Be sure to use it!
+sub exec_userhooks {
+    my ($cfg, $hook_path) = @_;
+
+    ksuserhooks ($cfg, $hook_path) unless $CAF::Object::NoAction;
+}
+
+
 # Prints the status of the node.
+# Display information for both PXELINUX and Grub2 variant.
+
 sub Status
 {
     my ($self, $cfg) = @_;
 
-    my $t = $cfg->getElement (ETH)->getTree;
-    my $dir = $this_app->option (NBPDIR);
-    my $fqdn = get_fqdn($cfg);
-    my $boot = $this_app->option (LOCALBOOT);
-    my $rescue = link_filepath($cfg, RESCUE);
-    my $firmware = link_filepath($cfg, FIRMWARE);
-    my $livecd = link_filepath($cfg, LIVECD);
-    foreach my $s (values (%$t)) {
-        next unless $s->{ip};
-        my $ln = hexip ($s->{ip});
-        my $since = "unknown";
-        my $st;
-        if (-l "$dir/$ln") {
-            $since = ctime(lstat("$dir/$ln")->ctime());
-            my $name = readlink ("$dir/$ln");
-            my $name_path = "$dir/$name";
-            if (! -e $name_path) {
-                $st = "broken";
-            } elsif ($name =~ m{^(?:.*/)?$fqdn\.cfg$}) {
-                $st = "install";
-            } elsif ($name =~ m{^$boot$}) {
-                $st = "boot";
-            } elsif ($firmware && ($name_path =~ m{$firmware})) {
-                $st = "firmware";
-            } elsif ($livecd && ($name_path =~ m{$livecd})) {
-                $st = "livecd";
-            } elsif ($rescue && ($name_path =~ m{$rescue})) {
-                $st = "rescue";
+    my $interfaces = $cfg->getElement (INTERFACES)->getTree;
+
+    foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+        my $dir = variant_option('nbpdir_opt', $variant);
+        my $boot = $this_app->option (LOCALBOOT);
+        my $fqdn = get_fqdn($cfg);
+        my $rescue = link_filepath($cfg, RESCUE, $variant);
+        my $firmware = link_filepath($cfg, FIRMWARE, $variant);
+        my $livecd = link_filepath($cfg, LIVECD, $variant);
+        foreach my $interface (sort(values(%$interfaces))) {
+            next unless $interface->{ip};
+            my $ln = hexip_filename ($interface->{ip}, $variant);
+            my $since = "unknown";
+            my $st;
+            if (-l "$dir/$ln") {
+                $since = ctime(lstat("$dir/$ln")->ctime());
+                my $name = readlink ("$dir/$ln");
+                my $name_path = "$dir/$name";
+                if (! -e $name_path) {
+                    $st = "broken";
+                } elsif ($name =~ m{^(?:.*/)?$fqdn\.cfg$}) {
+                    $st = "install";
+                } elsif ($name =~ m{^$boot$}) {
+                    $st = "boot";
+                } elsif ($firmware && ($name_path =~ m{$firmware})) {
+                    $st = "firmware";
+                } elsif ($livecd && ($name_path =~ m{$livecd})) {
+                    $st = "livecd";
+                } elsif ($rescue && ($name_path =~ m{$rescue})) {
+                    $st = "rescue";
+                } else {
+                    $st = "unknown";
+                }
             } else {
-                $st = "unknown";
+                $st = "undefined";
             }
-        } else {
-            $st = "undefined";
+            $self->info(ref($self), "status for $fqdn: $interface->{ip} $st since: $since (PXE variant=",
+                                    variant_attribute('name', $variant), ")");
         }
-        $self->info(ref($self), " status for $fqdn: $s->{ip} $st ",
-                "since: $since");
     }
-    ksuserhooks ($cfg, STATUS_HOOK_PATH);
+    
+    exec_userhooks ($cfg, STATUS_HOOK_PATH);
+    
     return 1;
 }
 
 # Removes PXE files and symlinks for the node. To be called by --remove.
+# This must be done for PXELINUX and Grub2 variants.
 sub Unconfigure
 {
     my ($self, $cfg) = @_;
@@ -493,33 +616,43 @@ sub Unconfigure
         return 1;
     }
 
-    my $t = $cfg->getElement (ETH)->getTree;
-    my $path = filepath ($cfg);
-    my $dir = $this_app->option (NBPDIR);
-    # Set the same settings for every network interface.
-    unlink ($path);
-    unlink ("$dir/" . hexip ($_->{ip})) foreach values (%$t);
-    ksuserhooks ($cfg, REMOVE_HOOK_PATH);
-    return 1;
+    my $interfaces = $cfg->getElement (INTERFACES)->getTree;
+
+    foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+        my $path = filepath ($cfg, $variant);
+        my $dir = $this_app->option ($VARIANT_PARAMS[$variant]->{nbpdir_opt});
+        # Set the same settings for every network interface.
+        unlink ($path);
+        unlink ("$dir/" . hexip_filename ($_->{ip}, $variant)) foreach values (%$interfaces);
+        exec_userhooks ($cfg, REMOVE_HOOK_PATH);
+        return 1;        
+    }
 }
 
 
 no strict 'refs';
-foreach my $i (qw(configure boot rescue livecd firmware install)) {
-    my $name = ucfirst($i);
-    my $cmd = uc($i);
+foreach my $operation (qw(configure boot rescue livecd firmware install)) {
+    my $name = ucfirst($operation);
+    my $cmd = uc($operation);
 
     *{$name} = sub {
         my ($self, $cfg) = @_;
 
-        pxeprint($cfg) if ($i eq 'configure');
+       foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+            if ( variant_enabled($variant) ) {
+                $self->verbose("Executing action '$operation' for variant ", variant_attribute('name', $variant));
+                variant_attribute('format_method', $variant)->($cfg) if ($operation eq 'configure');
 
-        unless (pxelink ($cfg, &$cmd())==0) {
-            my $fqdn = get_fqdn($cfg);
-            $self->error ("Failed to change the status of $fqdn to $i");
-            return 0;
+                unless ( pxelink ($cfg, &$cmd(), $variant) ) {
+                    my $fqdn = get_fqdn($cfg);
+                    $self->error ("Failed to change the status of $fqdn to $operation");
+                    return 0;
+                }
+            } else {
+                $self->debug(1, "Variant ", variant_attribute('name',$variant), "disabled: action '$operation' not executed");
+            }
         }
-        ksuserhooks ($cfg, HOOK_PATH.$i) unless $CAF::Object::NoAction;
+        exec_userhooks ($cfg, HOOK_PATH.$operation);
         return 1;
     };
 };

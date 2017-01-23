@@ -17,7 +17,7 @@ BEGIN {
 }
 
 my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
-foreach my $mm (qw(pxelink pxeprint unlink get_fqdn filepath link_filepath)) {
+foreach my $mm (qw(pxelink write_pxelinux_config write_grub2_config unlink get_fqdn filepath link_filepath)) {
     $mockpxe->mock($mm, 0);
 };
 

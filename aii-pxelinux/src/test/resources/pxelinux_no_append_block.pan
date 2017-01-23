@@ -1,6 +1,6 @@
 object template pxelinux_no_append_block;
 
-include 'pxelinux_no_append';
+include 'pxelinux_config_common';
 
 prefix "/system/aii/nbp/pxelinux";
 "ksdevice" = "eth0";

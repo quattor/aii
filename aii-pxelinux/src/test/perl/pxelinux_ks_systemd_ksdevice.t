@@ -15,7 +15,7 @@ use CAF::Object;
 
 =head1 SYNOPSIS
 
-Tests for the C<pxeprint> method.
+Tests for the C<write_pxelinux_config> method.
 
 =cut
 
@@ -39,7 +39,7 @@ foreach my $scheme (qw(1 2 3 4)) {
     $bond = NCM::Component::pxelinux::pxe_network_bonding($cfg, {}, $search);
     ok(! defined($bond), "Bonding for unsupported device $search returns undef");
 
-    NCM::Component::pxelinux::pxeprint($cfg);
+    NCM::Component::pxelinux::write_pxelinux_config($cfg);
 
     $fh = get_file($fp);
 

@@ -10,7 +10,7 @@ use CAF::Object;
 
 =head1 SYNOPSIS
 
-Tests for the C<pxeprint> method.
+Tests for the C<write_pxelinux_config> method.
 
 =cut
 
@@ -24,7 +24,7 @@ $mockpxe->mock('filepath', $fp);
 my $ks = NCM::Component::pxelinux->new('pxelinux_ks');
 my $cfg = get_config_for_profile('pxelinux_ks_el7_static_ip');
 
-NCM::Component::pxelinux::pxeprint($cfg);
+NCM::Component::pxelinux::write_pxelinux_config($cfg);
 
 my $fh = get_file($fp);
 
@@ -37,7 +37,7 @@ like($fh, qr{^\s{4}append\s.*?\snameserver=nm2(\s|$)}m, 'append nameserver 2');
 like($fh, qr{^\s{4}append\s.*?\sifname=eth0:00:11:22:33:44:55(\s|$)}m, 'append ifname for 1st nic');
 like($fh, qr{^\s{4}append\s.*?\sifname=eth1:00:11:22:33:44:66(\s|$)}m, 'append ifname for 2nd nic');
 # static ip
-like($fh, qr{^\s{4}append\s.*?\sip=1.2.3.0::1.2.3.4:255.255.255.0:x.y:eth0:none(\s|$)}m, 'append static ip for bootdev');
+like($fh, qr{^\s{4}append\s.*?\sip=133\.2\.85\.234::133\.2\.85\.1:255\.255\.255\.0:x.y:eth0:none(\s|$)}m, 'append static ip for bootdev');
 # enable sshd
 like($fh, qr{^\s{4}append\s.*?\sinst.sshd(\s|$)}m, 'append enable sshd');
 # enable cmdline

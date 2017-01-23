@@ -10,7 +10,7 @@ use CAF::Object;
 
 =head1 SYNOPSIS
 
-Tests for the C<pxeprint> method.
+Tests for the C<write_pxelinux_config> method.
 
 =cut
 
@@ -24,7 +24,7 @@ $mockpxe->mock('filepath', $fp);
 my $ks = NCM::Component::pxelinux->new('pxelinux_ks');
 my $cfg = get_config_for_profile('pxelinux_ks_nologging_host');
 
-NCM::Component::pxelinux::pxeprint($cfg);
+NCM::Component::pxelinux::write_pxelinux_config($cfg);
 
 my $fh = get_file($fp);
 
