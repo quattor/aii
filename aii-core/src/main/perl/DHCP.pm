@@ -281,6 +281,7 @@ sub update_dhcp_config
 {
     my ($self, $filename) = @_;
 
+
     # Lock and load the current dhcp configuration file
     my $lockfile = $filename . ".lock";
     my $lock = CAF::Lock->new ($lockfile, log => $self);
@@ -495,6 +496,38 @@ sub read_input
     return $error;
 }
 
+# update the dhcp config file and restart daemon
+sub update_and_restart {
+	my $self = @_;
+
+    my $filename = $self->option('dhcpconf');
+    $self->debug(1, "aii-dhcp: going to update dhcpd configuration $filename");
+    my ($error, $changed) = $self->update_dhcp_config();
+    if ($error) {
+        $self->error("aii-dhcp: failed to update dhcpd configuration $filename");
+        return(1);
+    }
+
+    # restart dhcpd daemon
+    if ($self->option('norestart')) {
+        $self->verbose("aii-dhcp: dhcpd daemon do not restart (norestart set)");
+    } else {
+        if ($changed) {
+            my $cmd = $self->option('restartcmd');
+            $self->debug(1, "aii-dhcp: restarting dhcpd daemon using cmd '$cmd'");
+            # expects an arayref
+            $self->restart_daemon([split(/\s+/, $cmd)]);
+        } else {
+            $self->verbose("aii-dhcp: no changes to $filename: daemon not restarted");
+        }
+    }
+}
+
+# return true if dhcp config need changes
+sub nodes_to_change {
+    my $self = @_;
+    return  (scalar(@{$self->{NTC}}) > 0) || (scalar(@{$self->{NTR}}) > 0);
+}
 
 # return 1 on failure, 0 on success
 sub configure
@@ -509,29 +542,8 @@ sub configure
     }
 
     # update dhcpd configuration file
-    if( scalar(@{$self->{NTC}}) > 0 || scalar(@{$self->{NTR}}) > 0 ) {
-        my $filename = $self->option('dhcpconf');
-
-        $self->debug(1, "aii-dhcp: going to update dhcpd configuration $filename");
-        my ($error, $changed) = $self->update_dhcp_config($filename);
-        if ($error) {
-            $self->error("aii-dhcp: failed to update dhcpd configuration $filename");
-            return(1);
-        }
-
-        # restart dhcpd daemon
-        if ($self->option('norestart')) {
-            $self->verbose("aii-dhcp: dhcpd daemon do not restart (norestart set)");
-        } else {
-            if ($changed) {
-                my $cmd = $self->option('restartcmd');
-                $self->debug(1, "aii-dhcp: restarting dhcpd daemon using cmd '$cmd'");
-                # expects an arayref
-                $self->restart_daemon([split(/\s+/, $cmd)]);
-            } else {
-                $self->verbose("aii-dhcp: no changes to $filename: daemon not restarted");
-            }
-        }
+    if($self->nodes_to_change() ) {
+		$self->update_and_restart();
     } else {
         $self->debug(1, "aii-nbp: there are no changes to dhcpd configuration to make");
     }
