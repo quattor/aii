@@ -496,15 +496,16 @@ sub read_input
 }
 
 # update the dhcp config file and restart daemon
-sub update_and_restart {
-	my $self = shift;
+sub update_and_restart 
+{
+    my $self = shift;
 
     my $filename = $self->option('dhcpconf');
     $self->debug(1, "aii-dhcp: going to update dhcpd configuration $filename");
     my ($error, $changed) = $self->update_dhcp_config($filename);
     if ($error) {
         $self->error("aii-dhcp: failed to update dhcpd configuration $filename");
-        return(1);
+        return;
     }
 
     # restart dhcpd daemon
@@ -520,6 +521,7 @@ sub update_and_restart {
             $self->verbose("aii-dhcp: no changes to $filename: daemon not restarted");
         }
     }
+    return 1;
 }
 
 # return true if dhcp config need changes
@@ -542,7 +544,7 @@ sub configure
 
     # update dhcpd configuration file
     if($self->nodes_to_change() ) {
-		$self->update_and_restart();
+		return 1 if (!$self->update_and_restart()) ;
     } else {
         $self->debug(1, "aii-nbp: there are no changes to dhcpd configuration to make");
     }

@@ -33,6 +33,7 @@ use Readonly;
 use Parallel::ForkManager 0.7.6;
 our $profiles_info = undef;
 use AII::DHCP;
+use 5.10.1;
 
 use constant MODULEBASE => 'NCM::Component::';
 use constant USEMODULE  => "use " . MODULEBASE;
@@ -439,7 +440,7 @@ sub dhcp
     if ("$cmd" eq CONFIGURE) {
         my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
         $self->debug (4, "Going to add dhcp entry of $node to configure");
-        $ec = $mgr->new_configure_entry($node, $mac, $opts->{tftpserver} // ';', $opts->{addoptions} // ());
+        $ec = $mgr->new_configure_entry($node, $mac, $opts->{tftpserver} // '', $opts->{addoptions} // ());
     } elsif ("$cmd" eq REMOVEMETHOD) {
         if ($st->{reinstall}) {
             $self->debug(3, "No dhcp removal with reinstall set for $node");
@@ -679,7 +680,8 @@ sub fetch_profiles
 }
 
 # Initiate the Parallel:ForkManager with requested threads if option is given
-sub init_pm {
+sub init_pm 
+{
     my ($self, $cmd, $responses) = @_;
     if ($self->option('parallel')) {
         my $pm = Parallel::ForkManager->new($self->option('parallel'));
@@ -870,13 +872,13 @@ sub check_protected {
     return %hash;
 }
 
-sub change_dhcp {
+sub change_dhcp 
+{
     my ($self, $method, %nodes) = @_;
-
-    my $dhcpmgr = AII::DHCP->new(
-        logfile => $self->option('logfile'), 
-        dhcpconf => $self->option('dhcpconf'), 
-        cfgfile => $self->option('cfgfile'), 
+    $self->debug(5,"logfile:", $self->option('logfile'), " dhcpconf:", $self->option('dhcpconf'), "cfgfile: ", $self->option('cfgfile'));
+    my $dhcpmgr = AII::DHCP->new('script',
+        "--logfile=".$self->option('logfile'), 
+        "--dhcpconf=".$self->option('dhcpconf'), 
         log => $self);
     foreach my $node (sort keys %nodes) {
         my $st = $nodes{$node};
@@ -886,10 +888,11 @@ sub change_dhcp {
     }    
     if ($dhcpmgr->nodes_to_change()) {
          $self->info('DHCP will be updated and restarted');
-         $self->update_and_restart();
+         $dhcpmgr->update_and_restart();
     } else {
         $self->debug(1, 'DHCP up to date');
     }    
+    return 1;
 }
       
 
