@@ -32,6 +32,7 @@ use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
 our $profiles_info = undef;
+use AII::DHCP;
 
 use constant MODULEBASE => 'NCM::Component::';
 use constant USEMODULE  => "use " . MODULEBASE;
@@ -416,45 +417,11 @@ sub run_plugin
     }
 }
 
-# Adds extra options to aii-dhcp configuration. This is the only part
-# of the core AII that has to explicitly look at the profile's values.
-# This part may be removed at a later version, when we have a proper
-# DHCP plug-in or component.
-sub dhcpcfg
-{
-    my ($self, $node, $cmd, $st, $mac) = @_;
-
-    my @dhcpop = (DHCPCFG, MAC, $mac);
-    if ("$cmd" eq CONFIGURE) {
-        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
-        # check for tftpserver option
-        push(@dhcpop,'--tftpserver',$opts->{tftpserver})
-            if (exists($opts->{tftpserver}));
-        # check for addoptions
-        # addoptions is a single string
-        push(@dhcpop,'--addoptions',$opts->{addoptions})
-            if (exists($opts->{addoptions}));
-        push(@dhcpop, "--$cmd", $node);
-    } elsif ("$cmd" eq REMOVEMETHOD) {
-        push(@dhcpop, "--remove", $node);
-    }
-
-    # Pass debug option
-    if (my $dbg = $self->option('debug') ) {
-        if($dbg =~ m{^(\d+)$}) {
-            push(@dhcpop, '--debug', $1);
-        } else {
-            $self->warn("Invalid debug value $dbg passed (should be integer)");
-        };
-    }
-    return @dhcpop;
-}
-
-# Runs aii-dhcp on the configuration object received as argument. It
+# Runs AII::DHCP with the configuration object received as argument. It
 # uses the MAC of the first card marked with "boot"=true.
 sub dhcp
 {
-    my ($self, $node, $st, $cmd) = @_;
+    my ($self, $node, $st, $cmd, $mgr) = @_;
 
     return unless $st->{configuration}->elementExists (DHCPPATH);
 
@@ -468,16 +435,22 @@ sub dhcp
        }
     }
 
-    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
-    $self->debug (4, "Going to run: " .join (" ",@commands));
-    my $output;
-    $output = CAF::Process->new(\@commands, log => $self)->output();
-    if ($?) {
-       $self->error("Error when configuring $node: $output");
-    } else {
-        $self->debug(4, "Output: $output");
-    };
-    $self->debug(4, "End output");
+    my $ec;
+    if ("$cmd" eq CONFIGURE) {
+        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
+        $self->debug (4, "Going to add dhcp entry of $node to configure");
+        $ec = $mgr->new_configure_entry($node, $mac, $opts->{tftpserver} // ';', $opts->{addoptions} // ());
+    } elsif ("$cmd" eq REMOVEMETHOD) {
+        if ($st->{reinstall}) {
+            $self->debug(3, "No dhcp removal with reinstall set for $node");
+        } else {
+            $self->debug (4, "Going to add dhcp entry of $node to remove");
+            $ec = $mgr->new_remove_entry($node);
+        }
+    }
+    if ($ec) {
+        $self->error("Error when configuring $node");
+    }
 }
 
 
@@ -819,11 +792,8 @@ sub _remove
     $self->iter_plugins($st, REMOVEMETHOD);
 
     if ($st->{reinstall}) {
-        $self->debug(3, "No dhcp and cache removal with reinstall set for $node");
+        $self->debug(3, "No cache removal with reinstall set for $node");
     } else {
-        if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-            $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
-        }
         $self->remove_cache_node($node) unless $self->option('noaction');
     };
 }
@@ -846,9 +816,6 @@ sub _configure
     my $when = time();
 
     $self->iter_plugins($st, CONFIGURE);
-    if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-        $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
-    }
     $self->set_cache_time($node, $when) unless $self->option('noaction');
 }
 
@@ -902,6 +869,25 @@ sub check_protected {
 
     return %hash;
 }
+
+sub change_dhcp {
+    my ($self, $method, %nodes) = @_;
+
+    my $dhcpmgr = AII::DHCP->new(log => $self);
+    foreach my $node (sort keys %nodes) {
+        my $st = $nodes{$node};
+        if ($st->{configuration}->elementExists(DHCPPATH)) {
+            $self->dhcp($node, $st, $method, $dhcpmgr);
+        }
+    }    
+    if ($dhcpmgr->nodes_to_change()) {
+         $self->info('DHCP will be updated and restarted');
+         $self->update_and_restart();
+    } else {
+        $self->debug(1, 'DHCP up to date');
+    }    
+}
+      
 
 # Runs all the commands
 sub cmds
@@ -979,8 +965,15 @@ sub cmds
             foreach my $node (@reinstall_list) {
                 $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
             }
+            # If needed, do DHCP here
+            if ("$cmd" eq "configure" && !$self->option(NODHCP)){ 
+                $self->change_dhcp(CONFIGURE, %nodes);
+            };
             $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
             $self->$cmd (%nodes);
+            if ("$cmd" eq "remove" &&  !$self->option(NODHCP)) {
+                $self->change_dhcp(REMOVEMETHOD, %nodes);
+            };
             $self->info ("ran $cmd on ", scalar (keys (%nodes)), " nodes");
         }
     }
