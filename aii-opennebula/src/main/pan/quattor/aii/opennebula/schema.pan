@@ -188,6 +188,8 @@ type opennebula_vmtemplate = {
     "ignoremac" ? opennebula_ignoremac
     "graphics"  : string = 'VNC' with match (SELF, '^(VNC|SDL|SPICE)$')
     "diskcache" ? string with match(SELF, '^(default|none|writethrough|writeback|directsync|unsafe)$')
+    @{specific image mapping driver. qcow2 is not supported by Ceph storage backends}
+    "diskdriver" ? string with match(SELF, '^(raw|qcow2)$')
     "permissions" ? opennebula_permissions
     "pci" ? opennebula_vmtemplate_pci[]
     @{labels is a list of strings to group the VMs under a given name and filter them 
