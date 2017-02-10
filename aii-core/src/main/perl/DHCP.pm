@@ -116,7 +116,6 @@ sub _initialize {
     unless ($self->SUPER::_initialize(@_)) {
         return;
     }
-
     # start using log file (could be done later on instead)
     $self->set_report_logfile($self->{'LOG'});
 
@@ -498,11 +497,11 @@ sub read_input
 
 # update the dhcp config file and restart daemon
 sub update_and_restart {
-	my $self = @_;
+	my $self = shift;
 
     my $filename = $self->option('dhcpconf');
     $self->debug(1, "aii-dhcp: going to update dhcpd configuration $filename");
-    my ($error, $changed) = $self->update_dhcp_config();
+    my ($error, $changed) = $self->update_dhcp_config($filename);
     if ($error) {
         $self->error("aii-dhcp: failed to update dhcpd configuration $filename");
         return(1);
@@ -525,7 +524,7 @@ sub update_and_restart {
 
 # return true if dhcp config need changes
 sub nodes_to_change {
-    my $self = @_;
+    my $self = shift;
     return  (scalar(@{$self->{NTC}}) > 0) || (scalar(@{$self->{NTR}}) > 0);
 }
 

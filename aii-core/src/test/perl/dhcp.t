@@ -124,7 +124,6 @@ set_file_contents('/path/dhcpd.conf', $dhcpd);
 
 mkdir('target/test') if ! -d 'target/test';
 
-
 my $mod = AII::DHCP->new(@opts);
 ok(! $mod->configure(), 'configure returns success');
 

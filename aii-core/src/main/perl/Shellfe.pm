@@ -873,7 +873,11 @@ sub check_protected {
 sub change_dhcp {
     my ($self, $method, %nodes) = @_;
 
-    my $dhcpmgr = AII::DHCP->new(log => $self);
+    my $dhcpmgr = AII::DHCP->new(
+        logfile => $self->option('logfile'), 
+        dhcpconf => $self->option('dhcpconf'), 
+        cfgfile => $self->option('cfgfile'), 
+        log => $self);
     foreach my $node (sort keys %nodes) {
         my $st = $nodes{$node};
         if ($st->{configuration}->elementExists(DHCPPATH)) {
