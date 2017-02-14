@@ -64,7 +64,7 @@ Test the functions in the pre section
 ^\s{4}return \$RET$
 ^\}$
 ^$
-^correct_disksize_MiB \(\) \{$
+^valid_disksize_MiB \(\) \{$
 ^\s{4}\# takes 3 args: device path, minimum size and maximum size$
 ^\s{4}\# uses exitcode for result \(e.g. if \[ \$\? -ne 0 \] to test for failure\)$
 ^\s{4}local path min max SIZE RET$

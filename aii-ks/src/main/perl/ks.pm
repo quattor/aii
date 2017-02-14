@@ -783,7 +783,7 @@ disksize_MiB () {
     return $RET
 }
 
-correct_disksize_MiB () {
+valid_disksize_MiB () {
     # takes 3 args: device path, minimum size and maximum size
     # uses exitcode for result (e.g. if [ $? -ne 0 ] to test for failure)
     local path min max SIZE RET
