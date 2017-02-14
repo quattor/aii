@@ -448,6 +448,9 @@ sub dhcp
             $self->debug (4, "Going to add dhcp entry of $node to remove");
             $ec = $mgr->new_remove_entry($node);
         }
+    } else {
+        $self->error('dhcp should only run for configure and remove methods');
+        $ec = 1;
     }
     if ($ec) {
         $self->error("Error when configuring $node");
@@ -700,7 +703,7 @@ sub init_pm
         );
         return $pm;
     } else {
-        return 0;
+        return;
     }
 }
     
@@ -710,7 +713,7 @@ foreach my $cmd (COMMANDS) {
     *{$cmd} = sub {
         my ($self, %node_states) = @_;
         my $method = "_$cmd";
-        my %responses = ();
+        my %responses; 
         my $pm = $self->init_pm($cmd, \%responses);
         foreach my $node (sort keys %node_states) {
             $self->debug (2, "$cmd: $node");
@@ -730,7 +733,7 @@ foreach my $cmd (COMMANDS) {
             my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
 
             if ($pm) {
-                $pm->finish($ec, $res ); # Terminates the child process
+                $pm->finish($ec, $res); # Terminates the child process
             } else {
                 $responses{$node} = $res;
             }
