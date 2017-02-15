@@ -422,7 +422,7 @@ sub new_configure_entry
                 MORE_OPT   => $add_txt,
              } );
         $self->debug(2, "AII::DHCP: add new entry: host = $host fqdn = $fqdn mac = $mac");
-        $self->debug(3, "AII::DHCP: add new entry: additional opts: $add_txt");
+        $self->debug(3, "AII::DHCP: add new entry: host = $host additional opts: $add_txt");
     }
 
     return(0);
@@ -461,8 +461,7 @@ sub read_input
         # get input data
         my $fh = CAF::FileReader->new($filename, log => $self);
         if ($EC->error()) {
-            $self->error("AII::DHCP: configurelist error: " .
-                             "file access error $filename");
+            $self->error("AII::DHCP: configurelist error: file access error $filename");
             $error +=1;
         } else {
             $self->debug(2, "AII::DHCP: reading nodes to configure from file: $filename");
@@ -511,10 +510,10 @@ sub update_and_restart
     # restart dhcpd daemon
     if ($changed) {
         if ($self->option('norestart')) {
-            $self->verbose("AII::DHCP: config changed but norestart set!");
+            $self->verbose("AII::DHCP: config $filename changed but norestart set!");
         } else {
             my $cmd = $self->option('restartcmd');
-            $self->debug(1, "AII::DHCP: restarting dhcpd daemon using cmd '$cmd'");
+            $self->info(1, "AII::DHCP: config $filename changed, restarting dhcpd daemon using cmd '$cmd'");
             # expects an arayref
             $self->restart_daemon([split(/\s+/, $cmd)]);
         } 
@@ -524,8 +523,9 @@ sub update_and_restart
     return 1;
 }
 
-# return true if dhcp config need changes
-sub nodes_to_change {
+# return true if nodes need to be configured or removed
+sub nodes_to_change 
+{
     my $self = shift;
     return  return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
 }
@@ -544,9 +544,9 @@ sub configure
 
     # update dhcpd configuration file
     if ($self->nodes_to_change()) {
-		return 1 if (!$self->update_and_restart()) ;
+        return 1 if (!$self->update_and_restart()) ;
     } else {
-        $self->debug(1, "aii-nbp: there are no changes to dhcpd configuration to make");
+        $self->debug(1, "AII:DHCP: no nodes to configure, no changes to dhcp configuration");
     }
 
     return 0;

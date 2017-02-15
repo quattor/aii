@@ -59,7 +59,7 @@ my %remove = (
 
 
 
-my @opts = qw(script --logfile=target/test/dhcp.log  --cfgfile=src/test/resources/dhcp.cfg);
+my @opts = qw(script --logfile=target/test/dhcp.log  --cfgfile=src/test/resources/shellfe.cfg --dhcpcfg=src/test/resources/dhcp.cfg);
 
 
 my $dhcpd = <<EOF;
