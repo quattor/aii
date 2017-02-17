@@ -715,43 +715,52 @@ sub init_pm
         return;
     }
 }
+
+# Run the cmd on the list of nodes
+sub run_cmd {
+    my ($self, $cmd, %node_states) = @_;
+    my $method = "_$cmd";
+    my %responses; 
+    my $pm = $self->init_pm($cmd, \%responses);
+    foreach my $node (sort keys %node_states) {
+        $self->debug (2, "$cmd: $node");
+        if ($cmd ne 'status') {
+            my $lock = $self->lock_node($node);
+            if (! $lock) {
+                $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
+            next;
+            };
+        };
+        $self->debug(5, "Going to start $cmd on node $node");
+        if ($pm) {
+            if ($pm->start($node)){
+                $self->verbose("started execution for $node in child"); 
+                next;
+            } else {
+                $self->verbose("child with parallel execution for $node");
+            }
+        }
+        my $ec = $self->$method($node, $node_states{$node}) || 0;
+        my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
     
+        if ($pm) {
+            $self->verbose("Terminating the child for $node");
+            $pm->finish($ec, $res);
+        } else {
+            $responses{$node} = $res;
+        }
+    };
+    $pm->wait_all_children if $pm;
+    $self->debug(2, "Ran $cmd for all requested nodes");
+    return \%responses;
+}
+
 # Wrapper to execute the commands in sorted manner
 no strict 'refs';
 foreach my $cmd (COMMANDS) {
     *{$cmd} = sub {
         my ($self, %node_states) = @_;
-        my $method = "_$cmd";
-        my %responses; 
-        my $pm = $self->init_pm($cmd, \%responses);
-        foreach my $node (sort keys %node_states) {
-            $self->debug (2, "$cmd: $node");
-            if ($cmd ne 'status') {
-                my $lock = $self->lock_node($node);
-                if (! $lock) {
-                    $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
-                    next;
-                };
-            };
-            $self->debug(5, "Going to start $cmd on node $node");
-            if ($pm) {
-                $pm->start($node) and next;
-                $self->verbose("started parallel execution for $node in child");
-            }
-
-            my $ec = $self->$method($node, $node_states{$node}) || 0;
-            my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
-
-            if ($pm) {
-                $self->verbose("Terminating the child for $node");
-                $pm->finish($ec, $res);
-            } else {
-                $responses{$node} = $res;
-            }
-        };
-        $pm->wait_all_children if $pm;
-        $self->debug(2, "Ran $cmd for all requested nodes");
-        return \%responses;
+        return $self->run_cmd($cmd, %node_states);
     }
 }
 use strict 'refs';
@@ -987,10 +996,10 @@ sub cmds
             foreach my $node (@reinstall_list) {
                 $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
             }
-            # If needed, do DHCP here
             if ($self->option(NODHCP)){
                 $self->verbose('got option NODHCP, DHCP not enabled');
             } else {
+                # If needed, do DHCP here
                 if ("$cmd" eq "configure"){ 
                     $self->change_dhcp(CONFIGURE, %nodes);
                 } elsif ("$cmd" eq "remove"){
