@@ -728,7 +728,7 @@ sub run_cmd {
             my $lock = $self->lock_node($node);
             if (! $lock) {
                 $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
-            next;
+                next;
             };
         };
         $self->debug(5, "Going to start $cmd on node $node");
@@ -910,12 +910,8 @@ sub change_dhcp
             $self->dhcp($node, $st, $method, $dhcpmgr);
         }
     }    
-    if ($dhcpmgr->nodes_to_change()) {
-         $self->info('DHCP will be updated and restarted if needed');
-         $dhcpmgr->update_and_restart();
-    } else {
-        $self->debug(1, 'DHCP up to date, no nodes to configure');
-    }    
+    $dhcpmgr->configure_dhcp();
+
     return 1;
 }
       
@@ -1008,7 +1004,7 @@ sub cmds
                     $self->debug(5, "Method $cmd does not need dhcp");
                 }
             }
-            $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
+            $self->verbose (scalar (keys (%nodes)) . " nodes to $cmd");
             $self->$cmd (%nodes);
             $self->info ("ran $cmd on ", scalar (keys (%nodes)), " nodes");
         }

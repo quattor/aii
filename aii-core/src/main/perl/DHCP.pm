@@ -530,6 +530,19 @@ sub nodes_to_change
     return  return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
 }
 
+# update dhcpd configuration file
+sub configure_dhcp
+{
+    my $self = shift;
+    if ($self->nodes_to_change()) {
+        $self->info('DHCP will be updated and restarted if needed');
+        return 0 if (!$self->update_and_restart());
+    } else {
+        $self->debug(1, "AII:DHCP: DHCP up to date, no nodes to configure");
+    }
+    return 1;
+}
+
 # return 1 on failure, 0 on success
 sub configure
 {
@@ -541,13 +554,7 @@ sub configure
         $self->error("AII::DHCP: failed to process cmd line or input files");
         return(1);
     }
-
-    # update dhcpd configuration file
-    if ($self->nodes_to_change()) {
-        return 1 if (!$self->update_and_restart()) ;
-    } else {
-        $self->debug(1, "AII:DHCP: no nodes to configure, no changes to dhcp configuration");
-    }
+    return 1 if (!$self->configure_dhcp());
 
     return 0;
 }
