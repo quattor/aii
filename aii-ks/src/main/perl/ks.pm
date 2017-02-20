@@ -2,7 +2,7 @@
 
 use EDG::WP4::CCM::Path qw (escape unescape);
 use NCM::Filesystem;
-use NCM::Partition qw (partition_compare);
+use NCM::Partition 16.12.1 qw (partition_sort);
 use NCM::BlockdevFactory qw (build);
 
 use LC::Exception qw (throw_error);
@@ -783,7 +783,7 @@ disksize_MiB () {
     return $RET
 }
 
-correct_disksize_MiB () {
+valid_disksize_MiB () {
     # takes 3 args: device path, minimum size and maximum size
     # uses exitcode for result (e.g. if [ $? -ne 0 ] to test for failure)
     local path min max SIZE RET
@@ -940,8 +940,9 @@ sub ksprint_filesystems
         push (@part, $pt);
     }
     # Partitions go first, as of bug #26137
-    $_->create_pre_ks foreach (sort partition_compare @part);
-    foreach (sort partition_compare @part) {
+    $_->create_pre_ks foreach (partition_sort(@part));
+
+    foreach (partition_sort(@part)) {
         $_->align_ks if $_->can('align_ks');
     }
     $_->create_ks foreach @filesystems;
