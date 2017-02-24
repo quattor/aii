@@ -1,3 +1,8 @@
+# -*- mode: cperl -*-
+# ${license-info}
+# ${author-info}
+# ${build-info}
+
 use strict;
 use warnings;
 
@@ -19,7 +24,9 @@ use CAF::Object;
 use Test::More;
 use Test::Quattor;
 use AII::DHCP;
+use AII::Shellfe;
 use Test::MockModule;
+use Test::Quattor qw(shellfe-dhcp-1 shellfe-dhcp-2 shellfe-dhcp-3 shellfe-dhcp-4 shellfe-dhcp-b);
 
 $CAF::Object::NoAction = 1;
 set_caf_file_close_diff(1);
@@ -28,26 +35,32 @@ my $mlock = Test::MockModule->new('CAF::Lock');
 my $lock = 0;
 $mlock->mock('set_lock', sub {$lock++; return 1;});
 
-my @opts = qw(script
-    --logfile=target/test/dhcp.log
-    --cfgfile=src/test/resources/dhcp.cfg
-    --configure host1.example.com --mac 00:11:22:33:44:55 --tftpserver host0.example.com --addoptions moremore
-    --remove host1.example1.com
-    --configurelist /path/configure_list
-    --removelist /path/remove_list
+
+my $cfg_1 = { configuration => get_config_for_profile('shellfe-dhcp-1') };
+my $cfg_2 = { configuration => get_config_for_profile('shellfe-dhcp-2') };
+my $cfg_3 = { configuration => get_config_for_profile('shellfe-dhcp-3') };
+my $cfg_4 = { configuration => get_config_for_profile('shellfe-dhcp-4') };
+my $cfg_b = { configuration => get_config_for_profile('shellfe-dhcp-b') };
+
+my %configure = ( 
+    'host1.example.com' => $cfg_1,
+    'host2.example.com' => $cfg_2,
+    'host3.example1.com' => $cfg_3,
+    'host4.example.com' => $cfg_4,
 );
 
-my $cfglist = <<EOF;
-host2.example.com 00:11:22:33:44:66 host0.example.com
-host3.example1.com 00:11:22:33:44:88
-host4.example.com 00:11:22:33:44:99 host0.example.com evenmore
+my %remove = (
+    'host1.example.com' => $cfg_1,
+    'host5.example.com' => $cfg_b,
+    'host6.example1.com' => $cfg_b,
+);
 
-EOF
 
-my $rmlist = <<EOF;
-host5.example.com
-host6.example1.com
-EOF
+
+
+
+my @opts = qw(script --logfile=target/test/dhcp.log  --cfgfile=src/test/resources/shellfe.cfg --dhcpcfg=src/test/resources/dhcp.cfg);
+
 
 my $dhcpd = <<EOF;
 
@@ -117,80 +130,19 @@ subnet 10.11.2.0 netmask 255.255.255.0 {
 
 EOF
 
-set_file_contents('/path/configure_list', $cfglist);
-set_file_contents('/path/remove_list', $rmlist);
 # set via dhcp.cfg
 set_file_contents('/path/dhcpd.conf', $dhcpd);
 
 mkdir('target/test') if ! -d 'target/test';
 
-my $mod = AII::DHCP->new(@opts);
-ok(! $mod->configure(), 'configure returns success');
+my $mod = AII::Shellfe->new(@opts);
 
-is($lock, 1, "lock taken");
+my $rem = $mod->change_dhcp('Unconfigure', %remove);
+my $con = $mod->change_dhcp('Configure', %configure);
+ok ($rem, 'remove returns success');
+ok ($con, 'configure returns success');
 
-diag explain $mod->{NTC};
-is_deeply($mod->{NTC}, [
-  {
-    'FQDN' => 'host1.example.com',
-    'IP' => 168493057,
-    'MAC' => '00:11:22:33:44:55',
-    'MORE_OPT' => 'moremore',
-    'NAME' => 'host1.example.com',
-    'OK' => 1,
-    'ST_IP' => '10.11.0.1',
-    'ST_IP_TFTP' => '10.11.0.0'
-  },
-  {
-    'FQDN' => 'host2.example.com',
-    'IP' => 168493058,
-    'MAC' => '00:11:22:33:44:66',
-    'MORE_OPT' => '',
-    'NAME' => 'host2.example.com',
-    'OK' => 1,
-    'ST_IP' => '10.11.0.2',
-    'ST_IP_TFTP' => '10.11.0.0'
-  },
-  {
-    'FQDN' => 'host3.example1.com',
-    'IP' => 168493571,
-    'MAC' => '00:11:22:33:44:88',
-    'MORE_OPT' => '',
-    'NAME' => 'host3.example1.com',
-    'OK' => 1,
-    'ST_IP' => '10.11.2.3',
-    'ST_IP_TFTP' => undef
-  },
-  {
-    'FQDN' => 'host4.example.com',
-    'IP' => 168493060,
-    'MAC' => '00:11:22:33:44:99',
-    'MORE_OPT' => 'evenmore',
-    'NAME' => 'host4.example.com',
-    'OK' => 1,
-    'ST_IP' => '10.11.0.4',
-    'ST_IP_TFTP' => '10.11.0.0'
-  }
-], "nodes to configure");
-
-diag explain $mod->{NTR};
-is_deeply($mod->{NTR}, [
-  {
-    'FQDN' => 'host1.example1.com',
-    'IP' => '10.11.2.1',
-    'NAME' => 'host1.example1.com'
-  },
-  {
-    'FQDN' => 'host5.example.com',
-    'IP' => '10.11.0.5',
-    'NAME' => 'host5.example.com'
-  },
-  {
-    'FQDN' => 'host6.example1.com',
-    'IP' => '10.11.2.6',
-    'NAME' => 'host6.example1.com'
-  }
-], "nodes to remove");
+is($lock, 2, "lock taken twice");
 
 ok(get_command('/sbin/service dhcpd restart'), 'dhcpd restarted');
 

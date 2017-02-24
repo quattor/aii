@@ -116,7 +116,6 @@ sub _initialize {
     unless ($self->SUPER::_initialize(@_)) {
         return;
     }
-
     # start using log file (could be done later on instead)
     $self->set_report_logfile($self->{'LOG'});
 
@@ -132,14 +131,14 @@ sub restart_daemon
 {
     my ($self, $cmd) = @_;
 
-    $self->debug(3, "aii-dhcp: restarting daemon dhcpd");
+    $self->debug(3, "AII::DHCP: restarting daemon dhcpd");
 
     my $output = CAF::Process->new($cmd, log => $self)->output();
     if ($?) {
-        $self->error("aii-dhcp: error restarting dhcp daemon: $output");
+        $self->error("AII::DHCP: error restarting dhcp daemon: $output");
         return(1);
     } else {
-        $self->verbose("aii-dhcp: daemon restarted: $output");
+        $self->verbose("AII::DHCP: daemon restarted: $output");
     }
 
     return(0);
@@ -177,7 +176,7 @@ sub update_dhcp_config_file
     my @netandmasks = ($text =~ /\n\s*subnet\s+([\d\.]+)\s+netmask\s+([\d\.]+)/g);
 
     if ($#netandmasks % 2 == 0) {
-        $self->error("aii-dhcp: syntax error on dhcpd config file: " .
+        $self->error("AII::DHCP: syntax error on dhcpd config file: " .
                      "netmask/network missing in subnet declaration");
         return(1, '');
     }
@@ -190,7 +189,7 @@ sub update_dhcp_config_file
                 ST_NET  => $netandmasks[$i],
                 ST_MASK => $netandmasks[$i+1],
               });
-        $self->verbose("aii-dhcp: found subnet $netandmasks[$i] " .
+        $self->verbose("AII::DHCP: found subnet $netandmasks[$i] " .
                        "mask $netandmasks[$i+1]");
     }
 
@@ -238,10 +237,10 @@ sub update_dhcp_config_file
 
                 $newnodes .= "$indent}\n";
                 if ( $subnet_defined ) {
-                    $self->verbose("aii-dhcp: added node $node->{NAME} ".
+                    $self->verbose("AII::DHCP: added node $node->{NAME} ".
                                        "to subnet $net->{ST_NET}");
                 } else {
-                    $self->verbose("aii-dhcp: added node $node->{NAME} (no subnet specified)");
+                    $self->verbose("AII::DHCP: added node $node->{NAME} (no subnet specified)");
                 }
             }
 
@@ -249,7 +248,7 @@ sub update_dhcp_config_file
 
         # Insert the nodes in the current subnet
         if ($newnodes ne '') {
-            $self->debug(1, "aii-dhcp: newnodes=|$newnodes|\n");
+            $self->debug(1, "AII::DHCP: newnodes=|$newnodes|\n");
             if ( $subnet_defined ) {
                 $text =~ s/( \s*  subnet  \s+ \Q$net->{ST_NET}\E  \s+
                          netmask \s+ \Q$net->{ST_MASK}\E \s+ \{
@@ -280,6 +279,7 @@ sub update_dhcp_config_file
 sub update_dhcp_config
 {
     my ($self, $filename) = @_;
+
 
     # Lock and load the current dhcp configuration file
     my $lockfile = $filename . ".lock";
@@ -326,14 +326,14 @@ sub new_remove_entry
 
     # Check host
     if (!defined($host) || $host eq '') {
-        $self->warn('aii-dhcp: missing hostname');
+        $self->warn('AII::DHCP: missing hostname');
         return(1);
     }
 
     my ($fqdn, @all_address) = (gethostbyname($host))[0,4];
     if (! @all_address) {
         # The array is empty => invalid name
-        $self->warn("aii-dhcp: invalid hostname to remove ($host), DNS lookup failed");
+        $self->warn("AII::DHCP: invalid hostname to remove ($host), DNS lookup failed");
         return(1);
     }
 
@@ -345,7 +345,7 @@ sub new_remove_entry
             IP   => $ip,
          } );
 
-    $self->debug(2, "aii-dhcp: mark $host (fqdn: $fqdn, ip: $ip) to remove");
+    $self->debug(2, "AII::DHCP: mark $host (fqdn: $fqdn, ip: $ip) to remove");
 
     return(0);
 }
@@ -360,24 +360,24 @@ sub new_configure_entry
 
     # Check hostname
     if (!defined($host) || $host eq '') {
-        $self->warn('aii-dhcp: missing hostname');
+        $self->warn('AII::DHCP: missing hostname');
         return(1);
     }
 
     my ($fqdn, @all_address) = (gethostbyname($host))[0,4];
     if ($#all_address < 0) {        # The array is empty => invalid name
-        $self->warn("aii-dhcp: invalid hostname to add ($host)");
+        $self->warn("AII::DHCP: invalid hostname to add ($host)");
         return(1);
     }
 
     # Check MAC address
     if (!defined($mac)) {
-        $self->warn("aii-dhcp: missing MAC address for host $host");
+        $self->warn("AII::DHCP: missing MAC address for host $host");
         return(1);
     }
 
     if ($mac !~ /^([[:xdigit:]]{2}[\:\-]){5}[[:xdigit:]]{2}$/) {
-        $self->warn("aii-dhcp: MAC address $mac not valid for host $host");
+        $self->warn("AII::DHCP: MAC address $mac not valid for host $host");
         return(1);
     }
 
@@ -392,7 +392,7 @@ sub new_configure_entry
             $tftpserver = Socket::inet_ntoa($all_tftp_address[0]);
         } else {
             # The array is empty => invalid name
-            $self->warn("aii-dhcp: invalid TFTP server ($tftpserver) for $host: DNS lookup failed");
+            $self->warn("AII::DHCP: invalid TFTP server ($tftpserver) for $host: DNS lookup failed");
             return(1);
         }
     }
@@ -403,7 +403,7 @@ sub new_configure_entry
     # check if the host entry already exists
     foreach my $item (@{$self->{NTC}}) {
         if($item->{FQDN} eq $fqdn) {
-            $self->debug(2, "aii-dhcp: new MAC entry for existing host = $host fqdn = $fqdn mac = $mac");
+            $self->debug(2, "AII::DHCP: new MAC entry for existing host = $host fqdn = $fqdn mac = $mac");
             $item->{MAC} .= " $mac";
             $mac = ""; # flag meaning object found
             last;
@@ -421,8 +421,8 @@ sub new_configure_entry
                 ST_IP_TFTP => $tftpserver,
                 MORE_OPT   => $add_txt,
              } );
-        $self->debug(2, "aii-dhcp: add new entry: host = $host fqdn = $fqdn mac = $mac");
-        $self->debug(3, "aii-dhcp: add new entry: additional opts: $add_txt");
+        $self->debug(2, "AII::DHCP: add new entry: host = $host fqdn = $fqdn mac = $mac");
+        $self->debug(3, "AII::DHCP: add new entry: host = $host additional opts: $add_txt");
     }
 
     return(0);
@@ -461,11 +461,10 @@ sub read_input
         # get input data
         my $fh = CAF::FileReader->new($filename, log => $self);
         if ($EC->error()) {
-            $self->error("aii-dhcp: configurelist error: " .
-                             "file access error $filename");
+            $self->error("AII::DHCP: configurelist error: file access error $filename");
             $error +=1;
         } else {
-            $self->debug(2, "aii-dhcp: reading nodes to configure from file: $filename");
+            $self->debug(2, "AII::DHCP: reading nodes to configure from file: $filename");
             foreach my $item (split(m/\n/, "$fh")) {
                 if ($item =~ m/^\s*([^#].*?)\s*$/) {
                     $error += $self->new_configure_entry(split(m/\s+/, $1));
@@ -480,10 +479,10 @@ sub read_input
 
         my $fh = CAF::FileReader->new($filename, log => $self);
         if ($EC->error()) {
-            $self->error("aii-dhcp: removelist error: file access error $filename");
+            $self->error("AII::DHCP: removelist error: file access error $filename");
             $error +=1;
         } else {
-            $self->debug(2, "aii-dhcp: reading nodes to remove from file: $filename");
+            $self->debug(2, "AII::DHCP: reading nodes to remove from file: $filename");
             foreach my $item (split(m/\n/, "$fh")) {
                 if ($item =~ m/^\s*([^#].*?)\s*$/) {
                     $error += $self->new_remove_entry($1);
@@ -495,6 +494,54 @@ sub read_input
     return $error;
 }
 
+# update the dhcp config file and restart daemon
+sub update_and_restart 
+{
+    my $self = shift;
+
+    my $filename = $self->option('dhcpconf');
+    $self->debug(1, "AII::DHCP: going to update dhcpd configuration $filename if needed");
+    my ($error, $changed) = $self->update_dhcp_config($filename);
+    if ($error) {
+        $self->error("AII::DHCP: failed to update dhcpd configuration $filename");
+        return;
+    }
+
+    # restart dhcpd daemon
+    if ($changed) {
+        if ($self->option('norestart')) {
+            $self->verbose("AII::DHCP: config $filename changed but norestart set!");
+        } else {
+            my $cmd = $self->option('restartcmd');
+            $self->info(1, "AII::DHCP: config $filename changed, restarting dhcpd daemon using cmd '$cmd'");
+            # expects an arayref
+            $self->restart_daemon([split(/\s+/, $cmd)]);
+        } 
+    } else {
+        $self->verbose("AII::DHCP: no changes to $filename: daemon not restarted");
+    }
+    return 1;
+}
+
+# return true if nodes need to be configured or removed
+sub nodes_to_change 
+{
+    my $self = shift;
+    return  return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
+}
+
+# update dhcpd configuration file
+sub configure_dhcp
+{
+    my $self = shift;
+    if ($self->nodes_to_change()) {
+        $self->info('DHCP will be updated and restarted if needed');
+        return 0 if (!$self->update_and_restart());
+    } else {
+        $self->debug(1, "AII:DHCP: DHCP up to date, no nodes to configure");
+    }
+    return 1;
+}
 
 # return 1 on failure, 0 on success
 sub configure
@@ -502,39 +549,12 @@ sub configure
     my $self = shift;
 
     # process command line options
-    $self->debug(1, "aii-dhcp: reading cmd line or input files");
+    $self->debug(1, "AII::DHCP: reading cmd line or input files");
     if ($self->read_input()) {
-        $self->error("aii-dhcp: failed to process cmd line or input files");
+        $self->error("AII::DHCP: failed to process cmd line or input files");
         return(1);
     }
-
-    # update dhcpd configuration file
-    if( scalar(@{$self->{NTC}}) > 0 || scalar(@{$self->{NTR}}) > 0 ) {
-        my $filename = $self->option('dhcpconf');
-
-        $self->debug(1, "aii-dhcp: going to update dhcpd configuration $filename");
-        my ($error, $changed) = $self->update_dhcp_config($filename);
-        if ($error) {
-            $self->error("aii-dhcp: failed to update dhcpd configuration $filename");
-            return(1);
-        }
-
-        # restart dhcpd daemon
-        if ($self->option('norestart')) {
-            $self->verbose("aii-dhcp: dhcpd daemon do not restart (norestart set)");
-        } else {
-            if ($changed) {
-                my $cmd = $self->option('restartcmd');
-                $self->debug(1, "aii-dhcp: restarting dhcpd daemon using cmd '$cmd'");
-                # expects an arayref
-                $self->restart_daemon([split(/\s+/, $cmd)]);
-            } else {
-                $self->verbose("aii-dhcp: no changes to $filename: daemon not restarted");
-            }
-        }
-    } else {
-        $self->debug(1, "aii-nbp: there are no changes to dhcpd configuration to make");
-    }
+    return 1 if (!$self->configure_dhcp());
 
     return 0;
 }

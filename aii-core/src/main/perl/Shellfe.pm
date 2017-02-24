@@ -30,8 +30,10 @@ use File::Path qw(mkpath rmtree);
 use File::Basename qw(basename);
 use DB_File;
 use Readonly;
-
+use Parallel::ForkManager 0.7.6;
 our $profiles_info = undef;
+use AII::DHCP;
+use 5.10.1;
 
 use constant MODULEBASE => 'NCM::Component::';
 use constant USEMODULE  => "use " . MODULEBASE;
@@ -229,19 +231,23 @@ sub app_options
          HELP    => 'where to store lock files',
          DEFAULT => "/var/lock/quattor" },
 
+       { NAME    => 'parallel=i',
+         HELP    => 'run commands on hosts in parallel ',
+         DEFAULT => 0 },
+
+       { NAME    => 'logpid',
+         HELP    => "Add process ID to the log messages (disabled by default, unless parallel is > 1)",
+         DEFAULT => undef },
+
          # Options for osinstall plug-ins
        { NAME    => 'osinstalldir=s',
          HELP    => 'Directory where Kickstart files will be installed',
          DEFAULT => '/osinstall/ks' },
 
          # Options for DISCOVERY plug-ins
-         { NAME => 'dhcpconf=s',
-           HELP => 'name of dhcp configuration file',
-           DEFAULT => '/etc/dhcpd.conf' },
-
-         { NAME => 'restartcmd=s',
-           HELP => 'how to restart the dhcp daemon',
-           DEFAULT => 'service dhcpd restart' },
+       { NAME => 'dhcpcfg=s',
+         HELP => 'name of aii configuration file for dhcp',
+         DEFAULT => '/etc/aii/aii-dhcp.conf' },
 
          # Options for NBP plug-ins
        { NAME    => 'nbpdir=s',
@@ -298,8 +304,16 @@ sub _initialize
     $self->{LOG_APPEND} = 1;
     $self->{LOG_TSTAMP} = 1;
     $self->{status} = 0;
+
     $self->SUPER::_initialize (@_) or return undef;
-    $self->set_report_logfile ($self->{LOG});
+
+    # Defaults: append to logfile, add timestamp
+    my $logopts = 'at';
+    if ((!defined($self->option('logpid')) && ($self->option('parallel') > 1)) || $self->option('logpid'))  {
+        $logopts .= 'p';
+    }
+    return if(! $self->init_logfile($self->option("logfile"), $logopts));
+
 
     # Log all warnings
     $SIG{__WARN__} = sub {
@@ -412,51 +426,18 @@ sub run_plugin
     }
 }
 
-# Adds extra options to aii-dhcp configuration. This is the only part
-# of the core AII that has to explicitly look at the profile's values.
-# This part may be removed at a later version, when we have a proper
-# DHCP plug-in or component.
-sub dhcpcfg
-{
-    my ($self, $node, $cmd, $st, $mac) = @_;
-
-    my @dhcpop = (DHCPCFG, MAC, $mac);
-    if ("$cmd" eq CONFIGURE) {
-        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
-        # check for tftpserver option
-        push(@dhcpop,'--tftpserver',$opts->{tftpserver})
-            if (exists($opts->{tftpserver}));
-        # check for addoptions
-        # addoptions is a single string
-        push(@dhcpop,'--addoptions',$opts->{addoptions})
-            if (exists($opts->{addoptions}));
-        push(@dhcpop, "--$cmd", $node);
-    } elsif ("$cmd" eq REMOVEMETHOD) {
-        push(@dhcpop, "--remove", $node);
-    }
-
-    # Pass debug option
-    if (my $dbg = $self->option('debug') ) {
-        if($dbg =~ m{^(\d+)$}) {
-            push(@dhcpop, '--debug', $1);
-        } else {
-            $self->warn("Invalid debug value $dbg passed (should be integer)");
-        };
-    }
-    return @dhcpop;
-}
-
-# Runs aii-dhcp on the configuration object received as argument. It
+# Call AII::DHCP with the configuration object received as argument. It
 # uses the MAC of the first card marked with "boot"=true.
+# dhcpmgr is the instance of AII:DHCP that collects the nodes to configure or remove
 sub dhcp
 {
-    my ($self, $node, $st, $cmd) = @_;
+    my ($self, $node, $st, $cmd, $dhcpmgr) = @_;
 
     return unless $st->{configuration}->elementExists (DHCPPATH);
 
     my $mac;
     my $cards = $st->{configuration}->getElement (HWCARDS)->getTree;
-    foreach my $cfg (values (%$cards)) {
+    foreach my $cfg (sort(values (%$cards))) {
        if ($cfg->{boot}) {
            $cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i;
            $mac = $1;
@@ -464,16 +445,25 @@ sub dhcp
        }
     }
 
-    my @commands = $self->dhcpcfg ($node, $cmd, $st, $mac);
-    $self->debug (4, "Going to run: " .join (" ",@commands));
-    my $output;
-    $output = CAF::Process->new(\@commands, log => $self)->output();
-    if ($?) {
-       $self->error("Error when configuring $node: $output");
+    my $ec;
+    if ($cmd eq CONFIGURE) {
+        my $opts = $st->{configuration}->getElement (DHCPOPTION)->getTree;
+        $self->debug (4, "Going to add dhcp entry of $node to configure");
+        $ec = $dhcpmgr->new_configure_entry($node, $mac, $opts->{tftpserver} // '', $opts->{addoptions} // ());
+    } elsif ($cmd eq REMOVEMETHOD) {
+        if ($st->{reinstall}) {
+            $self->debug(3, "No dhcp removal with reinstall set for $node");
+        } else {
+            $self->debug (4, "Going to add dhcp entry of $node to remove");
+            $ec = $dhcpmgr->new_remove_entry($node);
+        }
     } else {
-        $self->debug(4, "Output: $output");
-    };
-    $self->debug(4, "End output");
+        $self->error("on node $node: dhcp should only run for configure and remove methods, not $cmd");
+        $ec = 1;
+    }
+    if ($ec) {
+        $self->error("Error running method $cmd on node $node");
+    }
 }
 
 
@@ -701,24 +691,76 @@ sub fetch_profiles
     return %h;
 }
 
+# Initiate the Parallel:ForkManager with requested threads if option is given
+sub init_pm 
+{
+    my ($self, $cmd, $responses) = @_;
+    if ($self->option('parallel')) {
+        my $pm = Parallel::ForkManager->new($self->option('parallel'));
+        $pm->run_on_finish ( # called before the first call to start()
+            sub {
+                my ($pid, $exit_code, $id, $esignal, $cdump, $data_struct_ref) = @_;
+                if ($exit_code) {
+                    $self->error("Error running $cmd on $id, exitcode $exit_code");
+                };
+                # retrieve data structure from child 
+                if (defined($data_struct_ref)) {
+                    $responses->{$id} = $data_struct_ref;
+                    $self->debug(5, "Running $cmd on $id had output"); 
+                }
+            }
+        );
+        return $pm;
+    } else {
+        return;
+    }
+}
+
+# Run the cmd on the list of nodes
+sub run_cmd {
+    my ($self, $cmd, %node_states) = @_;
+    my $method = "_$cmd";
+    my %responses; 
+    my $pm = $self->init_pm($cmd, \%responses);
+    foreach my $node (sort keys %node_states) {
+        $self->debug (2, "$cmd: $node");
+        if ($cmd ne 'status') {
+            my $lock = $self->lock_node($node);
+            if (! $lock) {
+                $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
+                next;
+            };
+        };
+        $self->debug(5, "Going to start $cmd on node $node");
+        if ($pm) {
+            if ($pm->start($node)){
+                $self->verbose("started execution for $node in child"); 
+                next;
+            } else {
+                $self->verbose("child with parallel execution for $node");
+            }
+        }
+        my $ec = $self->$method($node, $node_states{$node}) || 0;
+        my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
+    
+        if ($pm) {
+            $self->verbose("Terminating the child for $node");
+            $pm->finish($ec, $res);
+        } else {
+            $responses{$node} = $res;
+        }
+    };
+    $pm->wait_all_children if $pm;
+    $self->debug(2, "Ran $cmd for all requested nodes");
+    return \%responses;
+}
 
 # Wrapper to execute the commands in sorted manner
 no strict 'refs';
 foreach my $cmd (COMMANDS) {
     *{$cmd} = sub {
         my ($self, %node_states) = @_;
-        my $method = "_$cmd";
-        foreach my $node (sort keys %node_states) {
-            $self->debug (2, "$cmd: $node");
-            if ($cmd ne 'status') {
-                my $lock = $self->lock_node($node);
-                if (! $lock) {
-                    $self->error("aii-shellfe: couldn't acquire lock on $node for $cmd");
-                    next;
-                };
-            };
-            $self->$method($node, $node_states{$node});
-        };
+        return $self->run_cmd($cmd, %node_states);
     }
 }
 use strict 'refs';
@@ -775,11 +817,8 @@ sub _remove
     $self->iter_plugins($st, REMOVEMETHOD);
 
     if ($st->{reinstall}) {
-        $self->debug(3, "No dhcp and cache removal with reinstall set for $node");
+        $self->debug(3, "No cache removal with reinstall set for $node");
     } else {
-        if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-            $self->dhcp ($node, $st, REMOVEMETHOD) unless $self->option (NODHCP);
-        }
         $self->remove_cache_node($node) unless $self->option('noaction');
     };
 }
@@ -802,9 +841,6 @@ sub _configure
     my $when = time();
 
     $self->iter_plugins($st, CONFIGURE);
-    if ($st->{configuration}->elementExists("/system/aii/dhcp")) {
-        $self->dhcp($node, $st, CONFIGURE) unless $self->option(NODHCP);
-    }
     $self->set_cache_time($node, $when) unless $self->option('noaction');
 }
 
@@ -858,6 +894,27 @@ sub check_protected {
 
     return %hash;
 }
+
+sub change_dhcp 
+{
+    my ($self, $method, %nodes) = @_;
+    $self->debug(5, "logfile:", $self->option('logfile'), " dhcpcfg:", $self->option('dhcpcfg'));
+    my $dhcpmgr = AII::DHCP->new('script',
+        "--logfile=".$self->option('logfile'), 
+        "--cfgfile=".$self->option('dhcpcfg'), 
+        log => $self);
+    foreach my $node (sort keys %nodes) {
+        my $st = $nodes{$node}; 
+        $self->debug(3, "Checking dhcp config on node $node for method $method.");
+        if ($st->{configuration}->elementExists(DHCPPATH)) {
+            $self->dhcp($node, $st, $method, $dhcpmgr);
+        }
+    }    
+    $dhcpmgr->configure_dhcp();
+
+    return 1;
+}
+      
 
 # Runs all the commands
 sub cmds
@@ -935,9 +992,21 @@ sub cmds
             foreach my $node (@reinstall_list) {
                 $nodes{$node}->{reinstall} = 1 if exists($nodes{$node});
             }
-
+            if ($self->option(NODHCP)){
+                $self->verbose('got option NODHCP, DHCP not enabled');
+            } else {
+                # If needed, do DHCP here
+                if ("$cmd" eq "configure"){ 
+                    $self->change_dhcp(CONFIGURE, %nodes);
+                } elsif ("$cmd" eq "remove"){
+                    $self->change_dhcp(REMOVEMETHOD, %nodes);
+                } else {
+                    $self->debug(5, "Method $cmd does not need dhcp");
+                }
+            }
+            $self->verbose (scalar (keys (%nodes)) . " nodes to $cmd");
             $self->$cmd (%nodes);
-            $self->info (scalar (keys (%nodes)) . " nodes to $cmd");
+            $self->info ("ran $cmd on ", scalar (keys (%nodes)), " nodes");
         }
     }
 
