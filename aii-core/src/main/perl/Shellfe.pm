@@ -538,7 +538,7 @@ sub nodelist
                 CAFILE() => 'cacert',
                 CADIR() => 'cadir'
                 );
-            my %lwp_opts = map {$lwp_opts_map{$_} => $self->options($_)} grep {$self->options($_)} keys %lwp_opts_map;
+            my %lwp_opts = map {$lwp_opts_map{$_} => $self->option($_)} grep {$self->option($_)} keys %lwp_opts_map;
 
             my $rp = $lwp->_do_ua('get', [$url], %lwp_opts);
             $self->debug (4, "Downloading profiles-info: $url");
