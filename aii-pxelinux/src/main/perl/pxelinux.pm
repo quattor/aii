@@ -2,14 +2,15 @@
 
 use Sys::Hostname;
 use CAF::FileWriter;
-use CAF::Object;
+use CAF::Object qw(SUCCESS CHANGED);
 use NCM::Component::ks qw (ksuserhooks);
 use LC::Fatal qw (symlink);
 use File::stat;
+use File::Basename qw(dirname);
 use Time::localtime;
 use Readonly;
 
-use parent qw (NCM::Component);
+use parent qw (NCM::Component CAF::Path);
 
 use constant PXEROOT => "/system/aii/nbp/pxelinux";
 use constant HOSTNAME => "/system/network/hostname";
@@ -128,7 +129,7 @@ sub hexip_filename
     return $hexip_str;
 }
 
-# Returns the absolute path where the PXE file must be written, based on the PXE variant
+# Returns the absolute path of the PXE config file for the current host, based on the PXE variant
 sub filepath
 {
     my ($cfg, $variant) = @_;
@@ -619,14 +620,38 @@ sub Unconfigure
     my $interfaces = $cfg->getElement (INTERFACES)->getTree;
 
     foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
-        my $path = filepath ($cfg, $variant);
-        my $dir = $this_app->option ($VARIANT_PARAMS[$variant]->{nbpdir_opt});
-        # Set the same settings for every network interface.
-        unlink ($path);
-        unlink ("$dir/" . hexip_filename ($_->{ip}, $variant)) foreach values (%$interfaces);
+        my $pxe_config_file = filepath ($cfg, $variant);
+        # Remove the PXEe config file for the current host
+        $this_app->debug(1, "Removing PXE config file $pxe_config_file (PXE variant=",
+                            variant_attribute('name', $variant), ")");
+        my $unlink_status = $self->cleanup($pxe_config_file);
+        if ( ! defined($unlink_status) ) {
+            $this_app->error("Failed to delete $pxe_config_file (error=$self->{fail})");
+        } elsif ( $unlink_status == SUCCESS ) {
+            $this_app->debug(1, "PXE config file $pxe_config_file not found");
+        } else {
+            $this_app->debug(1, "PXE config file $pxe_config_file successfully removed");
+        };
+        # Remove the symlink for every interface with an IP address
+        while (my ($interface, $params) = each %$interfaces) {
+            if ( defined($params->{ip}) ) {
+                my $pxe_symlink =  dirname($pxe_config_file) . "/" . hexip_filename ($params->{ip}, $variant);
+                $this_app->debug(1, "Removing symlink $pxe_symlink for interface $interface (PXE variant=",
+                                    variant_attribute('name', $variant), ")");
+                my $unlink_status = $self->cleanup($pxe_symlink);
+                if ( ! defined($unlink_status) ) {
+                    $this_app->error("Failed to delete $pxe_symlink (error=$self->{fail})");
+                } elsif ( $unlink_status == SUCCESS ) {
+                    $this_app->debug(1, "PXE link $pxe_symlink not found");
+                } else {
+                    $this_app->debug(1, "PXE link $pxe_symlink successfully removed");
+                };
+            };
+        };
         exec_userhooks ($cfg, REMOVE_HOOK_PATH);
-        return 1;        
     }
+
+    return 1;        
 }
 
 

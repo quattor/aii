@@ -14,8 +14,12 @@ prefix "/system/network";
 "nameserver/0" = 'nm1';
 "nameserver/1" = 'nm2';
 "default_gateway" = "133.2.85.1";
-"interfaces/eth0/ip" = "133.2.85.234";
-"interfaces/eth0/netmask" = "255.255.255.0";
+"interfaces/eth0" = nlist("ip", "133.2.85.234",
+                          "netmask", "255.255.255.0",
+                         );
+"interfaces/eth1" = nlist("onboot", "no",
+                         );
+
 
 prefix "/hardware/cards/nic";
 "eth0/hwaddr" = "00:11:22:33:44:55";
