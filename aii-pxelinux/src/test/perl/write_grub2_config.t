@@ -14,7 +14,7 @@ use Readonly;
 
 =head1 SYNOPSIS
 
-Tests for the C<write_grub2_config> method.
+Tests for the C<_write_grub2_config> method.
 
 =cut
 
@@ -29,12 +29,12 @@ our $this_app = $main::this_app;
 
 
 sub check_config {
-    my ($cfg, $kernel_root, $test_msg) = @_;
+    my ($comp, $cfg, $kernel_root, $test_msg) = @_;
 
-    NCM::Component::pxelinux::write_grub2_config($cfg);
+    $comp->_write_grub2_config($cfg);
 
     # Retrieve config file name matching the configuration
-    my $fp = NCM::Component::pxelinux::filepath($cfg, PXE_VARIANT_GRUB2);
+    my $fp = $comp->_filepath($cfg, PXE_VARIANT_GRUB2);
     
     # Check config file contents
     my $fh = get_file($fp);
@@ -61,10 +61,10 @@ $this_app->{CONFIG}->set(GRUB2_EFI_INITRD_CMD, $TEST_EFI_INITRD_CMD);
 $this_app->{CONFIG}->define(NBPDIR_GRUB2);
 $this_app->{CONFIG}->set(NBPDIR_GRUB2, $NBPDIR_GRUB2_VALUE);
 
-check_config($cfg, '', 'No GRUB2_EFI_KERNEL_ROOT');
+check_config($comp, $cfg, '', 'No GRUB2_EFI_KERNEL_ROOT');
 
 $this_app->{CONFIG}->define(GRUB2_EFI_KERNEL_ROOT);
 $this_app->{CONFIG}->set(GRUB2_EFI_KERNEL_ROOT, $GRUB2_EFI_KERNEL_ROOT_VALUE);
-check_config($cfg, $GRUB2_EFI_KERNEL_ROOT_VALUE, 'No GRUB2_EFI_KERNEL_ROOT');
+check_config($comp, $cfg, $GRUB2_EFI_KERNEL_ROOT_VALUE, 'No GRUB2_EFI_KERNEL_ROOT');
 
 done_testing();

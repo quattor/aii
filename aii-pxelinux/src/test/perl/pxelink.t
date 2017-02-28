@@ -14,26 +14,25 @@ use Readonly;
 
 =head1 SYNOPSIS
 
-Tests for the C<pxelink> method.
+Tests for the C<_pxelink> method.
 
 =cut
 
 our $this_app = $main::this_app;
 
 sub pxelink_test {
-    my ($cfg, $command, $pxe_variant, $pxe_variant_name) = @_;
+    my ($comp, $cfg, $command, $pxe_variant, $pxe_variant_name) = @_;
     unless ( defined($command) ) {
         $command = "";
     }
 
-    my $pxelink_status = NCM::Component::pxelinux::pxelink($cfg, $command, $pxe_variant);
+    my $pxelink_status = $comp->_pxelink($cfg, $command, $pxe_variant);
     ok($pxelink_status, "pxelink ok for $pxe_variant_name (command=$command)");
 }
 
 sub mocked_symlink ($$) {
     my ($target, $link) = @_;
     $this_app->info("Would create symlink $link with target $target");
->>>>>>> 240682d... fix test
 }
 
 # Mock symlink
@@ -71,8 +70,9 @@ for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
 
     # Do the test
     for my $action (@ACTIONS) { 
-        pxelink_test($cfg, $action, $variant, $PXE_VARIANT_NAMES[$variant]);
+        pxelink_test($comp, $cfg, $action, $variant, $PXE_VARIANT_NAMES[$variant]);
     };
 };
+
 
 done_testing();

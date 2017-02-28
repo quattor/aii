@@ -10,21 +10,21 @@ use CAF::Object;
 
 =head1 SYNOPSIS
 
-Tests for the C<write_pxelinux_config> method.
+Tests for the C<_write_pxelinux_config> method.
 
 =cut
 
 $CAF::Object::NoAction = 1;
 
-# mock filepath, it has this_app->option
+# mock _filepath, it has this_app->option
 my $fp = "target/test/pxelinux";
 my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
-$mockpxe->mock('filepath', $fp);
+$mockpxe->mock('_filepath', $fp);
 
-my $ks = NCM::Component::pxelinux->new('pxelinux_ks');
+my $comp = NCM::Component::pxelinux->new('pxelinux_ks');
 my $cfg = get_config_for_profile('pxelinux_ks_bonding_bridge');
 
-NCM::Component::pxelinux::write_pxelinux_config($cfg);
+$comp->_write_pxelinux_config($cfg);
 
 my $fh = get_file($fp);
 

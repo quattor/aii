@@ -42,8 +42,8 @@ my $ip = $pxe_config->{eth0}->{ip};
 
 # Create a non emty file matching each PXE entries
 for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
-    my $config_file = NCM::Component::pxelinux::filepath($cfg,$variant);
-    my $pxe_symlink = dirname($config_file) . "/" . NCM::Component::pxelinux::hexip_filename($ip,$variant);
+    my $config_file = $comp->_filepath($cfg,$variant);
+    my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     set_file_contents($config_file, $FILE_INITIAL_CONTENTS);
     set_file_contents($pxe_symlink, $SYMLINK_INITIAL_CONTENTS);
     # Ensure that the file contents is really instanciated and reported by get_file()
@@ -55,8 +55,8 @@ for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
 
 $comp->Unconfigure($cfg);
 for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
-    my $config_file = NCM::Component::pxelinux::filepath($cfg,$variant);
-    my $pxe_symlink = dirname($config_file) . "/" . NCM::Component::pxelinux::hexip_filename($ip,$variant);
+    my $config_file = $comp->_filepath($cfg,$variant);
+    my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     ok(!$comp->file_exists($config_file), "PXE config file $config_file removed (variant=$variant)");
     ok(!$comp->file_exists($pxe_symlink), "PXE link $pxe_symlink removed (variant=$variant)");
 };

@@ -14,7 +14,7 @@ use Readonly;
 
 =head1 SYNOPSIS
 
-Tests for the C<filepath> method.
+Tests for the C<_filepath> method.
 
 =cut
 
@@ -36,10 +36,10 @@ my $cfg = get_config_for_profile('pxelinux_base_config');
 
 my $pxe_file_path;
 
-$pxe_file_path = NCM::Component::pxelinux::filepath($cfg, PXE_VARIANT_PXELINUX);
+$pxe_file_path = $comp->_filepath($cfg, PXE_VARIANT_PXELINUX);
 is($pxe_file_path, "$NBPDIR_PXELINUX_VALUE/x.y.cfg", "PXE config file path ok for PXELINUX");
 
-$pxe_file_path = NCM::Component::pxelinux::filepath($cfg, PXE_VARIANT_GRUB2);
+$pxe_file_path = $comp->_filepath($cfg, PXE_VARIANT_GRUB2);
 is($pxe_file_path, "$NBPDIR_GRUB2_VALUE/x.y.cfg", "PXE config file path ok for Grub2");
 
 

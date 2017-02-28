@@ -14,7 +14,7 @@ use Readonly;
 
 =head1 SYNOPSIS
 
-Tests for the C<write_pxelinux_config> method.
+Tests for the C<_write_pxelinux_config> method.
 
 =cut
 
@@ -32,10 +32,10 @@ $this_app->{CONFIG}->set(NBPDIR_PXELINUX, $NBPDIR_PXELINUX_VALUE);
 my $comp = NCM::Component::pxelinux->new('grub2_config');
 my $cfg = get_config_for_profile('pxelinux_base_config');
 
-NCM::Component::pxelinux::write_pxelinux_config($cfg);
+$comp->_write_pxelinux_config($cfg);
 
 # Retrieve config file name matching the configuration
-my $fp = NCM::Component::pxelinux::filepath($cfg, PXE_VARIANT_PXELINUX);
+my $fp = $comp->_filepath($cfg, PXE_VARIANT_PXELINUX);
 
 # Check config file contents
 my $fh = get_file($fp);
