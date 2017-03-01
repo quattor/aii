@@ -530,7 +530,14 @@ sub _pxelink
             if ($CAF::Object::NoAction) {
                 $self->info ("Would symlink $path to $lnname");
             } else {
-                unlink ($lnname);
+                my $unlink_status = $self->cleanup ($lnname);
+                if ( ! defined($unlink_status) ) {
+                    $self->error("Failed to delete $lnname (error=$self->{fail})");
+                } elsif ( $unlink_status == SUCCESS ) {
+                    $self->debug(1, "PXE link $lnname not found");
+                } else {
+                    $self->debug(1, "PXE link $lnname successfully removed");
+                };
                 # This must be stripped to work with chroot'ed environments.
                 $path =~ s{$dir/?}{};
                 symlink ($path, $lnname);
