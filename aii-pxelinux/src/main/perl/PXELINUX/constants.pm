@@ -17,7 +17,6 @@ use constant CONFIGURE => undef;
 use constant INSTALL => 'install';
 use constant BOOT => 'boot';
 use constant RESCUE => 'rescue';
-use constant RESCUEBOOT => 'rescueconfig';
 use constant FIRMWARE => 'firmware';
 use constant LIVECD => 'livecd';
 
@@ -47,7 +46,7 @@ use enum qw(PXE_VARIANT_PXELINUX PXE_VARIANT_GRUB2);
 
 # To ease constant export/import by tests and other modules
 # Some constants are use only by unit tests
-Readonly my @PXE_VARIANTS => qw(
+Readonly our @PXE_VARIANTS => qw(
     PXE_VARIANT_PXELINUX
     PXE_VARIANT_GRUB2
 );
@@ -65,27 +64,29 @@ Readonly my @PXE_CONSTANTS => qw(
     OSINSTALL_DEF_PXELINUX_DIR
     OSINSTALL_DEF_GRUB2_DIR
 );
-Readonly my @PXE_COMMANDS => qw(
+Readonly our @PXE_COMMANDS => qw(
     BOOT
     CONFIGURE
     FIRMWARE
     INSTALL
     LIVECD
     RESCUE
-    RESCUEBOOT
 );
 Readonly my @PXE_HOOKS => qw(
     HOOK_PATH
     REMOVE_HOOK_PATH
     STATUS_HOOK_PATH
 );
-our @EXPORT_OK;
-push @EXPORT_OK, @PXE_VARIANTS, @PXE_CONSTANTS, @PXE_COMMANDS, @PXE_HOOKS;
+my @PXE_COMMANDS_OK = (@PXE_COMMANDS, qw(@PXE_COMMANDS));
+my @PXE_CONSTANTS_OK = (@PXE_CONSTANTS);
+my @PXE_HOOKS_OK = (@PXE_HOOKS);
+my @PXE_VARIANTS_OK = (@PXE_VARIANTS, qw(@PXE_VARIANTS));
+our @EXPORT_OK = (@PXE_COMMANDS_OK, @PXE_CONSTANTS_OK, @PXE_HOOKS_OK, @PXE_VARIANTS_OK);
 our %EXPORT_TAGS = (
     all => \@EXPORT_OK,
-    pxe_commands => \@PXE_COMMANDS,
-    pxe_constants => \@PXE_CONSTANTS,
-    pxe_hooks => \@PXE_HOOKS,
-    pxe_variants => \@PXE_VARIANTS,
+    pxe_commands => \@PXE_COMMANDS_OK,
+    pxe_constants => \@PXE_CONSTANTS_OK,
+    pxe_hooks => \@PXE_HOOKS_OK,
+    pxe_variants => \@PXE_VARIANTS_OK,
 );
 

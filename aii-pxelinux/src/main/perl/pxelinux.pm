@@ -26,11 +26,17 @@ use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
+# Configuration option names
+use constant RESCUEBOOT => 'rescueconfig';
+
 # Import PXE-related constants shared with other modules
 use NCM::Component::PXELINUX::constants qw(:all);
 
 # Support PXE variants and their parameters (currently PXELINUX and Grub2)
 # 'name' is a descriptive name for information/debugging messages
+# To add a new variant, define its name in PXELINUX::constants module, create a
+# new xxx_VARIANT_PARAMS with the same structure as the existing one and add it
+# in @VARIANT_PARAMS list. Then update the code where appropriate.
 Readonly my %GRUB2_VARIANT_PARAMS => (name => 'Grub2',
                                       nbpdir_opt => NBPDIR_GRUB2,
                                       kernel_root_path => GRUB2_EFI_KERNEL_ROOT,
@@ -146,14 +152,13 @@ sub _link_filepath
     my ($self, $cfg, $cmd, $variant) = @_;
 
     my $dir = $self->_variant_option('nbpdir_opt', $variant);
+    my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
 
-    my $cfgpath = PXEROOT . "/" . $cmd;
-    if ($cfg->elementExists ($cfgpath)) {
-        my $linkname = $cfg->getElement ($cfgpath)->getValue;
-        return "$dir/$linkname";
-    } elsif ($cmd eq RESCUE) {
-        # Backwards compatibility: use the option set on the command line
-        # if the profile does not define a rescue image
+    if ( defined($pxe_config->{$cmd}) ) {
+        return "$dir/$pxe_config->{$cmd}";
+    } elsif (($cmd eq RESCUE) && $self->_option_exists(RESCUEBOOT) ) {
+        # Backwards compatibility for rescue image only: use the option
+        # spsecified on the command line (if any) if none is defined in the profile
         my $path = $this_app->option (RESCUEBOOT);
         unless ($path =~ m{^([-.\w]+)$}) {
             $self->error ("Unexpected RESCUE configuration file");
@@ -300,7 +305,7 @@ sub _pxe_ks_append
 {
     my ($self, $cfg) = @_;
 
-    my $t = $cfg->getElement (PXEROOT)->getTree;
+    my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
 
     my $kst = {}; # empty hashref in case no kickstart is defined
     $kst = $cfg->getElement (KS)->getTree if $cfg->elementExists(KS);
@@ -312,26 +317,26 @@ sub _pxe_ks_append
     if($version >= ANACONDA_VERSION_EL_7_0) {
         $keyprefix="inst.";
 
-        if($t->{ksdevice} =~ m/^(bootif|link)$/ &&
-            ! $cfg->elementExists("/system/network/interfaces/$t->{ksdevice}")) {
+        if($pxe_config->{ksdevice} =~ m/^(bootif|link)$/ &&
+            ! $cfg->elementExists("/system/network/interfaces/$pxe_config->{ksdevice}")) {
             $self->warn("Using deprecated legacy behaviour. Please look into the configuration.");
         } else {
             $ksdevicename = "bootdev";
         }
     }
 
-    my $ksloc = $t->{kslocation};
+    my $ksloc = $pxe_config->{kslocation};
     my $server = hostname();
     $ksloc =~ s{LOCALHOST}{$server};
 
     my @append;
     push(@append,
          "ramdisk=32768",
-         "initrd=$t->{initrd}",
+         "initrd=$pxe_config->{initrd}",
          "${keyprefix}ks=$ksloc",
          );
 
-    my $ksdev = $t->{ksdevice};
+    my $ksdev = $pxe_config->{ksdevice};
     if ($version >= ANACONDA_VERSION_EL_6_0) {
         # bond support in pxelinunx config
         # (i.e using what device will the ks file be retrieved).
@@ -344,8 +349,8 @@ sub _pxe_ks_append
 
     push(@append, "$ksdevicename=$ksdev");
 
-    if ($t->{updates}) {
-        push(@append,"${keyprefix}updates=$t->{updates}");
+    if ($pxe_config->{updates}) {
+        push(@append,"${keyprefix}updates=$pxe_config->{updates}");
     };
 
     if ($kst->{logging} && $kst->{logging}->{host}) {
@@ -362,7 +367,7 @@ sub _pxe_ks_append
             push(@append, "${keyprefix}cmdline");
         };
 
-        if ($t->{setifnames}) {
+        if ($pxe_config->{setifnames}) {
             # set all interfaces names to the configured macaddress
             my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
             foreach my $nic (keys %$nics) {
@@ -387,7 +392,7 @@ sub _pxe_ks_append
         }
     }
 
-    my $custom_append = $t->{append};
+    my $custom_append = $pxe_config->{append};
     if ($custom_append) {
 	    $custom_append =~ s/LOCALHOST/$server/g;
 	    push @append, $custom_append;
@@ -553,10 +558,16 @@ sub _pxelink
 # The only role of this function is to ensure that ksuserhooks()
 # is always called the same way (in particular for NoAction
 # handling). Be sure to use it!
+# TODO: remove this function and use ksuserhooks directly when it has
+# been made safe with NoAction
 sub _exec_userhooks {
     my ($self, $cfg, $hook_path) = @_;
 
-    ksuserhooks ($cfg, $hook_path) unless $CAF::Object::NoAction;
+    if ( $CAF::Object::NoAction ) {
+        $self->info("NoAction set: not running user hooks");
+    } else {
+        ksuserhooks ($cfg, $hook_path);
+    };
 }
 
 
@@ -569,7 +580,8 @@ sub Status
 
     my $interfaces = $cfg->getElement (INTERFACES)->getTree;
 
-    foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+    foreach my $variant_constant (@PXE_VARIANTS) {
+        my $variant = __PACKAGE__->$variant_constant;
         my $dir = $self->_variant_option('nbpdir_opt', $variant);
         my $boot = $this_app->option (LOCALBOOT);
         my $fqdn = $self->_get_fqdn($cfg);
@@ -626,7 +638,8 @@ sub Unconfigure
 
     my $interfaces = $cfg->getElement (INTERFACES)->getTree;
 
-    foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+    foreach my $variant_constant (@PXE_VARIANTS) {
+        my $variant = __PACKAGE__->$variant_constant;
         my $pxe_config_file = $self->_filepath ($cfg, $variant);
         # Remove the PXEe config file for the current host
         $self->debug(1, "Removing PXE config file $pxe_config_file (PXE variant=",
@@ -670,7 +683,8 @@ foreach my $operation (qw(configure boot rescue livecd firmware install)) {
     *{$name} = sub {
         my ($self, $cfg) = @_;
 
-       foreach my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+        foreach my $variant_constant (@PXE_VARIANTS) {
+            my $variant = __PACKAGE__->$variant_constant;
             if ( $self->_variant_enabled($variant) ) {
                 $self->verbose("Executing action '$operation' for variant ", $self->_variant_attribute('name', $variant));
                 $self->_variant_attribute('format_method', $variant)->($self, $cfg) if ($operation eq 'configure');

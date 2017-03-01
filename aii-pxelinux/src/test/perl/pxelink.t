@@ -2,7 +2,7 @@ use strict;
 use warnings;
 use Test::More;
 use Test::Quattor qw(pxelinux_base_config);
-use NCM::Component::PXELINUX::constants qw(:all );
+use NCM::Component::PXELINUX::constants qw(:all);
 use NCM::Component::pxelinux;
 use CAF::FileReader;
 use CAF::Object;
@@ -41,7 +41,6 @@ $mockpxe->mock('symlink', \&mocked_symlink);
 
 Readonly my $NBPDIR_PXELINUX_VALUE => '/pxe/linux/conf.files';
 Readonly my $NBPDIR_GRUB2_VALUE => '/grub/config_files';
-Readonly my @ACTIONS => (BOOT, CONFIGURE, FIRMWARE, INSTALL, LIVECD, RESCUE);
 # Keep in the same order as variants in @PXE_VARIANTS
 Readonly my @PXE_VARIANT_NAMES => ('PXELINUX', 'Grub2');
 Readonly my @PXE_VARIANT_NBPDIR => ($NBPDIR_PXELINUX_VALUE, $NBPDIR_GRUB2_VALUE);
@@ -59,7 +58,8 @@ my $comp = NCM::Component::pxelinux->new('grub2_config');
 my $cfg = get_config_for_profile('pxelinux_base_config');
 my $pxe_config = $cfg->getElement('/system/aii/nbp/pxelinux')->getTree();
 
-for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+for my $variant_constant (@PXE_VARIANTS) {
+    my $variant = __PACKAGE__->$variant_constant;
     # Create expected config file for rescue, firmware and livecd
     for my $action ('firmware', 'livecd', 'rescue') {
         my $file = "$PXE_VARIANT_NBPDIR[$variant]/$pxe_config->{$action}";
@@ -69,7 +69,8 @@ for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
     };
 
     # Do the test
-    for my $action (@ACTIONS) { 
+    for my $action_constant (@PXE_COMMANDS) {
+        my $action = __PACKAGE__->$action_constant; 
         pxelink_test($comp, $cfg, $action, $variant, $PXE_VARIANT_NAMES[$variant]);
     };
 };

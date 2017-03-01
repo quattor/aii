@@ -41,7 +41,8 @@ my $pxe_config = $cfg->getElement('/system/network/interfaces')->getTree();
 my $ip = $pxe_config->{eth0}->{ip};
 
 # Create a non emty file matching each PXE entries
-for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+foreach my $variant_constant (@PXE_VARIANTS) {
+    my $variant = __PACKAGE__->$variant_constant;
     my $config_file = $comp->_filepath($cfg,$variant);
     my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     set_file_contents($config_file, $FILE_INITIAL_CONTENTS);
@@ -54,7 +55,8 @@ for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
 };
 
 $comp->Unconfigure($cfg);
-for my $variant (PXE_VARIANT_PXELINUX, PXE_VARIANT_GRUB2) {
+foreach my $variant_constant (@PXE_VARIANTS) {
+    my $variant = __PACKAGE__->$variant_constant;
     my $config_file = $comp->_filepath($cfg,$variant);
     my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     ok(!$comp->file_exists($config_file), "PXE config file $config_file removed (variant=$variant)");
