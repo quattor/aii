@@ -495,7 +495,7 @@ sub read_input
 }
 
 # update the dhcp config file and restart daemon
-sub update_and_restart 
+sub update_and_restart
 {
     my $self = shift;
 
@@ -513,10 +513,10 @@ sub update_and_restart
             $self->verbose("AII::DHCP: config $filename changed but norestart set!");
         } else {
             my $cmd = $self->option('restartcmd');
-            $self->info(1, "AII::DHCP: config $filename changed, restarting dhcpd daemon using cmd '$cmd'");
+            $self->info("AII::DHCP: config $filename changed, restarting dhcpd daemon using cmd '$cmd'");
             # expects an arayref
             $self->restart_daemon([split(/\s+/, $cmd)]);
-        } 
+        }
     } else {
         $self->verbose("AII::DHCP: no changes to $filename: daemon not restarted");
     }
@@ -524,7 +524,7 @@ sub update_and_restart
 }
 
 # return true if nodes need to be configured or removed
-sub nodes_to_change 
+sub nodes_to_change
 {
     my $self = shift;
     return  return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
