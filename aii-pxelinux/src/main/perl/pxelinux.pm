@@ -40,11 +40,11 @@ use NCM::Component::PXELINUX::constants qw(:all);
 Readonly my %GRUB2_VARIANT_PARAMS => (name => 'Grub2',
                                       nbpdir_opt => NBPDIR_GRUB2,
                                       kernel_root_path => GRUB2_EFI_KERNEL_ROOT,
-                                      format_method => \&_write_grub2_config);
+                                      format_method => '_write_grub2_config');
 Readonly my %PXELINUX_VARIANT_PARAMS => (name => 'PXELINUX',
                                          nbpdir_opt => NBPDIR_PXELINUX,
                                          kernel_root_path => '',
-                                         format_method => \&_write_pxelinux_config);
+                                         format_method => '_write_pxelinux_config');
 # Element in @VARIANT_PARAMS must be in the same order as enum PXE_VARIANT_xxx
 Readonly my @VARIANT_PARAMS => (\%PXELINUX_VARIANT_PARAMS, \%GRUB2_VARIANT_PARAMS);
 
@@ -300,10 +300,10 @@ sub _pxe_network_bonding {
 }
 
 
-# create a list with all append options for kickstart installations
-sub _pxe_ks_append
+# create a list with all kernel parameters for the kickstart installation
+sub _kernel_params_ks
 {
-    my ($self, $cfg) = @_;
+    my ($self, $cfg, $variant) = @_;
 
     my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
 
@@ -329,12 +329,12 @@ sub _pxe_ks_append
     my $server = hostname();
     $ksloc =~ s{LOCALHOST}{$server};
 
-    my @append;
-    push(@append,
-         "ramdisk=32768",
-         "initrd=$pxe_config->{initrd}",
-         "${keyprefix}ks=$ksloc",
-         );
+    # With PXELINUX, initrd path is specified with a kernel parameter
+    # Parameter order is not important but is kept as "ramdisk, initrd, ks" for compatibility
+    # with previous AII versions for easier comparisons.
+    my @kernel_params =  ("ramdisk=32768");
+    push (@kernel_params, "initrd=$pxe_config->{initrd}") if ( $variant == PXE_VARIANT_PXELINUX );
+    push (@kernel_params, "${keyprefix}ks=$ksloc");
 
     my $ksdev = $pxe_config->{ksdevice};
     if ($version >= ANACONDA_VERSION_EL_6_0) {
@@ -343,35 +343,35 @@ sub _pxe_ks_append
         my ($bonddev, $bondingtxt) = $self->_pxe_network_bonding($cfg, $kst, $ksdev);
         if ($bonddev) {
             $ksdev = $bonddev;
-            push (@append, $bondingtxt);
+            push (@kernel_params, $bondingtxt);
         }
     }
 
-    push(@append, "$ksdevicename=$ksdev");
+    push(@kernel_params, "$ksdevicename=$ksdev");
 
     if ($pxe_config->{updates}) {
-        push(@append,"${keyprefix}updates=$pxe_config->{updates}");
+        push(@kernel_params,"${keyprefix}updates=$pxe_config->{updates}");
     };
 
     if ($kst->{logging} && $kst->{logging}->{host}) {
-        push(@append, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}");
-        push(@append, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
+        push(@kernel_params, "${keyprefix}syslog=$kst->{logging}->{host}:$kst->{logging}->{port}");
+        push(@kernel_params, "${keyprefix}loglevel=$kst->{logging}->{level}") if $kst->{logging}->{level};
     }
 
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         if ($kst->{enable_sshd}) {
-            push(@append, "${keyprefix}sshd");
+            push(@kernel_params, "${keyprefix}sshd");
         };
 
         if ($kst->{cmdline}) {
-            push(@append, "${keyprefix}cmdline");
+            push(@kernel_params, "${keyprefix}cmdline");
         };
 
         if ($pxe_config->{setifnames}) {
             # set all interfaces names to the configured macaddress
             my $nics = $cfg->getElement ("/hardware/cards/nic")->getTree;
             foreach my $nic (keys %$nics) {
-                push (@append, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
+                push (@kernel_params, "ifname=$nic:".$nics->{$nic}->{hwaddr}) if ($nics->{$nic}->{hwaddr});
             }
         }
 
@@ -380,36 +380,36 @@ sub _pxe_ks_append
                 $self->error("Invalid ksdevice $ksdev for static ks configuration.");
             } else {
                 my $static = $self->_pxe_ks_static_network($cfg, $ksdev);
-                push(@append,"ip=$static") if ($static);
+                push(@kernel_params,"ip=$static") if ($static);
             }
         } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
-            push(@append,"ip=$kst->{bootproto}");
+            push(@kernel_params,"ip=$kst->{bootproto}");
         }
 
         my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
         foreach my $ns (@$nms) {
-            push(@append,"nameserver=$ns");
+            push(@kernel_params,"nameserver=$ns");
         }
     }
 
     my $custom_append = $pxe_config->{append};
     if ($custom_append) {
 	    $custom_append =~ s/LOCALHOST/$server/g;
-	    push @append, $custom_append;
+	    push @kernel_params, $custom_append;
     }
     
-    return @append;    
+    return @kernel_params;    
 }
 
-# create a list with all append options
-sub _pxe_append
+# create a list with all required kernel parameters, based on the configuration
+sub _kernel_params
 {
-    my ($self, $cfg) = @_;
+    my ($self, $cfg, $variant) = @_;
 
     if ($cfg->elementExists(KS)) {
-        return $self->_pxe_ks_append($cfg);
+        return $self->_kernel_params_ks($cfg, $variant);
     } else {
-        $self->error("Unclear how to create the append options. Not using any options.");
+        $self->error("No Kickstart-related parameters in configuration: no kernel parameters added.");
         return;
     }
 }
@@ -423,7 +423,7 @@ sub _write_pxelinux_config
                     log => $self, mode => 0644);
 
     my $appendtxt = '';
-    my @appendoptions = $self->_pxe_append($cfg);
+    my @appendoptions = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX);
     $appendtxt = join(" ", "append", @appendoptions) if @appendoptions;
 
     my $entry_label = "Install $pxe_config->{label}";
@@ -468,6 +468,11 @@ sub _write_grub2_config
     my $kernel_path = "$kernel_root/$pxe_config->{kernel}";
     my $initrd_path = "$kernel_root/$pxe_config->{initrd}";
 
+    my @kernel_params = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX);
+    @kernel_params = () unless @kernel_params;
+    my $kernel_params_text = join(' ', @kernel_params);
+    $kernel_params_text = ' ' . $kernel_params_text if $kernel_params_text;
+
     my $fh = CAF::FileWriter->open ($self->_filepath ($cfg, PXE_VARIANT_GRUB2),
                                     log => $self, mode => 0644);
     print $fh <<EOF;
@@ -477,7 +482,7 @@ set default=0
 set timeout=2
 menuentry "Install $pxe_config->{label}" {
     set root=(pxe)
-    $linux_cmd $kernel_path ks=$pxe_config->{kslocation} ksdevice=$pxe_config->{ksdevice}
+    $linux_cmd $kernel_path$kernel_params_text
     $initrd_cmd $initrd_path
     }
 }
@@ -631,11 +636,6 @@ sub Unconfigure
 {
     my ($self, $cfg) = @_;
 
-    if ($CAF::Object::NoAction) {
-        $self->info ("Would remove " . ref ($self));
-        return 1;
-    }
-
     my $interfaces = $cfg->getElement (INTERFACES)->getTree;
 
     foreach my $variant_constant (@PXE_VARIANTS) {
@@ -687,7 +687,8 @@ foreach my $operation (qw(configure boot rescue livecd firmware install)) {
             my $variant = __PACKAGE__->$variant_constant;
             if ( $self->_variant_enabled($variant) ) {
                 $self->verbose("Executing action '$operation' for variant ", $self->_variant_attribute('name', $variant));
-                $self->_variant_attribute('format_method', $variant)->($self, $cfg) if ($operation eq 'configure');
+                my $method = $self->_variant_attribute('format_method', $variant);
+                $self->$method($cfg) if ($operation eq 'configure');
 
                 unless ( $self->_pxelink ($cfg, &$cmd(), $variant) ) {
                     my $fqdn = $self->_get_fqdn($cfg);

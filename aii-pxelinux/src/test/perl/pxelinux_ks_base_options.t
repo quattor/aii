@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_ks_logging pxelinux_ks_nologging_host);
+use Test::Quattor qw(pxelinux_ks_block);
 use NCM::Component::PXELINUX::constants qw(:pxe_variants :pxe_constants);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
@@ -13,7 +13,7 @@ use Readonly;
 
 =head1 SYNOPSIS
 
-Tests for the C<_write_xxx_config> methods (logging related parameters).
+Tests for the C<_write_xxx_config> methods with the basic KS options.
 
 =cut
 
@@ -38,11 +38,9 @@ my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
 $mockpxe->mock('_filepath', $fp);
 
 my $comp = NCM::Component::pxelinux->new('pxelinux_ks');
+my $cfg = get_config_for_profile('pxelinux_ks_block');
+my $hostname = hostname();
 
-
-# Logging parameters specified
-
-my $cfg = get_config_for_profile('pxelinux_ks_logging');
 for my $variant_constant (@PXE_VARIANTS) {
     my $variant = __PACKAGE__->$variant_constant;
     my $variant_name = $VARIANT_NAMES[$variant];
@@ -52,24 +50,14 @@ for my $variant_constant (@PXE_VARIANTS) {
     $comp->$config_method($cfg);
     my $fh = get_file($fp);
     
-    like($fh, qr{^\s{4}$kernel_params_cmd\s.*?\ssyslog=logserver:514\sloglevel=debug(\s|$)}m, "append line (variant=$variant_name)");
-};
-
-
-# No logging host
-
-$cfg = get_config_for_profile('pxelinux_ks_nologging_host');
-for my $variant_constant (@PXE_VARIANTS) {
-    my $variant = __PACKAGE__->$variant_constant;
-    my $variant_name = $VARIANT_NAMES[$variant];
-    my $config_method = $PXE_VARIANT_METHODS[$variant];
-    my $kernel_params_cmd = $KERNEL_PARAMS_CMDS[$variant];
-
-    $comp->$config_method($cfg);
-    my $fh = get_file($fp);
-    
-    unlike($fh, qr{\ssyslog}, "no syslog config (variant=$variant_name)");
-    unlike($fh, qr{\sloglevel}, "no loglevel config (variant=$variant_name)");
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\sramdisk=32768(\s|$)}m, "append ramdisk (variant=$variant_name)");
+    if ( $variant == PXE_VARIANT_PXELINUX ) {
+        like($fh, qr{^\s{4}$kernel_params_cmd.*?\sinitrd=path/to/initrd(\s|$)}m, "append initrd (variant=$variant_name)");
+    };
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\sks=http://server/ks(\s|$)}m, "append ks url(variant=$variant_name)");
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\sksdevice=eth0(\s|$)}m, "append ksdevice(variant=$variant_name)");
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\supdates=http://somewhere/somthing/updates.img(\s|$)}m, "append ksdevice(variant=$variant_name)");
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\sinst.stage2=http://$hostname/stage2.img}m, "hostname substitution in append(variant=$variant_name)");
 };
 
 done_testing();

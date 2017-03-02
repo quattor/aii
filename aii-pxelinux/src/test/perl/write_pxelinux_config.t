@@ -43,6 +43,7 @@ my $hostname = hostname();
 like($fh, qr(^default\sInstall\s[\w\-\s\(\)\[\]]+$)m, 'PXELINUX menu entry');
 like($fh, qr{^\s{4}label\s[\w\-\s\(\)\[\]]+$}m, 'Label properly defined');
 like($fh, qr{^\s{4}kernel\smykernel$}m, 'Kernel properly defined');
+unlike($fh, qr{^\s*append}m, 'no append line');
 
 
 done_testing();
