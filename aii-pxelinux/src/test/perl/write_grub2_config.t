@@ -35,7 +35,7 @@ sub check_config {
     $comp->_write_grub2_config($cfg);
 
     # Retrieve config file name matching the configuration
-    my $fp = $comp->_filepath($cfg, PXE_VARIANT_GRUB2);
+    my $fp = $comp->_file_path($cfg, PXE_VARIANT_GRUB2);
     
     # Check config file contents
     my $fh = get_file($fp);

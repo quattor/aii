@@ -43,7 +43,7 @@ my $ip = $pxe_config->{eth0}->{ip};
 # Create a non emty file matching each PXE entries
 foreach my $variant_constant (@PXE_VARIANTS) {
     my $variant = __PACKAGE__->$variant_constant;
-    my $config_file = $comp->_filepath($cfg,$variant);
+    my $config_file = $comp->_file_path($cfg,$variant);
     my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     set_file_contents($config_file, $FILE_INITIAL_CONTENTS);
     set_file_contents($pxe_symlink, $SYMLINK_INITIAL_CONTENTS);
@@ -57,7 +57,7 @@ foreach my $variant_constant (@PXE_VARIANTS) {
 $comp->Unconfigure($cfg);
 foreach my $variant_constant (@PXE_VARIANTS) {
     my $variant = __PACKAGE__->$variant_constant;
-    my $config_file = $comp->_filepath($cfg,$variant);
+    my $config_file = $comp->_file_path($cfg,$variant);
     my $pxe_symlink = dirname($config_file) . "/" . $comp->_hexip_filename($ip,$variant);
     ok(!$comp->file_exists($config_file), "PXE config file $config_file removed (variant=$variant)");
     ok(!$comp->file_exists($pxe_symlink), "PXE link $pxe_symlink removed (variant=$variant)");

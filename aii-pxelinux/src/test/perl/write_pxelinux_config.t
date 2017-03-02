@@ -35,7 +35,7 @@ my $cfg = get_config_for_profile('pxelinux_base_config');
 $comp->_write_pxelinux_config($cfg);
 
 # Retrieve config file name matching the configuration
-my $fp = $comp->_filepath($cfg, PXE_VARIANT_PXELINUX);
+my $fp = $comp->_file_path($cfg, PXE_VARIANT_PXELINUX);
 
 # Check config file contents
 my $fh = get_file($fp);

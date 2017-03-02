@@ -60,6 +60,7 @@ my $pxe_config = $cfg->getElement('/system/aii/nbp/pxelinux')->getTree();
 
 for my $variant_constant (@PXE_VARIANTS) {
     my $variant = __PACKAGE__->$variant_constant;
+
     # Create expected config file for rescue, firmware and livecd
     for my $action ('firmware', 'livecd', 'rescue') {
         my $file = "$PXE_VARIANT_NBPDIR[$variant]/$pxe_config->{$action}";

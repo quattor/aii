@@ -32,10 +32,10 @@ $this_app->{CONFIG}->set(GRUB2_EFI_LINUX_CMD, $TEST_EFI_LINUX_CMD);
 $this_app->{CONFIG}->define(GRUB2_EFI_INITRD_CMD);
 $this_app->{CONFIG}->set(GRUB2_EFI_INITRD_CMD, $test_efi_initrd_cmd);
 
-# mock _filepath, it has this_app->option
+# mock _file_path, it has this_app->option
 my $fp = "target/test/pxelinux";
 my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
-$mockpxe->mock('_filepath', $fp);
+$mockpxe->mock('_file_path', $fp);
 
 my $comp = NCM::Component::pxelinux->new('pxelinux_ks');
 

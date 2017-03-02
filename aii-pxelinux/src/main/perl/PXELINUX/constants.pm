@@ -36,6 +36,9 @@ use constant GRUB2_EFI_KERNEL_ROOT => 'grub2_efi_kernel_root';
 use constant GRUB2_EFI_LINUX_CMD => 'grub2_efi_linux_cmd';
 use constant GRUB2_EFI_INITRD_CMD => 'grub2_efi_initrd_cmd';
 
+# Configuration option names
+use constant RESCUEBOOT => 'rescueconfig';
+
 # Hooks for NBP (PXE/UEFI) plug-in
 use constant HOOK_PATH => '/system/aii/hooks/';
 use constant REMOVE_HOOK_PATH => HOOK_PATH.'remove';
@@ -63,6 +66,7 @@ Readonly my @PXE_CONSTANTS => qw(
     OSINSTALL_DEF_ROOT_PATH
     OSINSTALL_DEF_PXELINUX_DIR
     OSINSTALL_DEF_GRUB2_DIR
+    RESCUEBOOT
 );
 Readonly our @PXE_COMMANDS => qw(
     BOOT
