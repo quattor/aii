@@ -16,8 +16,6 @@ Tests for the C<_hexip_filename> method.
 
 =cut
 
-$CAF::Object::NoAction = 1;
-
 our $this_app = $main::this_app;
 
 my $ip = "133.2.85.234";
