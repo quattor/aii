@@ -41,7 +41,8 @@ my $fp = $comp->_file_path($cfg, PXE_VARIANT_PXELINUX);
 my $fh = get_file($fp);
 my $hostname = hostname();
 like($fh, qr(^default\sInstall\s[\w\-\s\(\)\[\]]+$)m, 'PXELINUX menu entry');
-like($fh, qr{^\s{4}label\s[\w\-\s\(\)\[\]]+$}m, 'Label properly defined');
+like($fh, qr{^label\s[\w\-\s\(\)\[\]]+$}m, 'Label properly defined');
+like($fh, qr{^default\s(.*)\R.*?\Rlabel\s\1$}m, 'default entry matches label name');
 like($fh, qr{^\s{4}kernel\smykernel$}m, 'Kernel properly defined');
 unlike($fh, qr{^\s*append}m, 'no append line');
 
