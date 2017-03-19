@@ -30,14 +30,6 @@ sub pxelink_test {
     ok($pxelink_status, "pxelink ok for $pxe_variant_name (command=$command)");
 }
 
-sub mocked_symlink ($$) {
-    my ($target, $link) = @_;
-    $this_app->info("Would create symlink $link with target $target");
-}
-
-# Mock symlink
-my $mockpxe = Test::MockModule->new('NCM::Component::pxelinux');
-$mockpxe->mock('symlink', \&mocked_symlink);
 
 Readonly my $NBPDIR_PXELINUX_VALUE => '/pxe/linux/conf.files';
 Readonly my $NBPDIR_GRUB2_VALUE => '/grub/config_files';
@@ -68,6 +60,12 @@ for my $variant_constant (@PXE_VARIANTS) {
         my $fh = CAF::FileReader->new($file);
         ok(defined($fh), "$file created");
     };
+
+    # Create an empty localboot.cfg to check symlink operations
+    my  $localboot_file = "$PXE_VARIANT_NBPDIR[$variant]/localboot.cfg";
+    set_file_contents($localboot_file, "$variant local boot file");
+    my $fh = CAF::FileReader->new($localboot_file);
+    ok(defined($fh), "$localboot_file created");
 
     # Do the test
     for my $action_constant (@PXE_COMMANDS) {

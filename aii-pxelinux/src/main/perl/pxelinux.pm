@@ -4,7 +4,6 @@ use Sys::Hostname;
 use CAF::FileWriter;
 use CAF::Object qw(SUCCESS CHANGED);
 use NCM::Component::ks qw (ksuserhooks);
-use LC::Fatal qw (symlink);
 use File::stat;
 use File::Basename qw(dirname);
 use Time::localtime;
@@ -531,22 +530,20 @@ sub _pxelink
         next unless $st->{ip};
         my $dir = $self->_variant_option('nbpdir_opt', $variant);
         my $lnname = "$dir/".$self->_hexip_filename ($st->{ip}, $variant);
-        if ($cmd || ! -l $lnname) {
-            if ($CAF::Object::NoAction) {
-                $self->info ("Would symlink $path to $lnname");
+        if ($cmd || ! $self->is_symlink($lnname) ) {
+            $self->debug(2, "Removing $lnname if it exists");
+            my $unlink_status = $self->cleanup ($lnname);
+            if ( ! defined($unlink_status) ) {
+                $self->error("Failed to delete $lnname (error=$self->{fail})");
+            } elsif ( $unlink_status == SUCCESS ) {
+                $self->debug(1, "PXE link $lnname not found");
             } else {
-                my $unlink_status = $self->cleanup ($lnname);
-                if ( ! defined($unlink_status) ) {
-                    $self->error("Failed to delete $lnname (error=$self->{fail})");
-                } elsif ( $unlink_status == SUCCESS ) {
-                    $self->debug(1, "PXE link $lnname not found");
-                } else {
-                    $self->debug(1, "PXE link $lnname successfully removed");
-                };
-                # This must be stripped to work with chroot'ed environments.
-                $path =~ s{$dir/?}{};
-                symlink ($path, $lnname);
-            }
+                $self->debug(1, "PXE link $lnname successfully removed");
+            };
+            # This must be stripped to work with chroot'ed environments.
+            $path =~ s{$dir/?}{};
+            $self->debug(2, "Creating symlink $lnname (target=$path)");
+            $self->symlink ($path, $lnname);
         }
     }
 
@@ -593,7 +590,7 @@ sub Status
             my $ln = $self->_hexip_filename ($interface->{ip}, $variant);
             my $since = "unknown";
             my $st;
-            if (-l "$dir/$ln") {
+            if ( $self->is_symlink("$dir/$ln") ) {
                 $since = ctime(lstat("$dir/$ln")->ctime());
                 my $name = readlink ("$dir/$ln");
                 my $name_path = "$dir/$name";
@@ -691,7 +688,7 @@ foreach my $operation (qw(configure boot rescue livecd firmware install)) {
                     return 0;
                 }
             } else {
-                $self->debug(1, "Variant ", $self->_variant_attribute('name',$variant), "disabled: action '$operation' not executed");
+                $self->debug(1, "Variant ", $self->_variant_attribute('name',$variant), " disabled: action '$operation' not executed");
             }
         }
         $self->_exec_userhooks ($cfg, HOOK_PATH.$operation);
