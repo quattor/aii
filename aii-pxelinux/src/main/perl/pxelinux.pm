@@ -49,13 +49,6 @@ our $EC = LC::Exception::Context->new->will_store_all;
 our $this_app = $main::this_app;
 
 
-# Check if a configuration option exists
-sub _option_exists
-{
-    my ($self, $option) = @_;
-    return $this_app->{CONFIG}->_exists($option);
-}
-
 # Return the value of a variant attribute.
 # Attribute can be any valid key in one of the xxx_VARIANT_PARAMS
 sub _variant_attribute
@@ -81,7 +74,7 @@ sub _variant_enabled
     my ($self, $variant) = @_;
     my $nbpdir = $self->_variant_attribute('nbpdir_opt', $variant);
     $self->debug(2, "Using option '$nbpdir' to check if variant ", $self->_variant_attribute('name',$variant), " is enabled");
-    my $enabled = $self->_option_exists($nbpdir) &&
+    my $enabled = $this_app->option_exists($nbpdir) &&
                   ($this_app->option($nbpdir) ne NBPDIR_VARIANT_DISABLED);
     return $enabled;
 }
@@ -159,7 +152,7 @@ sub _link_path
 
     if ( $pxe_config->{$cmd} ) {
         return "$dir/$pxe_config->{$cmd}";
-    } elsif (($cmd eq RESCUE) && $self->_option_exists(RESCUEBOOT) ) {
+    } elsif (($cmd eq RESCUE) && $this_app->option_exists(RESCUEBOOT) ) {
         # Backwards compatibility for rescue image only: use the option
         # spsecified on the command line (if any) if none is defined in the profile
         my $path = $this_app->option (RESCUEBOOT);
@@ -465,10 +458,8 @@ sub _write_grub2_config
         $self->error("AII option ".GRUB2_EFI_INITRD_CMD." undefined");
         return 0;
     };
-    my $kernel_root = '';
-    if ( $self->_option_exists(GRUB2_EFI_KERNEL_ROOT) ) {
-        $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
-    }
+    my $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
+    $kernel_root = '' unless defined($kernel_root);
     my $kernel_path = "$kernel_root/$pxe_config->{kernel}";
     my $initrd_path = "$kernel_root/$pxe_config->{initrd}";
 
