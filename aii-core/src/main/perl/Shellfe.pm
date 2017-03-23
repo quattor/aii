@@ -378,6 +378,40 @@ sub _initialize
     return $self;
 }
 
+
+# Extract CAF::Download::LWP or CCM HTTPS (or other)
+# download related options from aii-shellfe config/options
+# Returns a hashref with options.
+# type can be lwp or ccm
+sub _download_options
+{
+    my ($self, $type) = @_;
+
+    my @related_opts = (CERT, KEY, CAFILE, CADIR);
+
+    # map AII config option names to the LWP ones
+    my $map = {
+        lwp => {
+            CERT() => 'cert',
+            KEY() => 'key',
+            CAFILE() => 'cacert',
+            CADIR() => 'cadir',
+        },
+    };
+
+    my $opts = {}; # make sure it can always be used as %$opts
+    foreach my $optname (@related_opts) {
+        my $val = $self->option($optname);
+        if ($val) {
+            my $key = $map->{$type}->{$optname} || $optname;
+            $opts->{$key} = $val;
+        }
+    };
+
+    return $opts;
+}
+
+
 # Lock a node being configured, needs to be called in every method that contains
 # node operations (ie configure etc)
 sub lock_node
@@ -584,15 +618,8 @@ sub nodelist
             my $url = $self->option (CDBURL) . "/" . PROFILEINFO;
 
             my $lwp = CAF::Download::LWP->new(log => $self);
-            my %lwp_opts_map = (
-                CERT() => 'cert',
-                KEY() => 'key',
-                CAFILE() => 'cacert',
-                CADIR() => 'cadir'
-                );
-            my %lwp_opts = map {$lwp_opts_map{$_} => $self->option($_)} grep {$self->option($_)} keys %lwp_opts_map;
-
-            my $rp = $lwp->_do_ua('get', [$url], %lwp_opts);
+            my $opts = $self->_download_options('lwp');
+            my $rp = $lwp->_do_ua('get', [$url], %$opts);
             $self->debug (4, "Downloading profiles-info: $url");
             unless ($rp->is_success) {
                 $self->error ("Couldn't download $url. Aborting ",
@@ -700,6 +727,11 @@ sub fetch_profiles
             print $cfg_fh "json_typed $json_typed\n";
             print $cfg_fh "tabcompletion 0\n";
 
+            my $opts = $self->_download_options('ccm');
+            foreach my $optname (sort keys %$opts) {
+                print $cfg_fh "$optname $opts->{$optname}\n";
+            }
+
             my $changed = $cfg_fh->close() ? "" : "not";
             $self->debug(1, "config file $config $changed changed.");
         };
@@ -744,7 +776,7 @@ sub fetch_profiles
 }
 
 # Initiate the Parallel:ForkManager with requested threads if option is given
-sub init_pm 
+sub init_pm
 {
     my ($self, $cmd, $responses) = @_;
     if ($self->option('parallel')) {
@@ -755,10 +787,10 @@ sub init_pm
                 if ($exit_code) {
                     $self->error("Error running $cmd on $id, exitcode $exit_code");
                 };
-                # retrieve data structure from child 
+                # retrieve data structure from child
                 if (defined($data_struct_ref)) {
                     $responses->{$id} = $data_struct_ref;
-                    $self->debug(5, "Running $cmd on $id had output"); 
+                    $self->debug(5, "Running $cmd on $id had output");
                 }
             }
         );
@@ -772,7 +804,7 @@ sub init_pm
 sub run_cmd {
     my ($self, $cmd, %node_states) = @_;
     my $method = "_$cmd";
-    my %responses; 
+    my %responses;
     my $pm = $self->init_pm($cmd, \%responses);
     foreach my $node (sort keys %node_states) {
         $self->debug (2, "$cmd: $node");
@@ -786,7 +818,7 @@ sub run_cmd {
         $self->debug(5, "Going to start $cmd on node $node");
         if ($pm) {
             if ($pm->start($node)){
-                $self->verbose("started execution for $node in child"); 
+                $self->verbose("started execution for $node in child");
                 next;
             } else {
                 $self->verbose("child with parallel execution for $node");
@@ -794,7 +826,7 @@ sub run_cmd {
         }
         my $ec = $self->$method($node, $node_states{$node}) || 0;
         my $res = { ec => $ec, method => $method, node => $node, mode => $pm ? 1 : 0 };
-    
+
         if ($pm) {
             $self->verbose("Terminating the child for $node");
             $pm->finish($ec, $res);
@@ -947,26 +979,26 @@ sub check_protected {
     return %hash;
 }
 
-sub change_dhcp 
+sub change_dhcp
 {
     my ($self, $method, %nodes) = @_;
     $self->debug(5, "logfile:", $self->option('logfile'), " dhcpcfg:", $self->option('dhcpcfg'));
     my $dhcpmgr = AII::DHCP->new('script',
-        "--logfile=".$self->option('logfile'), 
-        "--cfgfile=".$self->option('dhcpcfg'), 
+        "--logfile=".$self->option('logfile'),
+        "--cfgfile=".$self->option('dhcpcfg'),
         log => $self);
     foreach my $node (sort keys %nodes) {
-        my $st = $nodes{$node}; 
+        my $st = $nodes{$node};
         $self->debug(3, "Checking dhcp config on node $node for method $method.");
         if ($st->{configuration}->elementExists(DHCPPATH)) {
             $self->dhcp($node, $st, $method, $dhcpmgr);
         }
-    }    
+    }
     $dhcpmgr->configure_dhcp();
 
     return 1;
 }
-      
+
 
 # Runs all the commands
 sub cmds
@@ -1048,7 +1080,7 @@ sub cmds
                 $self->verbose('got option NODHCP, DHCP not enabled');
             } else {
                 # If needed, do DHCP here
-                if ("$cmd" eq "configure"){ 
+                if ("$cmd" eq "configure"){
                     $self->change_dhcp(CONFIGURE, %nodes);
                 } elsif ("$cmd" eq "remove"){
                     $self->change_dhcp(REMOVEMETHOD, %nodes);
