@@ -23,6 +23,10 @@
       <name>Luis Fernando Muñoz Mejías</name>
       <email>Luis.Munoz@UGent.be</email>
     </developer>
+    <developer>
+        <name>Ronald Starink</name>
+        <email>ronalds@nikhef.nl</email>
+      </developer>
   </developers>
   <contributors>
     <!-- Anyone with more than 10 commits is here -->
@@ -50,6 +54,13 @@
     <contributor>
       <name>Nick Williams</name>
       <email>Nick.Williams@morganstanley.com</email>
+      <roles>
+        <role>author</role>
+      </roles>
+    </contributor>
+    <contributor>
+      <name>Stijn De Weirdt</name>
+      <email>stijn.deweirdt@ugent.be</email>
       <roles>
         <role>author</role>
       </roles>

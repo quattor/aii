@@ -27,12 +27,14 @@ use XML::Simple;
 use EDG::WP4::CCM::Fetch;
 use EDG::WP4::CCM::CCfg;
 use File::Path qw(mkpath rmtree);
-use File::Basename qw(basename);
+use File::Basename qw(basename dirname);
 use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
+
 our $profiles_info = undef;
 use AII::DHCP;
+use NCM::Component::PXELINUX::constants qw(:pxe_constants);
 use 5.10.1;
 
 use constant MODULEBASE => 'NCM::Component::';
@@ -54,28 +56,28 @@ use constant TIMEOUT    => 60;
 use constant PARTERR_ST => 16;
 use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status);
 use constant INCLUDE    => 'include';
-use constant NBPDIR     => 'nbpdir';
-use constant CONFIGURE  => 'Configure';
-use constant INSTALLMETHOD      => 'Install';
-use constant BOOTMETHOD => 'Boot';
-use constant REMOVEMETHOD       => 'Unconfigure';
-use constant STATUSMETHOD       => 'Status';
-use constant RESCUEMETHOD       => 'Rescue';
-use constant FIRMWAREMETHOD     => 'Firmware';
-use constant LIVECDMETHOD       => 'Livecd';
 use constant CAFILE     => 'ca_file';
 use constant CADIR      => 'ca_dir';
 use constant KEY        => 'key_file';
 use constant CERT       => 'cert_file';
-
-use constant HWCARDS   => '/hardware/cards/nic';
-use constant DHCPCFG   => "/usr/sbin/aii-dhcp";
+use constant HWCARDS    => '/hardware/cards/nic';
+use constant DHCPCFG    => "/usr/sbin/aii-dhcp";
 use constant DHCPOPTION => '/system/aii/dhcp/options';
-use constant DHCPPATH  => '/system/aii/dhcp';
-use constant MAC       => '--mac';
+use constant DHCPPATH   => '/system/aii/dhcp';
+use constant MAC        => '--mac';
+
+# Actual method associated with various actions
+use constant CONFIGURE       => 'Configure';
+use constant INSTALLMETHOD   => 'Install';
+use constant BOOTMETHOD      => 'Boot';
+use constant REMOVEMETHOD    => 'Unconfigure';
+use constant STATUSMETHOD    => 'Status';
+use constant RESCUEMETHOD    => 'Rescue';
+use constant FIRMWAREMETHOD  => 'Firmware';
+use constant LIVECDMETHOD    => 'Livecd';
 
 # Keep in sync with the help string of $PROTECTED_OPTION
-Readonly our $PROTECTED_COMMANDS   => 'remove|configure|(re)?install';
+Readonly our $PROTECTED_COMMANDS => 'remove|configure|(re)?install';
 Readonly our $PROTECTED_OPTION   => 'confirm';
 
 use parent qw (CAF::Application CAF::Reporter);
@@ -250,18 +252,33 @@ sub app_options
          DEFAULT => '/etc/aii/aii-dhcp.conf' },
 
          # Options for NBP plug-ins
-       { NAME    => 'nbpdir=s',
-         HELP    => 'Directory where files for NBP should be stored',
-         DEFAULT => '/osinstall/nbp/pxelinux.cfg' },
+       { NAME    => NBPDIR_PXELINUX.'=s',
+         HELP    => 'Directory where files for PXELINUX NBP should be stored',
+         DEFAULT => OSINSTALL_DEF_ROOT_PATH . OSINSTALL_DEF_PXELINUX_DIR },
 
-       { NAME    => 'bootconfig=s',
+       # Default value for nbpdir_grub2 will be computed based on nbpdir
+       { NAME    => NBPDIR_GRUB2.'=s',
+         HELP    => 'Directory where files for Grub2 NBP should be stored',
+         DEFAULT => undef },
+
+       { NAME    => LOCALBOOT.'=s',
          HELP    => 'Generic "boot from local disk" file',
-         DEFAULT => 'localboot.cfg' },
+         DEFAULT => LOCAL_BOOT_CONFIG_FILE },
 
-       { NAME   => 'rescueconfig=s',
-         HELP   => 'Generic "boot from rescue image" file',
-         DEFAULT        => 'rescue.cfg' },
-         # Options for HTTPS
+       { NAME    => GRUB2_EFI_LINUX_CMD.'=s',
+         HELP    => 'Grub2 command to use for loading the kernel',
+         DEFAULT => GRUB2_EFI_LINUX_CMD_DEFAULT },
+
+       # Default value for grub2_efi_kernel_root will be computed based on nbpdir
+       { NAME    => GRUB2_EFI_KERNEL_ROOT.'=s',
+         HELP    => 'Parent path for the directories containing installation kernel/initrd',
+         DEFAULT => undef },
+
+       { NAME    => 'rescueconfig=s',
+         HELP    => 'Generic "boot from rescue image" file',
+         DEFAULT => 'rescue.cfg' },
+
+     # Options for HTTPS
        { NAME   => CAFILE.'=s',
          HELP   => 'Certificate file for the CA' },
 
@@ -323,6 +340,41 @@ sub _initialize
     if ($self->option(INCLUDE)) {
         unshift(@INC, split(/:+/, $self->option(INCLUDE)));
     }
+
+    # Initialization and validation of some options whose default values are based on other options
+    if ( $self->option(NBPDIR_PXELINUX) ) {
+        $self->{CONFIG}->set(NBPDIR_PXELINUX, undef) if $self->option(NBPDIR_PXELINUX) eq NBPDIR_VARIANT_DISABLED;
+    }
+    if ( $self->option(NBPDIR_GRUB2) ) {
+        $self->{CONFIG}->set(NBPDIR_GRUB2, undef) if $self->option(NBPDIR_GRUB2) eq NBPDIR_VARIANT_DISABLED;
+    } else {
+        if ( $self->option(NBPDIR_PXELINUX) ) {
+            my $efi_dir = dirname($self->option(NBPDIR_PXELINUX)) . OSINSTALL_DEF_GRUB2_DIR;
+            $self->{CONFIG}->set(NBPDIR_GRUB2, $efi_dir);
+        } else {
+            $self->{CONFIG}->set(NBPDIR_GRUB2, OSINSTALL_DEF_ROOT_PATH . OSINSTALL_DEF_GRUB2_DIR);
+        }
+    }
+    if ( !$self->option(GRUB2_EFI_KERNEL_ROOT) ) {
+        if ( $self->option(NBPDIR_GRUB2) ) {
+            my $kernel_root = dirname($self->option(NBPDIR_GRUB2));
+            $kernel_root =~ s/^\/\w+//;
+            $kernel_root = '' if ( $kernel_root eq '/' );
+            $self->{CONFIG}->set(GRUB2_EFI_KERNEL_ROOT, $kernel_root);
+        }
+    }
+    # GRUB2_EFI_INITRD_CMD is always derived from GRUB2_EFI_LINUX_CMD as
+    # Grub2 has a set of linux/initrd command pairs that must match together.
+    if ( $self->option(GRUB2_EFI_LINUX_CMD) ) {
+        my $initrd_cmd = $self->option(GRUB2_EFI_LINUX_CMD);
+        $initrd_cmd =~ s/linux/initrd/;
+        if ( $initrd_cmd eq $self->option(GRUB2_EFI_LINUX_CMD) ) {
+            $self->error("Commands to load the kernel and initrd are identical ($initrd_cmd)");
+        }
+        $self->{CONFIG}->define(GRUB2_EFI_INITRD_CMD);
+        $self->{CONFIG}->set(GRUB2_EFI_INITRD_CMD, $initrd_cmd);
+    }
+
     return $self;
 }
 

@@ -3,7 +3,7 @@ Base pxelinux_ks data
 @}
 template pxelinux_ks;
 
-include 'pxelinux_no_append';
+include 'pxelinux_config_common';
 
 # at least 1 ks entry to trigger ks append lines
 prefix "/system/aii/osinstall/ks";

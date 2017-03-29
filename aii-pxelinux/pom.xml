@@ -9,7 +9,7 @@
   <parent>
     <groupId>org.quattor.maven</groupId>
     <artifactId>build-profile</artifactId>
-    <version>1.50</version>
+    <version>1.53</version>
   </parent>
   <developers>
     <developer>
@@ -44,12 +44,63 @@
     <pluginManagement>
       <plugins>
         <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-resources-plugin</artifactId>
+          <executions>
+            <execution>
+              <id>filter-eg-sources</id>
+              <phase>process-sources</phase>
+              <goals>
+                <goal>copy-resources</goal>
+              </goals>
+              <configuration>
+                <encoding>UTF-8</encoding>
+                <delimiters>
+                  <delimiter>${*}</delimiter>
+                </delimiters>
+                <outputDirectory>${project.build.directory}/doc/eg</outputDirectory>
+                <resources>
+                  <resource>
+                    <directory>src/main/eg</directory>
+                    <filtering>true</filtering>
+                    <includes>
+                      <include>*</include>
+                    </includes>
+                  </resource>
+                </resources>
+              </configuration>
+            </execution>
+          </executions>
+        </plugin>
+        <plugin>
           <groupId>org.codehaus.mojo</groupId>
           <artifactId>rpm-maven-plugin</artifactId>
           <configuration>
             <summary>AII PXELINUX generator</summary>
             <name>aii-${project.artifactId}</name>
             <url>https://github.com/quattor/aii/tree/master/aii-pxelinux</url>
+            <mappings combine.children="append">
+              <mapping>
+                <directory>/usr/share/doc/aii-${project.artifactId}-${project.version}</directory>
+                <filemode>644</filemode>
+                <documentation>true</documentation>
+                <directoryIncluded>false</directoryIncluded>
+                <sources>
+                  <source>
+                    <location>${basedir}</location>
+                    <includes>
+                      <include>ChangeLog</include>
+                    </includes>
+                  </source>
+                  <source>
+                    <location>target/doc</location>
+                    <includes>
+                      <include>eg/*</include>
+                    </includes>
+                  </source>
+                </sources>
+              </mapping>
+            </mappings>
           </configuration>
         </plugin>
       </plugins>
