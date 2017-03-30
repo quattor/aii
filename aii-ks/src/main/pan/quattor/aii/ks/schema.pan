@@ -20,10 +20,10 @@ type structure_ks_ksxinfo = {
     "vsync"		? long
     "hsync"		? long
     "defaultdesktop" : string with match (SELF, "^(GNOME|KDE)$")
-    "resolution"	: string with match (SELF, "^[0-9]+x[0-9]+$")
+    "resolution"	? string with {deprecated(0, "resolution unsupported in EL6+"); match(SELF, '^\d+x\d+$');}
     "videoram"	? long
     "startxonboot"	: boolean = true
-    "depth"		: long (1..32) = 24
+    "depth"		? long (1..32) with {deprecated(0, "depth unsupported in EL6+"); true;}
 };
 
 type string_ksservice = string with match (SELF, "^(ssh|telnet|smtp|http|ftp)$");
