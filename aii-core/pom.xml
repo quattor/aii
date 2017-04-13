@@ -218,6 +218,7 @@
             <requires>
               <require>perl-CDB_File</require>
               <require>perl-XML-Simple</require>
+              <require>perl-Parallel-ForkManager</require>
             </requires>
             <mappings>
               <mapping>
