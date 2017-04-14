@@ -29,7 +29,6 @@ use Test::MockModule;
 use Test::Quattor qw(shellfe-dhcp-1 shellfe-dhcp-2 shellfe-dhcp-3 shellfe-dhcp-4 shellfe-dhcp-b);
 
 $CAF::Object::NoAction = 1;
-set_caf_file_close_diff(1);
 
 my $mlock = Test::MockModule->new('CAF::Lock');
 my $lock = 0;
