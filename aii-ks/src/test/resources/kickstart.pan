@@ -1,9 +1,9 @@
-@{ 
+@{
 Base kickstart data
 @}
 template kickstart;
 
-prefix "/system/network"; 
+prefix "/system/network";
 "hostname" = 'x';
 "domainname" = 'y';
 "nameserver/0" = 'nm1';
@@ -29,7 +29,7 @@ include 'quattor/aii/ks/schema';
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
 
 prefix "/system/aii/osinstall/ks";
-"bootproto" = "dhcp"; 
+"bootproto" = "dhcp";
 "keyboard" = "us";
 "lang" = "en_US.UTF-8";
 "node_profile" = "https://somewhere/node_profile";

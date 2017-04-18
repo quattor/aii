@@ -1,0 +1,6 @@
+Test the blockdevice generation in the pre section with aii=false
+---
+negate
+---
+sdb1
+Lagoon
