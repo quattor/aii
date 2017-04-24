@@ -181,8 +181,8 @@ sub _pxe_ks_static_network
 
     # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
-    if ($net->{bridge}) {
-        my $brdev = $net->{bridge};
+    my $brdev = $net->{bridge} || $net->{ovs_bridge};
+    if ($brdev) {
         $self->debug (2, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
@@ -193,9 +193,9 @@ sub _pxe_ks_static_network
     }
 
     unless ($net->{ip}) {
-            $self->error ("Static boot protocol specified ",
-                              "but no IP given to the interface $dev");
-            return;
+        $self->error ("Static boot protocol specified ",
+                      "but no IP given to the interface $dev");
+        return;
     }
 
     # can't set MTU with static ip via PXE

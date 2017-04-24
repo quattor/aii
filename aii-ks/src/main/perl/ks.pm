@@ -264,8 +264,8 @@ sub ksnetwork
     # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
     # (do this here, i.e. after --device is set)
-    if ($net->{bridge}) {
-        my $brdev = $net->{bridge};
+    my $brdev = $net->{bridge} || $net->{ovs_bridge};
+    if ($brdev) {
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
         $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
@@ -276,9 +276,9 @@ sub ksnetwork
     }
 
     unless ($net->{ip}) {
-            $this_app->error ("Static boot protocol specified ",
-                              "but no IP given to the interface $dev");
-            return ();
+        $this_app->error ("Static boot protocol specified ",
+                          "but no IP given to the interface $dev");
+        return ();
     }
     push(@network, "--ip=$net->{ip}", "--netmask=$net->{netmask}");
 
