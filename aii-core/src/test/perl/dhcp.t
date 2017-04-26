@@ -22,7 +22,6 @@ use AII::DHCP;
 use Test::MockModule;
 
 $CAF::Object::NoAction = 1;
-set_caf_file_close_diff(1);
 
 my $mlock = Test::MockModule->new('CAF::Lock');
 my $lock = 0;

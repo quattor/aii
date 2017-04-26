@@ -7,7 +7,6 @@ use Test::Deep;
 use Test::More;
 use Test::Quattor qw(basic);
 use Test::MockModule;
-use EDG::WP4::CCM::Element;
 use CAF::Application;
 use CAF::Reporter;
 use AII::Shellfe;
