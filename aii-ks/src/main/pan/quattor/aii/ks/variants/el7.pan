@@ -25,7 +25,7 @@ prefix "/system/aii/osinstall/ks";
 # rhel
 "eula" = true;
 # deal with optional repository
-"packagesinpost" = true;
+"packagesinpost" ?= true;
 
 prefix "/system/aii/nbp/pxelinux";
 "setifnames" = true;
