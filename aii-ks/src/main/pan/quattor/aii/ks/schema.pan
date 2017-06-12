@@ -65,6 +65,8 @@ type structure_ks_logging = {
 type structure_ks_mail = {
     @{Send email on succesful install}
     "success" : boolean = false
+    @{SMTP server to use (requires mailx)}
+    "smtp" ? type_hostname
 } = dict();
 
 @documentation{

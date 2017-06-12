@@ -3,6 +3,8 @@ Base kickstart data
 @}
 template kickstart;
 
+"/system/rootmail" = "root@example.com";
+
 prefix "/system/network";
 "hostname" = 'x';
 "domainname" = 'y';
@@ -43,6 +45,7 @@ prefix "/system/aii/osinstall/ks";
 "clearmbr" = true;
 "enable_sshd" = false;
 "mail/success" = false;
+"mail/smtp" = "smtp.example.com";
 "installtype" = "url --url http://baseos";
 "timezone" = "Europe/SomeCity";
 "packages" = list("package", "package2");

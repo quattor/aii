@@ -1037,6 +1037,14 @@ sub kspostreboot_header
     my $fqdn = get_fqdn($config);
 
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
+    my $tree = $config->getTree(KS);
+
+    # Legacy setting precedes
+    my $mailonsuccess = defined($tree->{email_success}) ? $tree->{email_success} : $tree->{mail}->{success};
+    my $return_no_success_mail = $mailonsuccess ? '' : "# No mail on success\n    return";
+
+    my $mailx_smtp = "";
+    $mailx_smtp .= " smtp=$tree->{mail}->{smtp}" if $tree->{mail}->{smtp};
 
     print <<EOF;
 #!/bin/bash
@@ -1052,7 +1060,7 @@ fail() {
     echo "Quattor installation on $fqdn failed: \\\$1"
     subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root\@$fqdn mailx -s "\$subject" $rootmail <<End_of_mailx
+        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
 
 \\`cat $logfile\\`
 ------------------------------------------------------------
@@ -1063,7 +1071,7 @@ End_of_mailx
         sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: \$subject
+Subject: \\\$subject
 
 \\`cat $logfile\\`
 ------------------------------------------------------------
@@ -1077,13 +1085,15 @@ End_of_sendmail
     exit 1
 }
 
-# Function to be called if the installation succeeds.  It sends an
+# Function to be called if the installation succeeds.  It can send an
 # e-mail to $rootmail alerting about the installation success.
 success() {
     echo "Quattor installation on $fqdn succeeded"
+    $return_no_success_mail
+
     subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root\@$fqdn mailx -s "\$subject" $rootmail <<End_of_mailx
+        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
 
 Node $fqdn successfully installed.
 
@@ -1092,7 +1102,7 @@ End_of_mailx
         sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: \$subject
+Subject: \\\$subject
 
 Node $fqdn successfully installed.
 .
@@ -1212,12 +1222,10 @@ sub kspostreboot_tail
 
     ksuserscript ($config, POSTREBOOTSCRIPT);
 
-    my $tree = $config->getTree(KS);
-    # legacy setting precedes
-    print "\nsuccess\n"
-        if defined($tree->{email_success}) ? $tree->{email_success} : $tree->{mail}->{success};
-
     print <<EOF;
+
+success
+
 if [ -x /usr/bin/systemctl ]; then
     /usr/bin/systemctl mask ks-post-reboot.service
     # is the reload needed with mask command?
