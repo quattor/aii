@@ -1051,10 +1051,20 @@ hostname $fqdn
 # It sends an e-mail to $rootmail alerting about the failure.
 fail() {
     echo "Quattor installation on $fqdn failed: \\\$1"
-    sendmail -t <<End_of_sendmail
+    subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1"
+    if [ -x /usr/bin/mailx ]; then
+        env MAILRC=/dev/null from=root\@$fqdn mailx -s "\$subject" $rootmail <<End_of_mailx
+
+\\`cat $logfile\\`
+------------------------------------------------------------
+\\`ls -tr /var/log/ncm 2>/dev/null|xargs tail /var/log/spma.log\\`
+
+End_of_mailx
+    else
+        sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
+Subject: \$subject
 
 \\`cat $logfile\\`
 ------------------------------------------------------------
@@ -1062,6 +1072,7 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
+    fi
     # Drain remote logger (0 if not relevant)
     sleep \\\$drainsleep
     exit 1
@@ -1071,14 +1082,23 @@ End_of_sendmail
 # e-mail to $rootmail alerting about the installation success.
 success() {
     echo "Quattor installation on $fqdn succeeded"
-    sendmail -t <<End_of_sendmail
+    subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded"
+    if [ -x /usr/bin/mailx ]; then
+        env MAILRC=/dev/null from=root\@$fqdn mailx -s "\$subject" $rootmail <<End_of_mailx
+
+Node $fqdn successfully installed.
+
+End_of_mailx
+    else
+        sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
+Subject: \$subject
 
 Node $fqdn successfully installed.
 .
 End_of_sendmail
+    fi
     # Drain remote logger (0 if not relevant)
     sleep \\\$drainsleep
 }
