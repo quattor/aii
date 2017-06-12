@@ -48,7 +48,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                AII_PROFILE      => "/system/aii/osinstall/ks/node_profile",
                CCM_PROFILE      => "/software/components/ccm/profile",
                CCM_CONFIG_PATH  => "/software/components/ccm",
-               EMAIL_SUCCESS    => "/system/aii/osinstall/ks/email_success",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
                END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
@@ -1212,8 +1211,11 @@ sub kspostreboot_tail
     my $config = shift;
 
     ksuserscript ($config, POSTREBOOTSCRIPT);
-    print "\nsuccess\n" if $config->elementExists (EMAIL_SUCCESS) &&
-      $config->getElement (EMAIL_SUCCESS)->getTree;
+
+    my $tree = $config->getTree(KS);
+    # legacy setting precedes
+    print "\nsuccess\n"
+        if defined($tree->{email_success}) ? $tree->{email_success} : $tree->{mail}->{success};
 
     print <<EOF;
 if [ -x /usr/bin/systemctl ]; then

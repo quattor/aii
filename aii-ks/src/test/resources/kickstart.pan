@@ -42,7 +42,7 @@ prefix "/system/aii/osinstall/ks";
 "bootloader_password" = "$1$ZAOkBwVp$Cs5cO5cfaqzH5AdZ/jpjP/"; # "Quattor"
 "clearmbr" = true;
 "enable_sshd" = false;
-"email_success" = false;
+"mail/success" = false;
 "installtype" = "url --url http://baseos";
 "timezone" = "Europe/SomeCity";
 "packages" = list("package", "package2");
