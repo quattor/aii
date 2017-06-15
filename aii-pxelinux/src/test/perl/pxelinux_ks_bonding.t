@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_ks_bonding pxelinux_ks_bonding_bridge);
+use Test::Quattor qw(pxelinux_ks_bonding pxelinux_ks_bonding_bridge pxelinux_ks_ovs_bridge);
 use NCM::Component::PXELINUX::constants qw(:pxe_variants :pxe_constants);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
@@ -27,7 +27,7 @@ Readonly my @PXE_VARIANT_METHODS => ('_write_pxelinux_config', '_write_grub2_con
 Readonly my @VARIANT_NAMES => ('PXELINUX', 'Grub2');
 
 # List of configurations to test (must be added as Test::Quattor parameters)
-Readonly my @TEST_PROFILES => ('pxelinux_ks_bonding', 'pxelinux_ks_bonding_bridge');
+Readonly my @TEST_PROFILES => ('pxelinux_ks_bonding', 'pxelinux_ks_bonding_bridge', 'pxelinux_ks_ovs_bridge');
 
 our $this_app = $main::this_app;
 $this_app->{CONFIG}->define(GRUB2_EFI_LINUX_CMD);
@@ -50,26 +50,32 @@ for my $profile (@TEST_PROFILES) {
         my $variant_name = $VARIANT_NAMES[$variant];
         my $config_method = $PXE_VARIANT_METHODS[$variant];
         my $kernel_params_cmd = $KERNEL_PARAMS_CMDS[$variant];
-    
+
         $comp->$config_method($cfg);
         my $fh = get_file($fp);
-        
-        # bonding opts
-        like($fh,
-             qr{^\s{4}$kernel_params_cmd\s.*?\sbond=bond0:eth0,eth1:(opt1=val1,opt2=val2|opt2=val2,opt1=val1)(\s|$)}m,
-             "append bond ksdevice (profile=$profile, variant=$variant_name)");
-        
-        # static ip settings from bond0, also bond0 is bootdev
-        like($fh,
-             qr{^\s{4}$kernel_params_cmd\s.*?\sip=1\.2\.3\.0::133\.2\.85\.1:255\.255\.255\.0:x.y:bond0:none(\s|$)}m,
-             "append static ip for bootdev bond0 ksdevice (profile=$profile, variant=$variant_name)");
-        
-        # kickstart file should be fetched via ksdevice bond0
-        # this is EL7, the EL6 test should be ksdevice=bond0
-        like($fh,
-             qr{^\s{4}$kernel_params_cmd\s.*?\sbootdev=bond0(\s|$)}m,
-             "append set ksdevice/bootdev to bond0 ksdevice (profile=$profile, variant=$variant_name)");
 
+        if ($profile =~ m/bond/) {
+            # bonding opts
+            like($fh,
+                 qr{^\s{4}$kernel_params_cmd\s.*?\sbond=bond0:eth0,eth1:(opt1=val1,opt2=val2|opt2=val2,opt1=val1)(\s|$)}m,
+                 "append bond ksdevice (profile=$profile, variant=$variant_name)");
+
+            # static ip settings from bond0, also bond0 is bootdev
+            like($fh,
+                 qr{^\s{4}$kernel_params_cmd\s.*?\sip=1\.2\.3\.0::133\.2\.85\.1:255\.255\.255\.0:x.y:bond0:none(\s|$)}m,
+                 "append static ip for bootdev bond0 ksdevice (profile=$profile, variant=$variant_name)");
+
+            # kickstart file should be fetched via ksdevice bond0
+            # this is EL7, the EL6 test should be ksdevice=bond0
+            like($fh,
+                 qr{^\s{4}$kernel_params_cmd\s.*?\sbootdev=bond0(\s|$)}m,
+                 "append set ksdevice/bootdev to bond0 ksdevice (profile=$profile, variant=$variant_name)");
+        } else {
+            # static ip settings from ovs_bridge
+            like($fh,
+                 qr{^\s{4}$kernel_params_cmd\s.*?\sip=1\.2\.3\.0::133\.2\.85\.1:255\.255\.255\.0:x.y:eth0:none(\s|$)}m,
+                 "append static ip for bootdev eth0 ksdevice from ovs_bridge (profile=$profile, variant=$variant_name)");
+        }
     };
 };
 
