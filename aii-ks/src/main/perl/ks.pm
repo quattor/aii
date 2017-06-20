@@ -561,6 +561,10 @@ EOF
     my $fss = $config->getElement (FS);
     while ($fss->hasNextElement) {
         my $fs = $fss->getNextElement;
+
+        my $aii = $fs->getTree()->{aii};
+        next if defined($aii) && !$aii;
+
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
         next if ($fstree->{block_device}->{holding_dev} &&
@@ -904,6 +908,10 @@ sub ksprint_filesystems
     # cleanup/wipe partitions etc
     while ($fss->hasNextElement) {
         my $fs = $fss->getNextElement;
+
+        my $aii = $fs->getTree()->{aii};
+        next if defined($aii) && !$aii;
+
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
                                            $config);
         $fstree->del_pre_ks;
@@ -919,10 +927,14 @@ sub ksprint_filesystems
     }
 
     # Create what needs to be created.
-    $fss = $config->getElement (PART);
+    my $pts = $config->getElement (PART);
     my @part = ();
-    while ($fss->hasNextElement) {
-        my $p = $fss->getNextElement;
+    while ($pts->hasNextElement) {
+        my $p = $pts->getNextElement;
+
+        my $aii = $p->getTree()->{aii};
+        next if defined($aii) && !$aii;
+
         my $pt = NCM::Partition->new ($p->getPath->toString,
                                       $config);
 

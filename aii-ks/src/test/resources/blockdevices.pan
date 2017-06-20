@@ -1,7 +1,7 @@
 unique template blockdevices;
 
 "/hardware/harddisks/sdb" = nlist(
-    "capacity", 4000, 
+    "capacity", 4000,
 );
 
 "/system/blockdevices" = nlist (
@@ -71,4 +71,3 @@ unique template blockdevices;
         "pass", 1
         )
     );
-		
