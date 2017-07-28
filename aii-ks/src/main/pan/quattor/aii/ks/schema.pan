@@ -60,6 +60,16 @@ type structure_ks_logging = {
 };
 
 @documentation{
+    Configure email settings
+}
+type structure_ks_mail = {
+    @{Send email on succesful install}
+    "success" : boolean = false
+    @{SMTP server to use (requires mailx)}
+    "smtp" ? type_hostname
+} = dict();
+
+@documentation{
     Information needed for creating the Kickstart file
     Optional hooks pre_install, post_install, post_reboot and install
     for user customization are under /system/ks/hooks/.
@@ -77,7 +87,8 @@ type structure_ks_ks_info = {
     "enable_sshd"   : boolean = false
     "clearpart"	? string []
     "driverdisk"	? type_absoluteURI[]
-    "email_success" : boolean = false
+    @{deprecated boolean. when defined, precedes value of mail/success.}
+    "email_success" ? boolean with {deprecated(0, "email_success is deprecated; use mail/success instead"); true;}
     "firewall"	? structure_ks_ksfirewall
     "installtype"	: string
     "installnumber" ? string
@@ -87,6 +98,7 @@ type structure_ks_ks_info = {
     "langsupport"	? string [] = list ("en_US.UTF-8")
     "logging"	? structure_ks_logging
     "mouse"		? string
+    "mail"      : structure_ks_mail
     "bootproto"	: string with match (SELF, "static|dhcp")
     "keyboard"	: string = "us"
     "node_profile"	: type_absoluteURI

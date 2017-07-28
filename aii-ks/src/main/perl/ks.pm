@@ -48,7 +48,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                AII_PROFILE      => "/system/aii/osinstall/ks/node_profile",
                CCM_PROFILE      => "/software/components/ccm/profile",
                CCM_CONFIG_PATH  => "/software/components/ccm",
-               EMAIL_SUCCESS    => "/system/aii/osinstall/ks/email_success",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
                END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
@@ -1038,6 +1037,14 @@ sub kspostreboot_header
     my $fqdn = get_fqdn($config);
 
     my $rootmail = $config->getElement (ROOTMAIL)->getValue;
+    my $tree = $config->getTree(KS);
+
+    # Legacy setting precedes
+    my $mailonsuccess = defined($tree->{email_success}) ? $tree->{email_success} : $tree->{mail}->{success};
+    my $return_no_success_mail = $mailonsuccess ? '' : "# No mail on success\n    return";
+
+    my $mailx_smtp = "";
+    $mailx_smtp .= " smtp=$tree->{mail}->{smtp}" if $tree->{mail}->{smtp};
 
     print <<EOF;
 #!/bin/bash
@@ -1051,10 +1058,20 @@ hostname $fqdn
 # It sends an e-mail to $rootmail alerting about the failure.
 fail() {
     echo "Quattor installation on $fqdn failed: \\\$1"
-    sendmail -t <<End_of_sendmail
+    subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1"
+    if [ -x /usr/bin/mailx ]; then
+        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
+
+\\`cat $logfile\\`
+------------------------------------------------------------
+\\`ls -tr /var/log/ncm 2>/dev/null|xargs tail /var/log/spma.log\\`
+
+End_of_mailx
+    else
+        sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
+Subject: \\\$subject
 
 \\`cat $logfile\\`
 ------------------------------------------------------------
@@ -1062,23 +1079,35 @@ Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1
 
 .
 End_of_sendmail
+    fi
     # Drain remote logger (0 if not relevant)
     sleep \\\$drainsleep
     exit 1
 }
 
-# Function to be called if the installation succeeds.  It sends an
+# Function to be called if the installation succeeds.  It can send an
 # e-mail to $rootmail alerting about the installation success.
 success() {
     echo "Quattor installation on $fqdn succeeded"
-    sendmail -t <<End_of_sendmail
+    $return_no_success_mail
+
+    subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded"
+    if [ -x /usr/bin/mailx ]; then
+        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
+
+Node $fqdn successfully installed.
+
+End_of_mailx
+    else
+        sendmail -t <<End_of_sendmail
 From: root\@$fqdn
 To: $rootmail
-Subject: [\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded
+Subject: \\\$subject
 
 Node $fqdn successfully installed.
 .
 End_of_sendmail
+    fi
     # Drain remote logger (0 if not relevant)
     sleep \\\$drainsleep
 }
@@ -1192,10 +1221,11 @@ sub kspostreboot_tail
     my $config = shift;
 
     ksuserscript ($config, POSTREBOOTSCRIPT);
-    print "\nsuccess\n" if $config->elementExists (EMAIL_SUCCESS) &&
-      $config->getElement (EMAIL_SUCCESS)->getTree;
 
     print <<EOF;
+
+success
+
 if [ -x /usr/bin/systemctl ]; then
     /usr/bin/systemctl mask ks-post-reboot.service
     # is the reload needed with mask command?

@@ -340,6 +340,18 @@ variable AII_OSINSTALL_PACKAGES ?= list (
     if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
         append('-selinux*');
     };
+    # SMTP support requires mailx
+    if (exists('/system/aii/osinstall/ks/mail/smtp')) {
+        append('mailx');
+    };
+    SELF;
+};
+
+"/software/packages" = {
+    # mailx is also required so fail/success works after spma runs
+    if (exists('/system/aii/osinstall/ks/mail/smtp')) {
+        pkg_repl('mailx');
+    };
     SELF;
 };
 

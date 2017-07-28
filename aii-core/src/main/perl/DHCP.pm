@@ -495,6 +495,7 @@ sub read_input
 }
 
 # update the dhcp config file and restart daemon
+# return undef on failure, 1 on success
 sub update_and_restart
 {
     my $self = shift;
@@ -527,10 +528,11 @@ sub update_and_restart
 sub nodes_to_change
 {
     my $self = shift;
-    return  return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
+    return (@{$self->{NTC}} + @{$self->{NTR}}) ? 1 : 0;
 }
 
 # update dhcpd configuration file
+# return 0 on failure, 1 on success
 sub configure_dhcp
 {
     my $self = shift;
@@ -552,11 +554,10 @@ sub configure
     $self->debug(1, "AII::DHCP: reading cmd line or input files");
     if ($self->read_input()) {
         $self->error("AII::DHCP: failed to process cmd line or input files");
-        return(1);
+        return 1;
     }
-    return 1 if (!$self->configure_dhcp());
 
-    return 0;
+    return $self->configure_dhcp() ? 0 : 1;
 }
 
 1;

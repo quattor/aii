@@ -21,8 +21,6 @@ use Test::Quattor;
 use AII::DHCP;
 use Test::MockModule;
 
-$CAF::Object::NoAction = 1;
-
 my $mlock = Test::MockModule->new('CAF::Lock');
 my $lock = 0;
 $mlock->mock('set_lock', sub {$lock++; return 1;});
@@ -124,7 +122,7 @@ set_file_contents('/path/dhcpd.conf', $dhcpd);
 mkdir('target/test') if ! -d 'target/test';
 
 my $mod = AII::DHCP->new(@opts);
-ok(! $mod->configure(), 'configure returns success');
+ok(! $mod->configure(), 'configure returns 0 on success');
 
 is($lock, 1, "lock taken");
 
