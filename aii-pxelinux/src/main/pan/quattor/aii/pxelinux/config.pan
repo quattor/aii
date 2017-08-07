@@ -103,7 +103,7 @@ variable AII_NBP_ROOT ?= {
         if ( length(toks) < 3 ) {
             root = undef;
         } else {
-            root = toks[1] + '_'+ toks[2];
+            root = toks[1] + '_' + toks[2];
             if (length (toks) > 3) {
                 root = root + toks[3];
             };
