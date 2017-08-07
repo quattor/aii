@@ -5,7 +5,7 @@
 # ${build-info}
 #
 # This file is the standard aii configuration. It only performs some
-# validations, combines information that is already available, and 
+# validations, combines information that is already available, and
 # set sensible default values.
 #
 # This file should NOT contain any site or platform customization.
