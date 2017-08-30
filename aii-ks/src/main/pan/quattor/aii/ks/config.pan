@@ -11,6 +11,8 @@ include 'quattor/aii/ks/schema';
 
 bind "/system/aii/osinstall/ks" = structure_ks_ks_info;
 
+prefix "/system/aii/osinstall/ks";
+
 variable AII_DOMAIN ?= value('/system/network/domainname');
 variable AII_HOSTNAME ?= value('/system/network/hostname');
 
@@ -29,19 +31,18 @@ variable AII_OSINSTALL_CLEARPART_BOOT_ONLY ?= false;
 # Also ensure that AII_OSINSTALL_SRV has no  trailing /.
 #
 variable AII_OSINSTALL_SRV ?= {
-    error("You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) "
-          + " in order to use AII templates");
+    error("You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) " +
+            " in order to use AII templates");
 };
 
 variable AII_OSINSTALL_SRV = {
-  toks = matches(AII_OSINSTALL_SRV,'^(.*)/$');
-  if ( length(toks) < 2 ) {
-    return(SELF);
-  } else {
-    return(toks[1]);
-  };
+    toks = matches(AII_OSINSTALL_SRV, '^(.*)/$');
+    if ( length(toks) < 2 ) {
+        SELF;
+    } else {
+        toks[1];
+    };
 };
-
 
 #
 # KS configuration files server
@@ -63,12 +64,13 @@ variable AII_OSINSTALL_PATH ?= undef;
 # Installation protocol (http or nfs)
 # defaults to http
 #
-variable AII_OSINSTALL_PROTOCOL ?= if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
-                                     error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
-                                   } else {
-                                     return('http');
-                                   };
-"/system/aii/osinstall/ks/osinstall_protocol" ?= AII_OSINSTALL_PROTOCOL;
+variable AII_OSINSTALL_PROTOCOL ?=
+    if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
+        error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
+    } else {
+        'http';
+    };
+"osinstall_protocol" ?= AII_OSINSTALL_PROTOCOL;
 # Be sure AII_OSINSTALL_PROTOCOL matches osinstall_protocol in case the latter was defined first.
 # For backward compatibility, as in previous versions, osinstall_protocol was explicitly defined by sites.
 variable AII_OSINSTALL_PROTOCOL = value('/system/aii/osinstall/ks/osinstall_protocol');
@@ -87,21 +89,21 @@ variable AII_OSINSTALL_OS_VERSION ?= undef;
 # (e.g. /base)
 
 variable AII_OSINSTALL_SUBURL ?= undef;
-variable AII_OSINSTALL_PATH ?= {
+variable AII_OSINSTALL_PATH ?=
     if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
-	    path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
-	    if ( is_defined(AII_OSINSTALL_SUBURL) ) {
-		    path = path + AII_OSINSTALL_SUBURL;
-		};
-		return(path);
-	} else {
-	    return(undef);
-	} ;
-};
+        path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
+        if ( is_defined(AII_OSINSTALL_SUBURL) ) {
+            path = path + AII_OSINSTALL_SUBURL;
+        };
+        path;
+    } else {
+        undef;
+    };
+
 
 # SElinux default configuration at installation time.
 variable AII_OSINSTALL_SELINUX ?= 'disabled';
-"/system/aii/osinstall/ks/selinux" ?= AII_OSINSTALL_SELINUX;
+"selinux" ?= AII_OSINSTALL_SELINUX;
 
 #
 # Install type and URL (for http or https) or directory (for NFS)
@@ -109,18 +111,18 @@ variable AII_OSINSTALL_SELINUX ?= 'disabled';
 # For backward compatibility (deprecated), allow installtype to be defined explicicly
 # rather than from AII_OSINSTALL_xxx variables.
 #
-"/system/aii/osinstall/ks/installtype" ?= {
+"installtype" ?= {
     if ( !exists(AII_OSINSTALL_PATH) || !is_defined(AII_OSINSTALL_PATH) ) {
-      error("You need to define the variable AII_OSINSTALL_PATH or AII_OSINSTALL_ROOT "
-          + "(OS distribution location on the Quattor server)");
+        error("You need to define the variable AII_OSINSTALL_PATH or AII_OSINSTALL_ROOT "
+                + "(OS distribution location on the Quattor server)");
     };
 
-    if ( match(AII_OSINSTALL_PROTOCOL,"^https?") )  {
-        return("url --url " + AII_OSINSTALL_PROTOCOL + "://" + AII_OSINSTALL_SRV + AII_OSINSTALL_PATH);
-    } else if ( match(AII_OSINSTALL_PROTOCOL,"(?i)nfs") ) {
-        return("nfs --server " + AII_OSINSTALL_SRV + " --dir " + AII_OSINSTALL_PATH);
+    if ( match(AII_OSINSTALL_PROTOCOL, "^https?") )  {
+        "url --url " + AII_OSINSTALL_PROTOCOL + "://" + AII_OSINSTALL_SRV + AII_OSINSTALL_PATH;
+    } else if ( match(AII_OSINSTALL_PROTOCOL, "(?i)nfs") ) {
+        "nfs --server " + AII_OSINSTALL_SRV + " --dir " + AII_OSINSTALL_PATH;
     } else {
-      error('Unsupported OS installation protocol: '+AII_OSINSTALL_PROTOCOL);
+        error('Unsupported OS installation protocol: ' + AII_OSINSTALL_PROTOCOL);
     };
 };
 
@@ -128,34 +130,34 @@ variable AII_OSINSTALL_SELINUX ?= 'disabled';
 # Language during installation process
 #
 variable AII_OSINSTALL_OPTION_LANG ?= "en_US";
-"/system/aii/osinstall/ks/lang" ?= AII_OSINSTALL_OPTION_LANG;
+"lang" ?= AII_OSINSTALL_OPTION_LANG;
 
 
 #
 # Language installed
 #
 variable AII_OSINSTALL_OPTION_LANG_SUPP ?= list (AII_OSINSTALL_OPTION_LANG);
-"/system/aii/osinstall/ks/langsupport" ?= AII_OSINSTALL_OPTION_LANG_SUPP;
+"langsupport" ?= AII_OSINSTALL_OPTION_LANG_SUPP;
 
 #
 # Keyboard layout
 #
 variable AII_OSINSTALL_OPTION_KEYBOARD ?= "us";
-"/system/aii/osinstall/ks/keyboard" ?= AII_OSINSTALL_OPTION_KEYBOARD;
+"keyboard" ?= AII_OSINSTALL_OPTION_KEYBOARD;
 
 
 #
 # Mouse type
 #
 variable AII_OSINSTALL_OPTION_MOUSE ?= "none";
-"/system/aii/osinstall/ks/mouse" ?= AII_OSINSTALL_OPTION_MOUSE;
+"mouse" ?= AII_OSINSTALL_OPTION_MOUSE;
 
 
 #
 # Time zone
 #
 variable AII_OSINSTALL_OPTION_TIMEZONE ?= "Europe/Paris";
-"/system/aii/osinstall/ks/timezone" ?= AII_OSINSTALL_OPTION_TIMEZONE;
+"timezone" ?= AII_OSINSTALL_OPTION_TIMEZONE;
 
 
 #
@@ -163,7 +165,7 @@ variable AII_OSINSTALL_OPTION_TIMEZONE ?= "Europe/Paris";
 # by default, derived from the account component
 #
 variable AII_OSINSTALL_ROOTPW ?= value("/software/components/accounts/rootpwd");
-"/system/aii/osinstall/ks/rootpw" ?= AII_OSINSTALL_ROOTPW;
+"rootpw" ?= AII_OSINSTALL_ROOTPW;
 
 
 #
@@ -171,7 +173,7 @@ variable AII_OSINSTALL_ROOTPW ?= value("/software/components/accounts/rootpwd");
 # default is to clear the boot record
 #
 variable AII_OSINSTALL_OPTION_CLEARMBR ?= true;
-"/system/aii/osinstall/ks/clearmbr" ?= AII_OSINSTALL_OPTION_CLEARMBR;
+"clearmbr" ?= AII_OSINSTALL_OPTION_CLEARMBR;
 
 #
 # The location of the bootloader.
@@ -179,7 +181,7 @@ variable AII_OSINSTALL_OPTION_CLEARMBR ?= true;
 # default is "mbr"
 #
 variable AII_OSINSTALL_OPTION_BOOTLOADER ?= "mbr";
-"/system/aii/osinstall/ks/bootloader_location" ?= AII_OSINSTALL_OPTION_BOOTLOADER;
+"bootloader_location" ?= AII_OSINSTALL_OPTION_BOOTLOADER;
 
 #
 # Define list of disks to ignore and list of disks whose partition must be cleared.
@@ -196,116 +198,117 @@ variable AII_OSINSTALL_DISKS = {
     SELF['boot_order'] = list();
 
     # Check if an explicit list of disk to clear was specified
-    explicit_clearpath = nlist();
+    explicit_clearpath = dict();
     if ( is_defined(AII_OSINSTALL_OPTION_CLEARPART) ) {
-      if ( is_list(AII_OSINSTALL_OPTION_CLEARPART) ) {
-        SELF['clearpart'] = AII_OSINSTALL_OPTION_CLEARPART;
-        foreach (i;disk;AII_OSINSTALL_OPTION_CLEARPART) {
-          explicit_clearpath[disk] = '';
+        if ( is_list(AII_OSINSTALL_OPTION_CLEARPART) ) {
+            SELF['clearpart'] = AII_OSINSTALL_OPTION_CLEARPART;
+                foreach (i; disk; AII_OSINSTALL_OPTION_CLEARPART) {
+                    explicit_clearpath[disk] = '';
+            };
+        } else {
+            error('AII_OSINSTALL_OPTION_CLEARPART must be a list');
         };
-      } else {
-        error('AII_OSINSTALL_OPTION_CLEARPART must be a list');
-      };
     } else {
-      SELF['clearpart'] = list();
+        SELF['clearpart'] = list();
     };
 
     # Check if an explicit list of disk to ignore was specified
-    explicit_ignore = nlist();
+    explicit_ignore = dict();
     if ( is_defined(AII_OSINSTALL_IGNOREDISKS) ) {
-      if ( is_list(AII_OSINSTALL_IGNOREDISKS) ) {
-        SELF['ignore'] = AII_OSINSTALL_IGNOREDISKS;
-        foreach (i;disk;AII_OSINSTALL_IGNOREDISKS) {
-          explicit_ignore[disk] = '';
+        if ( is_list(AII_OSINSTALL_IGNOREDISKS) ) {
+            SELF['ignore'] = AII_OSINSTALL_IGNOREDISKS;
+            foreach (i; disk; AII_OSINSTALL_IGNOREDISKS) {
+                explicit_ignore[disk] = '';
+            };
+        } else {
+            error('AII_OSINSTALL_IGNOREDISKS must be a list');
         };
-      } else {
-        error('AII_OSINSTALL_IGNOREDISKS must be a list');
-      };
     } else {
-      SELF['ignore'] = list();
+        SELF['ignore'] = list();
     };
 
     # Retrieve list of defined block devices (meaning disks managed by Quattor)
     if ( path_exists(blockdevices_path) && is_defined(value(blockdevices_path)) ) {
-      blockdevices = value(blockdevices_path);
+        blockdevices = value(blockdevices_path);
     } else {
-      blockdevices= nlist()
+        blockdevices = dict()
     };
 
     if ( exists(hd_path) && is_defined(value(hd_path)) ) {
-      hd_list = value(hd_path);
-      foreach (disk; params; hd_list) {
-        # A disk explicitly set in clearpart list must not be in ignore list
-        if ( (length(hd_list) == 1) ||
-             (is_defined(blockdevices[disk]) && !AII_OSINSTALL_CLEARPART_BOOT_ONLY) ||
-             is_defined(explicit_clearpath[disk]) ||
-             (exists(params['boot']) && params['boot']) ) {
-          if ( index(disk,SELF['ignore']) < 0 ) {
-            clearpart_enabled = true;
-            if ( index(disk,SELF['clearpart']) < 0 ) {
-              SELF['clearpart'][length(SELF['clearpart'])] = unescape(disk);
-            };
-          } else {
-            clearpart_enabled = false;
-          };
-          # Define only if there is an explicit boot property defined, else let undefined
-          if ( exists(params['boot']) && params['boot'] ) {
-            if ( clearpart_enabled ) {
-              SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
+        hd_list = value(hd_path);
+        foreach (disk; params; hd_list) {
+            # A disk explicitly set in clearpart list must not be in ignore list
+            if ( (length(hd_list) == 1) ||
+                (is_defined(blockdevices[disk]) && !AII_OSINSTALL_CLEARPART_BOOT_ONLY) ||
+                is_defined(explicit_clearpath[disk]) ||
+                (exists(params['boot']) && params['boot']) ) {
+                if ( index(disk, SELF['ignore']) < 0 ) {
+                    clearpart_enabled = true;
+                    if ( index(disk, SELF['clearpart']) < 0 ) {
+                        SELF['clearpart'][length(SELF['clearpart'])] = unescape(disk);
+                    };
+                } else {
+                clearpart_enabled = false;
+                };
+                # Define only if there is an explicit boot property defined, else let undefined
+                if ( exists(params['boot']) && params['boot'] ) {
+                    if ( clearpart_enabled ) {
+                        SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
+                    } else {
+                        error('HW description inconsistency: ' + disk +
+                                ' defined as a boot disk but clearing of partitions disabled');
+                    };
+                };
             } else {
-              error('HW description inconsistency: '+disk+' defined as a boot disk but clearing of partitions disabled');
+                if ( index(disk, SELF['clearpart']) < 0 ) {
+                    if ( index(disk, SELF['ignore']) < 0 ) {
+                        SELF['ignore'][length(SELF['ignore'])] = unescape(disk);
+                    };
+                } else {
+                    debug(disk + ' not added to the list of ignored disk as its partitions must be cleared');
+                };
             };
-          };
-        } else {
-          if ( index(disk,SELF['clearpart']) < 0 ) {
-            if ( index(disk,SELF['ignore']) < 0 ) {
-              SELF['ignore'][length(SELF['ignore'])] = unescape(disk);
-            };
-          } else {
-            debug(disk+' not added to the list of ignored disk as its partitions must be cleared');
-          };
         };
-      };
     } else {
-      debug(TEMPLATE+': no disk defined in hardware configuration');
+        debug(TEMPLATE + ': no disk defined in hardware configuration');
     };
-    debug('Disks to ignore: '+to_string(SELF['ignore']));
-    debug('Disks whose partitions must be cleared: '+to_string(SELF['clearpart']));
+    debug('Disks to ignore: ' + to_string(SELF['ignore']));
+    debug('Disks whose partitions must be cleared: ' + to_string(SELF['clearpart']));
     SELF;
 };
 
 variable AII_OSINSTALL_BOOTDISK_ORDER ?= AII_OSINSTALL_DISKS['boot_order'];
 
-"/system/aii/osinstall/ks/clearpart" ?= AII_OSINSTALL_DISKS['clearpart'];
-"/system/aii/osinstall/ks/ignoredisk" ?= AII_OSINSTALL_DISKS['ignore'];
-"/system/aii/osinstall/ks/bootdisk_order" ?= AII_OSINSTALL_BOOTDISK_ORDER;
+"clearpart" ?= AII_OSINSTALL_DISKS['clearpart'];
+"ignoredisk" ?= AII_OSINSTALL_DISKS['ignore'];
+"bootdisk_order" ?= AII_OSINSTALL_BOOTDISK_ORDER;
 
-##
-## A list of services to be disabled for the first reboot after the ks install
-## eg variable AII_OSINSTALL_DISABLE_SERVICE = list("yum","apt","yum-autoupdate");
-##
+#
+# A list of services to be disabled for the first reboot after the ks install
+# eg variable AII_OSINSTALL_DISABLE_SERVICE = list("yum","apt","yum-autoupdate");
+#
 variable AII_OSINSTALL_DISABLE_SERVICE ?= null;
-"/system/aii/osinstall/ks/disable_service" ?= AII_OSINSTALL_DISABLE_SERVICE;
+"disable_service" ?= AII_OSINSTALL_DISABLE_SERVICE;
 
 
 #
 # How will we configure the network during the installation?
 # Default to 'dhcp'
 variable  AII_OSINSTALL_BOOTPROTO ?= 'dhcp';
-"/system/aii/osinstall/ks/bootproto" ?= AII_OSINSTALL_BOOTPROTO;
+"bootproto" ?= AII_OSINSTALL_BOOTPROTO;
 
 #
 # Options for authentication
 # defaults to using shadow passwords and sha512 hashing
 #
 variable AII_OSINSTALL_OPTION_AUTH ?= list ("enableshadow", "passalgo=sha512");
-"/system/aii/osinstall/ks/auth" ?= AII_OSINSTALL_OPTION_AUTH;
+"auth" ?= AII_OSINSTALL_OPTION_AUTH;
 #
 # Firewall
 # default is to disable the firewall
 #
 variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
-"/system/aii/osinstall/ks/firewall" ?= AII_OSINSTALL_OPTION_FIREWALL;
+"firewall" ?= AII_OSINSTALL_OPTION_FIREWALL;
 
 
 #
@@ -313,7 +316,7 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 # default list of packages required for the initial installation
 #
 
-variable AII_OSINSTALL_PACKAGES ?= list (
+variable AII_OSINSTALL_PACKAGES ?= list(
     "curl",
     "lsof",
     "openssh",
@@ -335,8 +338,8 @@ variable AII_OSINSTALL_PACKAGES ?= list (
 );
 
 
-"/system/aii/osinstall/ks/packages" ?= AII_OSINSTALL_PACKAGES;
-"/system/aii/osinstall/ks/packages" = {
+"packages" ?= AII_OSINSTALL_PACKAGES;
+"packages" = {
     if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
         append('-selinux*');
     };
@@ -368,8 +371,7 @@ variable AII_OSINSTALL_PACKAGES ?= list (
 #
 variable AII_ACK_SRV ?= AII_OSINSTALL_SRV;
 variable AII_ACK_CGI ?= "/cgi-bin/aii-installack.cgi";
-"/system/aii/osinstall/ks/ackurl" =
-    "http://" + AII_ACK_SRV + AII_ACK_CGI;
+"ackurl" = "http://" + AII_ACK_SRV + AII_ACK_CGI;
 
 
 #
@@ -377,18 +379,18 @@ variable AII_ACK_CGI ?= "/cgi-bin/aii-installack.cgi";
 #
 variable AII_USE_CCM ?= exists("/software/components/ccm") && is_defined("/software/components/ccm");
 variable AII_PROFILE_PATH ?= "/profiles";
-variable AII_OSINSTALL_NODEPROFILE ?= {
+variable AII_OSINSTALL_NODEPROFILE ?=
     if (AII_USE_CCM) {
         if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
-            return(value("/software/components/ccm/profile"));
+            value("/software/components/ccm/profile");
         } else {
-            error("Can't find value for the profile url at /software/components/ccm/profile. If you don't use ccm, set the variable AII_USE_CCM to false.");
+            error("Can't find value for the profile url at /software/components/ccm/profile. " +
+                    "If you don't use ccm, set the variable AII_USE_CCM to false.");
         };
     } else {
-        return("http://" + AII_CDB_SRV + AII_PROFILE_PATH + "/" + OBJECT + ".xml");
+        format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
     };
-};
-"/system/aii/osinstall/ks/node_profile" ?= AII_OSINSTALL_NODEPROFILE;
+"node_profile" ?= AII_OSINSTALL_NODEPROFILE;
 
 # Include OS specific kickstart configuration, if needed
 #  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
@@ -396,19 +398,27 @@ variable AII_OSINSTALL_NODEPROFILE ?= {
 #    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
 #    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
 #    templates).  When both exist, they are both applied.
-variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['major']) ) {
-                                                     if_exists('quattor/aii/ks/variants/'+OS_VERSION_PARAMS['major']);
-                                                   } else {
-                                                     undef;
-                                                   };
-include { debug('KS specific configuration for OS major version: '+to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE)); AII_KS_OS_MAJOR_SPECIFIC_INCLUDE };
+variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?=
+    if ( is_defined(OS_VERSION_PARAMS['major']) ) {
+        if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
+    } else {
+        undef;
+    };
+include {
+    debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
+};
 # Existence of OS_VERSION_PARAMS['minor'] is used a a QWG signature
-variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
-                                                     if_exists('config/quattor/ks');
-                                                   } else {
-                                                     undef;
-                                                   };
-include { debug('KS specific configuration for OS minor release: '+to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE)); AII_KS_OS_MINOR_SPECIFIC_INCLUDE };
+variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?=
+    if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
+        if_exists('config/quattor/ks');
+    } else {
+        undef;
+};
+include {
+    debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
+};
 
 #
 # For more details on Kickstart options see RedHat documentation:
@@ -416,7 +426,7 @@ include { debug('KS specific configuration for OS minor release: '+to_string(AII
 # This package list must be properly ordered to satisfy package requirements.
 #
 
-variable AII_OSINSTALL_BASE_PACKAGES ?= list (
+variable AII_OSINSTALL_BASE_PACKAGES ?= list(
     'perl-Proc-ProcessTable',
     'perl-Set-Scalar',
     'perl-common-sense',
@@ -432,8 +442,8 @@ variable AII_OSINSTALL_BASE_PACKAGES ?= list (
     "ncm-cdispd",
 );
 
-"/system/aii/osinstall/ks/base_packages" ?= AII_OSINSTALL_BASE_PACKAGES;
+"base_packages" ?= AII_OSINSTALL_BASE_PACKAGES;
 
 # Define if volgroup statement is required for LVM-based file systems.
 # Default is for SL4/5
-"/system/aii/osinstall/ks/volgroup_required" = true;
+"volgroup_required" = true;

@@ -2,7 +2,7 @@
 
 template quattor/aii/ks/variants/el7;
 
-# Remove deprecated options 
+# Remove deprecated options
 prefix "/system/aii/osinstall/ks";
 "mouse" = null;
 "langsupport" = null;
@@ -19,7 +19,7 @@ prefix "/system/aii/osinstall/ks";
 "enable_sshd" = true;
 "cmdline" = true;
 
-"logging/method" = 'bash'; 
+"logging/method" = 'bash';
 "logging/protocol" = 'tcp';
 
 # rhel

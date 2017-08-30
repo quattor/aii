@@ -7,4 +7,4 @@
 
 unique template quattor/aii/ks/rpms;
 
-"/software/packages"=pkg_repl("aii-ks","${no-snapshot-version}-${rpm.release}","noarch");
+"/software/packages" = pkg_repl("aii-ks", "${no-snapshot-version}-${rpm.release}", "noarch");
