@@ -4,7 +4,6 @@ use Test::More;
 use Test::Quattor qw(kickstart_postreboot);
 use NCM::Component::ks;
 use CAF::FileWriter;
-use CAF::Object;
 use Text::Diff;
 
 =pod
@@ -15,16 +14,18 @@ Tests for the C<kscommands> method with emphasis on postreboot.
 
 =cut
 
-$CAF::Object::NoAction = 1;
+my $ks = NCM::Component::ks->new('ks');
+my $cfg = get_config_for_profile('kickstart_postreboot');
 
 my $fh = CAF::FileWriter->new("target/test/ks");
 # This module simply prints to the default filehandle.
 select($fh);
 
-my $ks = NCM::Component::ks->new('ks');
-my $cfg = get_config_for_profile('kickstart_postreboot');
-
 NCM::Component::ks::kspostreboot_header($cfg);
+
+# some diagnostic messages can get caught up in the result via print
+my $text = "$fh";
+$text =~ s/^\[VERB.*\n//gm;
 
 my $header = <<'EOHEADER';
 #!/bin/bash
@@ -126,10 +127,10 @@ wait_for_network x.y
 
 EOHEADER
 
-if ("$fh" ne $header) {
-    diag "diff header ", diff ($fh->string_ref, \$header);
+if ($text ne $header) {
+    diag "diff header ", diff (\$text, \$header);
 };
-is("$fh", $header, "ks postreboot header generated (see diff header)");
+is($text, $header, "ks postreboot header generated (see diff header)");
 
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;
