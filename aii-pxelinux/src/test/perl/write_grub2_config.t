@@ -42,7 +42,7 @@ sub check_config {
     my $hostname = hostname();
     like($fh, qr{^set default=0$}m, "default kernel ($test_msg)");
     like($fh, qr{^set timeout=\d+$}m, "Grub2 menu timeout ($test_msg)");
-    like($fh, qr(^menuentry\s"Install\s[\w\-\s\(\)\[\]]+"\s\{$)m, "Grub2 menu entry ($test_msg)");
+    like($fh, qr(^menuentry\s"Install\s[\w\-\s()\[\]]+"\s\{$)m, "Grub2 menu entry ($test_msg)");
     like($fh, qr{^\s{4}set root=\(pxe\)$}m, "Grub2 root ($test_msg)");
     like($fh, qr{^\s{4}$TEST_EFI_LINUX_CMD $kernel_root/mykernel}m, "Kernel loading ($test_msg)");
     like($fh, qr{^\s{4}$test_efi_initrd_cmd $kernel_root/path/to/initrd$}m, "initrd loading ($test_msg)");
