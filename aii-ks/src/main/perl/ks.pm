@@ -566,6 +566,7 @@ sub ksuserscript
 
     return unless $config->elementExists ($path);
     my $url = $config->getElement ($path)->getValue;
+    $url =~ s{LOCALHOST}{LOCALHOST}e;
     $this_app->debug (5, "User defined script to be fetched ",
                       "from $url for path $path");
 
