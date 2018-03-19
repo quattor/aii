@@ -196,7 +196,11 @@ sub app_options
          DEFAULT => undef },
 
        { NAME    => "$PROTECTED_OPTION=s",
-         HELP    => 'required when removing/configuring/(re)installing protected nodes otherwise the operation will fail. A node is protected when /system/aii/protected is set, and the value of that path must be passed to this parameter. Consequently only those protected nodes with same confirmation can be modified in a single shellfe command invocation.',
+         HELP    => 'required when removing/configuring/(re)installing protected nodes otherwise ' .
+                    'the operation will fail. A node is protected when /system/aii/protected is set, ' .
+                    'and the value of that path must be passed to this parameter. Consequently only ' .
+                    'those protected nodes with same confirmation can be modified in a single shellfe '.
+                    'command invocation.',
          DEFAULT => undef },
 
          # other common options
@@ -214,7 +218,8 @@ sub app_options
          DEFAULT => undef },
 
        { NAME    => 'use_fqdn',
-         HELP    => 'Use the fully qualified domain name in the profile name (if specified). Enable it if you use a regular expression with a dot as "host name"',
+         HELP    => 'Use the fully qualified domain name in the profile name (if specified). Enable it if you ' .
+                    'use a regular expression with a dot as "host name"',
          DEFAULT => undef },
 
        { NAME    => 'profile_prefix=s',
