@@ -131,6 +131,8 @@ installation.
 URLs where the user-specific scripts can be fetched from. Please note
 that these scripts are not hooks!
 
+LOCALHOST will be substituted with the local hostname.
+
 =item * timezone : string
 
 Your local timezone, e.g: Europe/Madrid.
