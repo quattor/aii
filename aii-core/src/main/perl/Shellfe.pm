@@ -54,7 +54,7 @@ use constant LOCKFILE   => '/var/lock/quattor/aii';
 use constant RETRIES    => 6;
 use constant TIMEOUT    => 60;
 use constant PARTERR_ST => 16;
-use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status);
+use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status metaconfig);
 use constant INCLUDE    => 'include';
 use constant CAFILE     => 'ca_file';
 use constant CADIR      => 'ca_dir';
@@ -169,6 +169,12 @@ sub app_options
          HELP    => 'File with the nodes requiring livecd target',
          DEFAULT => undef },
 
+       { NAME    => 'metaconfig=s',
+         HELP    => 'Node(s) to generate all metaconfig services for, ' .
+                    'relative to the cachemanager cachepath for that host' .
+                    '(can be a regexp)',
+         DEFAULT => undef },
+
        { NAME    => CDBURL.'=s',
          HELP    => 'URL for CDB location',
          DEFAULT => undef },
@@ -196,7 +202,11 @@ sub app_options
          DEFAULT => undef },
 
        { NAME    => "$PROTECTED_OPTION=s",
-         HELP    => 'required when removing/configuring/(re)installing protected nodes otherwise the operation will fail. A node is protected when /system/aii/protected is set, and the value of that path must be passed to this parameter. Consequently only those protected nodes with same confirmation can be modified in a single shellfe command invocation.',
+         HELP    => 'required when removing/configuring/(re)installing protected nodes otherwise ' .
+                    'the operation will fail. A node is protected when /system/aii/protected is set, ' .
+                    'and the value of that path must be passed to this parameter. Consequently only ' .
+                    'those protected nodes with same confirmation can be modified in a single shellfe '.
+                    'command invocation.',
          DEFAULT => undef },
 
          # other common options
@@ -214,7 +224,8 @@ sub app_options
          DEFAULT => undef },
 
        { NAME    => 'use_fqdn',
-         HELP    => 'Use the fully qualified domain name in the profile name (if specified). Enable it if you use a regular expression with a dot as "host name"',
+         HELP    => 'Use the fully qualified domain name in the profile name (if specified). Enable it if you ' .
+                    'use a regular expression with a dot as "host name"',
          DEFAULT => undef },
 
        { NAME    => 'profile_prefix=s',
@@ -450,26 +461,32 @@ sub plugin_handler {
 }
 
 # Runs $method on the plug-in given at $path for $node. Arguments:
-# $_[1]: the name of the host being configured.
-# $_[2]: the PAN path of the plug-in to be run. If the path does not
-# exist, nothing will be done.
-# $_[3]: the method to be run.
+# 1: the node state (value of hash returned by fetch_profiles)
+# 2: the PAN path of the plug-in to be run. If the path does not
+#     exist, nothing will be done.
+# 3: the method to be run.
+# 4: optional modulename: when none is provided, the first sorted key
+#     of the PAN path will be used.
 sub run_plugin
 {
-    my ($self, $st, $path, $method) = @_;
+    my ($self, $st, $path, $method, $modulename) = @_;
 
     return unless $st->{configuration}->elementExists ($path);
 
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
-    my %rm = $st->{configuration}->getElement ($path)->getHash;
-    my $modulename = (sort keys (%rm))[0];
+    if (!defined($modulename)) {
+        my %rm = $st->{configuration}->getElement ($path)->getHash;
+        $modulename = (sort keys (%rm))[0];
+    }
+
     if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
         $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
         $self->{status} = PARTERR_ST;
         return;
     }
 
+    local $@;
     if (!exists $self->{plugins}->{$modulename}) {
         $self->debug (4, "Loading plugin module $modulename");
         eval (USEMODULE .  $modulename);
@@ -480,6 +497,7 @@ sub run_plugin
         }
         $self->debug (4, "Instantiating $modulename");
         my $class = MODULEBASE.$modulename;
+
         # Plugins as derived from NCM::Component, so they need a name argument
         my $module = eval { $class->new($modulename) };
         if ($@) {
@@ -928,6 +946,11 @@ sub _configure
     $self->set_cache_time($node, $when) unless $self->option('noaction');
 }
 
+sub _metaconfig
+{
+    my ($self, $node, $st) = @_;
+    $self->run_plugin($st, '/software/components/metaconfig', 'aii_command', 'metaconfig');
+}
 
 sub get_cache_time {
     my ($self, $node) = @_;
