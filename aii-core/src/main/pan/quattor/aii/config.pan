@@ -19,7 +19,7 @@ include 'quattor/functions/filesystem';
 include 'quattor/aii/schema';
 
 # First include AII site configuration, if any
-variable AII_CONFIG_SITE ?= null;
+variable AII_CONFIG_SITE ?= undef;
 include if_exists(to_string(AII_CONFIG_SITE));
 
 # For convenience
