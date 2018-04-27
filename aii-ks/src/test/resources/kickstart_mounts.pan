@@ -24,6 +24,11 @@ prefix "/system/aii/osinstall/ks";
             "size", 100,
             "type", "primary", # no defaults !
         ),
+        "sdb2", dict(
+            "holding_dev", "sdb",
+            "size", 100,
+            "type", "primary", # no defaults !
+        ),
         escape("mapper/special1"), dict(
             "holding_dev", escape("mapper/special"),
             "type", "primary",
@@ -37,7 +42,17 @@ prefix "/system/aii/osinstall/ks";
             "stripe_size", 64,
             ),
     ),
-
+    "volume_groups", dict(
+        "vg0", dict (
+            "device_list", list ("partitions/sdb2"),
+            )
+        ),
+    "logical_volumes", dict(
+        "lv0", dict (
+            "size", 800,
+            "volume_group", "vg0"
+            ),
+        ),
 );
 
 "/system/filesystems" = list (
@@ -71,6 +86,17 @@ prefix "/system/aii/osinstall/ks";
         "mountopts", "auto",
         "block_device", escape("mapper/special1"),
         "aii", false,
+        "type", "ext4",
+        "freq", 0,
+        "pass", 1
+    ),
+    dict(
+        "mount", true,
+        "mountpoint", "/evenfs",
+        "preserve", true,
+        "format", false,
+        "mountopts", "auto",
+        "block_device", "logical_volumes/lv0",
         "type", "ext4",
         "freq", 0,
         "pass", 1
