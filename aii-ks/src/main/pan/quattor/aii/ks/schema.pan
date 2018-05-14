@@ -134,4 +134,5 @@ type structure_ks_ks_info = {
     'bonding' ? boolean
     'lvmforce' ? boolean
     'init_spma_ignore_deps' ? boolean
+    'leavebootorder' ? boolean
 };

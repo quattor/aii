@@ -449,6 +449,9 @@ EOF
         if $tree->{bootloader_append};
     print " --password=\"$tree->{bootloader_password}\" --iscrypted"
         if $tree->{bootloader_password};
+    if ($tree->{leavebootorder} && $version >= ANACONDA_VERSION_EL_7_0) {
+        print " --leavebootorder";
+    }
     print "\n";
 
     if ($tree->{xwindows}) {
