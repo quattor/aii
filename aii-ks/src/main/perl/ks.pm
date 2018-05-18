@@ -230,8 +230,7 @@ sub ksnetwork_get_dev_net
 
     }
 
-    return ($dev, $net, @networkopts);
-
+    return ($dev, $ipdev, $ifaces->{$dev}, $net, @networkopts);
 }
 
 
@@ -260,7 +259,7 @@ sub ksnetwork
 
     push(@network, "--bootproto=static");
 
-    my ($dev, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
+    my ($dev, $ipdev, $devnet, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
     push(@network, @networkopts);
 
     $this_app->debug (5, "Node will boot from $dev");
@@ -277,11 +276,15 @@ sub ksnetwork
     # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
     # (do this here, i.e. after --device is set)
-    my $brdev = $net->{bridge} || $net->{ovs_bridge};
+    my $brdev = $devnet->{bridge} || $devnet->{ovs_bridge};
     if ($brdev) {
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
-        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        if ($ipdev && $ipdev ne $brdev) {
+            $this_app->verbose("Using ipdev $ipdev configured instead of bridge device $brdev")
+        } else {
+            $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        }
         # warning: $dev is changed here to the bridge device to create correct log
         # messages in remainder of this method. as there is not bridge device
         # in anaconda phase, the new value of $dev is not an actual network device!

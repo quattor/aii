@@ -683,7 +683,10 @@ sub Unconfigure
         };
     }
 
+<<<<<<< HEAD
     $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
+=======
+>>>>>>> pxelinux/ks: support ipdev: use ip configuration from ipdev device instead of ksdevice (or guessed)
     return 1;
 }
 
