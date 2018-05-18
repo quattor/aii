@@ -13,7 +13,7 @@ include 'pan/types';
 type structure_pxelinux_pxe_info = {
     "initrd" : string
     "kernel" : string
-    "ksdevice"  : string with match (SELF, ('^(bootif|link|' +
+    "ksdevice" : string with match (SELF, ('^(bootif|link|' +
         '(eth|seth|em|bond|br|vlan|usb|ib|p\d+p|' +
         'en(o|(p\d+)?s(?:\d+f)?(?:\d+d)?)' +
         ')\d+(\.\d+)?|enx\p{XDigit}{12})$')) || is_hwaddr (SELF)
@@ -25,4 +25,7 @@ type structure_pxelinux_pxe_info = {
     "firmware" ? string
     "setifnames" ? boolean
     "updates" ? type_absoluteURI
+    @{Get (static) IP details used for ksdevice configuration form this device.
+      For most network configs like bridges and bonds, this is not required.}
+    "ipdev" ? string with exists(format("/system/network/interfaces/%s", SELF))
 };
