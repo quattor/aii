@@ -1601,6 +1601,40 @@ EOF
         ksfix_grub;
     }
 
+    # restore UEFI pxeboot first
+    if ($tree->{pxeboot}) {
+        print <<EOF;
+#
+# restore pxeboot as first boot order in case efibootmgr is around
+#
+efibootmgr=/usr/sbin/efibootmgr
+function join { local IFS=","; echo "\$*"; }
+if [ -x \$efibootmgr ]; then
+    ordertxt=\$(\$efibootmgr |grep BootOrder | sed "s/.*: \\?//")
+    order=(\$(echo \$ordertxt | tr ',' ' '))
+    pxe=(\$(\$efibootmgr -v | grep -ie ' \\(NIC\\|PXE\\|Network\\) ' | sed "s/*\\? .*//;s/^Boot//" | sort ))
+    neworder=("\${pxe[@]}")
+    for idx in "\${order[@]}"; do
+        add=1
+        for pxeidx in "\${pxe[@]}"; do
+            if [ \$pxeidx == \$idx ]; then
+                add=0
+            fi
+        done
+        if [ \$add -eq 1 ]; then
+            neworder+=(\$idx)
+        fi
+    done
+    newordertxt=\$(join "\${neworder[@]}")
+    if [ \$newordertxt != \$ordertxt ]; then
+        echo "Found PXE indices \${pxe[@]}; old bootorder \$ordertxt, new bootorder \$newordertxt"
+        \$efibootmgr -o \$newordertxt
+    fi
+fi
+
+EOF
+    }
+
     # delete services, if any
     # on EL7 the services disabled via the kickstart commands only
     if ($tree->{disable_service} && $version < ANACONDA_VERSION_EL_7_0) {

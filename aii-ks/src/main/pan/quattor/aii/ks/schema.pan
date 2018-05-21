@@ -140,4 +140,7 @@ type structure_ks_ks_info = {
     'lvmforce' ? boolean
     'init_spma_ignore_deps' ? boolean
     'leavebootorder' ? boolean
+    @{pxeboot first: set the PXE boot device as first device. Only
+      for supported platforms (e.g. UEFI)}
+    'pxeboot' ? boolean
 };
