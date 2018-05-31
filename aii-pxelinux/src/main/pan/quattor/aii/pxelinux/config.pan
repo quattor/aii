@@ -65,7 +65,7 @@ variable AII_NBP_LABEL ?= {
         'fedora', 'Fedora',
         'sl', 'Scientific Linux',
         'slc', 'Scientific Linux CERN',
-        'rhel', 'Red Hat Entreprise Linux',
+        'rhel', 'Red Hat Enterprise Linux',
     );
 
     toks =  matches(AII_OSINSTALL_OS_VERSION, '^(slc?|rhel|centos|fedora)(\w+?)[_\-](.*)');
