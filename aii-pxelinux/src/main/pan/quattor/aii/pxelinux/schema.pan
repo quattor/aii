@@ -13,10 +13,7 @@ include 'pan/types';
 type structure_pxelinux_pxe_info = {
     "initrd" : string
     "kernel" : string
-    "ksdevice" : string with match (SELF, ('^(bootif|link|' +
-        '(eth|seth|em|bond|br|vlan|usb|ib|p\d+p|' +
-        'en(o|(p\d+)?s(?:\d+f)?(?:\d+d)?)' +
-        ')\d+(\.\d+)?|enx\p{XDigit}{12})$')) || is_hwaddr (SELF)
+    "ksdevice"  : string with match(SELF, '^(bootif|link)$') || is_hwaddr(SELF) || exists("/system/network/interfaces/" + escape(SELF))
     "kslocation" : type_absoluteURI
     "label"  : string
     "append" ? string
