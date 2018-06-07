@@ -2,8 +2,8 @@
 
 use EDG::WP4::CCM::Path qw (escape unescape);
 use NCM::Filesystem;
-use NCM::Partition 16.12.1 qw (partition_sort);
-use NCM::BlockdevFactory qw (build);
+use NCM::Partition qw (partition_sort);
+use NCM::BlockdevFactory 18.3.1 qw (build);
 
 use LC::Exception qw (throw_error);
 use CAF::FileWriter;
@@ -582,6 +582,7 @@ EOF
         }
         if ($version >= ANACONDA_VERSION_EL_7_0) {
              $fstree->{useexisting_md} = 1;
+             $fstree->{useexisting_lv} = 1;
         }
 
         $fstree->print_ks;
