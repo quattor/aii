@@ -163,19 +163,24 @@ sub ksnetwork_get_dev_net
     my @networkopts = ();
     my $version = get_anaconda_version($tree);
 
-    my $dev = $config->getElement("/system/aii/nbp/pxelinux/ksdevice")->getValue;
+    my $pxetree = $config->getTree("/system/aii/nbp/pxelinux");
+    my $ifaces = $config->getTree("/system/network/interfaces");
+
+    my $dev = $pxetree->{ksdevice};
+    my $ipdev = $pxetree->{ipdev};
 
     if ($dev =~ m!(?:[0-9a-f]{2}(?::[0-9a-f]{2}){5})|bootif|link!i) {
         $this_app->error("Invalid ksdevice $dev for static ks configuration.");
         return;
     }
 
-    if (! $config->elementExists("/system/network/interfaces/$dev")) {
+    if (!$ifaces->{$dev}) {
         $this_app->error("ksdevice $dev missing network details for static ks configuration.");
         return;
     }
 
-    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    $this_app->verbose("Using IP config from $ipdev instead of $dev.") if $ipdev;
+    my $net = $ifaces->{$ipdev || $dev};
 
     # check for bonding
     my $bonddev = $net->{master};
@@ -194,15 +199,18 @@ sub ksnetwork_get_dev_net
         $this_app->debug (5, "Ksdevice $dev is a bonding slave, node will boot from bonding device $bonddev");
 
         # network settings are part of the bond master
-        my $intfs = $config->getElement("/system/network/interfaces")->getTree;
-        $net = $intfs->{$bonddev};
+        if ($ipdev && $ipdev ne $bonddev) {
+            $this_app->verbose("Using ipdev $ipdev configured instead of bond device $bonddev")
+        } else {
+            $net = $ifaces->{$bonddev};
+        }
 
         # gather the slaves, the ksdevice is put first
         my @slaves;
         push(@slaves, $dev);
-        foreach my $intf (sort keys %$intfs) {
-            push (@slaves, $intf) if ($intfs->{$intf}->{master} &&
-                                      $intfs->{$intf}->{master} eq $bonddev &&
+        foreach my $intf (sort keys %$ifaces) {
+            push (@slaves, $intf) if ($ifaces->{$intf}->{master} &&
+                                      $ifaces->{$intf}->{master} eq $bonddev &&
                                       !(grep { $_ eq $intf } @slaves));
         };
 

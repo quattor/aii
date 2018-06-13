@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(kickstart_el7_static_ip);
+use Test::Quattor qw(kickstart_el7_static_ip kickstart_el7_static_ip_ipdev);
 use NCM::Component::ks;
 use CAF::FileWriter;
 use CAF::Object;
@@ -45,6 +45,14 @@ like($fh, qr{^sshpw\s--username=root\sveryverysecret\s--iscrypted}m, "sshd enabl
 like($fh, qr{^eula --agreed$}m, 'eula agreed');
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^EENNDD\n}m, 'installtype present');
+
+
+my $cfg2 = get_config_for_profile('kickstart_el7_static_ip_ipdev');
+
+NCM::Component::ks::kscommands($cfg2);
+like($fh, qr{network --bootproto=static --device=eth0 --hostname=x.y --nameserver=nm1 --ip=9.8.7.6 --netmask=255.0.0.0 --gateway=1.2.3.4}m,
+     "ip config from ipdev");
+
 
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;

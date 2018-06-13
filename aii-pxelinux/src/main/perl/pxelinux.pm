@@ -66,7 +66,7 @@ sub _variant_option
 }
 
 # Test if a variant is enabled
-# A variant is enabled if the configuration option defined in its 'nbpdir' 
+# A variant is enabled if the configuration option defined in its 'nbpdir'
 # attribute is defined and is not 'none'
 sub _variant_enabled
 {
@@ -171,21 +171,30 @@ sub _link_path
 # (EL7+ only)
 sub _pxe_ks_static_network
 {
-    my ($self, $config, $dev) = @_;
+    my ($self, $config, $dev, $ipdev) = @_;
 
     my $fqdn = $self->_get_fqdn($config);
 
     my $bootdev = $dev;
 
-    my $net = $config->getElement("/system/network/interfaces/$dev")->getTree;
+    my $ifaces = $config->getTree("/system/network/interfaces");
+
+    my $devnet = $ifaces->{$dev};
+    my $net = $ifaces->{$ipdev || $dev};
 
     # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
-    my $brdev = $net->{bridge} || $net->{ovs_bridge};
+    my $brdev = $devnet->{bridge} || $devnet->{ovs_bridge};
     if ($brdev) {
         $self->debug (2, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
-        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        # network settings are part of the bond master
+        if ($ipdev && $ipdev ne $brdev) {
+            $this_app->verbose("Using ipdev $ipdev configured instead of bridge device $brdev")
+        } else {
+            $net = $ifaces->{$brdev};
+        }
+
         # warning: $dev is changed here to the bridge device to create correct log
         # messages in remainder of this method. as there is not bridge device
         # in anaconda phase, the new value of $dev is not an actual network device!
@@ -371,19 +380,22 @@ sub _kernel_params_ks
         }
 
         if($kst->{bootproto} eq 'static') {
-            if ($ksdev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
+            # ksdev should not change after this
+            my $ipdev = $pxe_config->{ipdev};
+
+            if ($ipdev && $ipdev =~ m/^((?:(?:[0-9a-f]{2}[:-]){5}[0-9a-f]{2})|bootif|link)$/i) {
                 $self->error("Invalid ksdevice $ksdev for static ks configuration.");
             } else {
-                my $static = $self->_pxe_ks_static_network($cfg, $ksdev);
-                push(@kernel_params,"ip=$static") if ($static);
+                my $static = $self->_pxe_ks_static_network($cfg, $ksdev, $ipdev);
+                push(@kernel_params, "ip=$static") if ($static);
             }
         } elsif ($kst->{bootproto} =~ m/^(dhcp6?|auto6|ibft)$/) {
-            push(@kernel_params,"ip=$kst->{bootproto}");
+            push(@kernel_params, "ip=$kst->{bootproto}");
         }
 
         my $nms = $cfg->getElement("/system/network/nameserver")->getTree;
         foreach my $ns (@$nms) {
-            push(@kernel_params,"nameserver=$ns");
+            push(@kernel_params, "nameserver=$ns");
         }
     }
 
@@ -392,8 +404,8 @@ sub _kernel_params_ks
 	    $custom_append =~ s/LOCALHOST/$server/g;
 	    push @kernel_params, $custom_append;
     }
-    
-    return @kernel_params;    
+
+    return @kernel_params;
 }
 
 # create a list with all required kernel parameters, based on the configuration
@@ -616,9 +628,9 @@ sub Status
                                     $self->_variant_attribute('name', $variant), ")");
         }
     }
-    
+
     $self->_exec_userhooks ($cfg, STATUS_HOOK_PATH);
-    
+
     return 1;
 }
 
@@ -663,7 +675,7 @@ sub Unconfigure
         $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
     }
 
-    return 1;        
+    return 1;
 }
 
 
