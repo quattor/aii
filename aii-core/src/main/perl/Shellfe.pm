@@ -179,10 +179,6 @@ sub app_options
          HELP    => 'URL for CDB location',
          DEFAULT => undef },
 
-       { NAME    => 'localnclcache=s',
-         HELP    => 'Local cache for NCL library',
-         DEFAULT => '/usr/lib/aii/aii_ncl_cache' },
-
        { NAME    => 'file=s',
          HELP    => 'File with the nodes and the actions to perform',
          DEFAULT => undef },
