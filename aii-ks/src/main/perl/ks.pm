@@ -872,16 +872,19 @@ EOF
     my $kstree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($kstree);
 
+    print <<EOF;
+
+# De-activate logical volumes. Needed on RHEL6, see:
+# https://bugzilla.redhat.com/show_bug.cgi?id=652417
+lvm vgchange -an
+EOF
+
     # mdadm devices should be stopped at the end of the pre-ks phase on EL7
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         print "mdadm --stop --scan\n";
     }
 
     print <<EOF;
-
-# De-activate logical volumes. Needed on RHEL6, see:
-# https://bugzilla.redhat.com/show_bug.cgi?id=652417
-lvm vgchange -an
 echo 'End of pre section'
 
 # Drain remote logger (0 if not relevant)
