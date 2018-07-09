@@ -764,32 +764,6 @@ rereadpt () {
     sleep 2
 }
 
-# Align the start of a partition
-align () {
-    local disk path n align_sect START ALIGNED
-    # By passing disk/path/n separately, we don't have to worry about part_prefix
-    disk="$1"
-    path="$2"
-    n="$3"
-    align_sect="$4"
-
-    START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
-    ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
-    if [ $START != $ALIGNED ]; then
-        echo "-----------------------------------"
-        echo "Aligning $path: old start sector: $START, new: $ALIGNED"
-        fdisk $disk <<end_of_fdisk
-x
-b
-$n
-$ALIGNED
-w
-end_of_fdisk
-
-        rereadpt $disk
-    fi
-}
-
 disksize_MiB () {
     local path BYTES MB RET
     RET=0
@@ -975,9 +949,6 @@ sub ksprint_filesystems
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (partition_sort(@part));
 
-    foreach (partition_sort(@part)) {
-        $_->align_ks if $_->can('align_ks');
-    }
     $_->create_ks foreach @filesystems;
 
     # Ensure that all LVMs are active before formatting anything, or
