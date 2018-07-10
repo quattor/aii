@@ -404,13 +404,11 @@ sub kscommands
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-        if ($proxyhost) {
+        if ($proxyhost && $proxytype eq "reverse") {
             if ($proxyport) {
                 $proxyhost .= ":$proxyport";
             }
-            if ($proxytype eq "reverse") {
-                $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-            }
+            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
         }
     }
 
@@ -423,7 +421,18 @@ rootpw --iscrypted $tree->{rootpw}
 EOF
 
     if ($tree->{repo}) {
-        print "repo $_ \n" foreach @{$tree->{repo}};
+        foreach my $url (@{$tree->{repo}}) {
+            if ($url =~ /http/) {
+                my ($proxyhost, $proxyport, $proxytype) = proxy($config);
+                if ($proxyhost && $proxytype eq "reverse") {
+                    if ($proxyport) {
+                        $proxyhost .= ":$proxyport";
+                    }
+                    $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+                }
+            }
+            print "repo $url\n";
+        }
     }
 
     if ($tree->{cmdline}) {
