@@ -676,9 +676,9 @@ sub Unconfigure
                 };
             };
         };
-        $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
     }
 
+    $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
     return 1;
 }
 
