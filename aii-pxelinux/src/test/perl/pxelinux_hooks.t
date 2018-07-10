@@ -40,8 +40,8 @@ foreach my $method (@methods) {
 
     ksuserhooks($cfg, $hook_path);
     my $hookargs = get_ks_userhook_args();
-    isa_ok($hookargs->[0], 'EDG::WP4::CCM::Configuration', 
-           "First arg passed to ksuserhooks in method $method is a CCM::Configuration instance");
+    isa_ok($hookargs->[0], 'EDG::WP4::CCM::CacheManager::Configuration',
+           "First arg passed to ksuserhooks in method $method is a CCM::CacheManager::Configuration instance");
     my $hp = '/system/aii/hooks/'.($method eq 'Unconfigure' ? 'remove' : lc($method));
     is($hookargs->[1], $hp, "Second arg passed to userhooks in method $method is path $hp");
 };
