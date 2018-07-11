@@ -496,9 +496,7 @@ EOF
     print join(" ",ksnetwork ($tree, $config)), "\n";
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
-    if ($tree->{clearmbr}) {
-        print "zerombr", $version >= ANACONDA_VERSION_EL_7_0 ? "" : " yes", "\n";
-    }
+    print "zerombr\n" if ($tree->{clearmbr});
     if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         print "ignoredisk --drives=",
