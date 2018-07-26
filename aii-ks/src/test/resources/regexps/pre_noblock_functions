@@ -117,7 +117,7 @@ Test the functions in the pre section
 ^\s{4}fi$
 ^\s{4}echo "\[INFO\] wipe path \$path with SIZE \$SIZE and ENDSEEK \$ENDSEEK"$
 ^\s{4}\# dd with 1 MiB blocksize \(unit used by disksize_MiB and faster then e.g. bs=512\)$
-^\s{4}dd if=/dev/zero of="\$path" bs=1048576 count=\$ENDSEEK_OFFSET 2>/dev/null$
-^\s{4}dd if=/dev/zero of="\$path" bs=1048576 seek=\$ENDSEEK 2>/dev/null$
+^\s{4}dd if=/dev/zero of="\$path" bs=1048576 count=\$ENDSEEK_OFFSET$
+^\s{4}dd if=/dev/zero of="\$path" bs=1048576 seek=\$ENDSEEK$
 ^\s{4}sync$
 ^\}$
