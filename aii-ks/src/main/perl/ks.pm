@@ -853,8 +853,8 @@ wipe_metadata () {
     fi
     echo "[INFO] wipe path $path with SIZE $SIZE and ENDSEEK $ENDSEEK"
     # dd with 1 MiB blocksize (unit used by disksize_MiB and faster then e.g. bs=512)
-    dd if=/dev/zero of="$path" bs=1048576 count=$ENDSEEK_OFFSET 2>/dev/null
-    dd if=/dev/zero of="$path" bs=1048576 seek=$ENDSEEK 2>/dev/null
+    dd if=/dev/zero of="$path" bs=1048576 count=$ENDSEEK_OFFSET
+    dd if=/dev/zero of="$path" bs=1048576 seek=$ENDSEEK
     sync
 }
 
