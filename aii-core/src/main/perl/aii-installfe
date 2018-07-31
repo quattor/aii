@@ -66,6 +66,16 @@ expressions can be used.
 Select boot from local disk for hosts listed on <filename>. Hosts have to
 be listed one per line. Lines starting with # are comment.
 
+=item --cdburl <url>
+
+URL for CDB location
+
+Known profiles are determined via the C<profiles-info.xml> file.
+
+In case the C<dir:///path/profile/directory> is used,
+all profiles in that directory are considered usable via C<file://>
+url.
+
 =item --configure <hostname|regexp>
 
 Configure <hostname>. Perl regular expressions can be used.
@@ -280,6 +290,10 @@ eval {
 sub app_options {
 
     push(my @array,
+
+        { NAME    => 'cdburl=s',
+          HELP    => 'URL for CDB location',
+          DEFAULT => undef },
 
         { NAME    => 'configure=s',
           HELP    => 'Node(s) to be configured (can be a regexp)',
@@ -540,6 +554,8 @@ sub parse_options {
     #
     # retrieve options for shellfe
     #
+
+    push(@Options, '--cdburl', $this_app->option('cdburl'))      if $this_app->option('cdburl');
 
     push(@Options, '--nodhcp')      if $this_app->option('nodhcp');
     push(@Options, '--nonbp')       if $this_app->option('nonbp');
