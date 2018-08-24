@@ -345,6 +345,8 @@ variable AII_OSINSTALL_PACKAGES ?= list(
 "packages" ?= AII_OSINSTALL_PACKAGES;
 "packages" = {
     if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
+        # grubby is used to disable selinux on with kernel parameter
+        append('grubby');
         append('-selinux*');
     };
     # SMTP support requires mailx
