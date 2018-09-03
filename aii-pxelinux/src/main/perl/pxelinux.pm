@@ -591,6 +591,8 @@ sub Status
 
     foreach my $variant_constant (@PXE_VARIANTS) {
         my $variant = __PACKAGE__->$variant_constant;
+        next unless $self->_variant_enabled($variant);
+
         my $dir = $self->_variant_option('nbpdir_opt', $variant);
         my $boot = $this_app->option (LOCALBOOT);
         my $fqdn = $self->_get_fqdn($cfg);
@@ -644,6 +646,8 @@ sub Unconfigure
 
     foreach my $variant_constant (@PXE_VARIANTS) {
         my $variant = __PACKAGE__->$variant_constant;
+        next unless $self->_variant_enabled($variant);
+
         my $pxe_config_file = $self->_file_path ($cfg, $variant);
         # Remove the PXEe config file for the current host
         $self->debug(1, "Removing PXE config file $pxe_config_file (PXE variant=",
