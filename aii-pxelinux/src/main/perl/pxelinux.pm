@@ -73,7 +73,7 @@ sub _variant_enabled
     my ($self, $variant) = @_;
     my $nbpdir = $self->_variant_attribute('nbpdir_opt', $variant);
     $self->debug(2, "Using option '$nbpdir' to check if variant ", $self->_variant_attribute('name',$variant), " is enabled");
-    my $enabled = $this_app->option_exists($nbpdir) &&
+    my $enabled = $this_app->option_exists($nbpdir) && $this_app->option($nbpdir) &&
                   ($this_app->option($nbpdir) ne NBPDIR_VARIANT_DISABLED);
     return $enabled;
 }
