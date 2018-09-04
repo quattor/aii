@@ -49,6 +49,7 @@ use constant USEMODULE  => "use " . MODULEBASE;
 use constant PROFILEINFO => 'profiles-info.xml';
 
 use constant NODHCP     => 'nodhcp';
+use constant DISCOVERY  => '/system/aii/discovery';
 use constant OSINSTALL  => '/system/aii/osinstall';
 use constant NBP        => '/system/aii/nbp';
 use constant CDBURL     => 'cdburl';
@@ -608,6 +609,14 @@ sub dhcp
     my ($self, $st, $cmd, $dhcpmgr) = @_;
 
     my $name = $st->{name};
+
+    # If the profile has a discovery plugin configured, then don't second-guess
+    # it - it may or may not be ISC DHCP
+    if ($st->{configuration}->elementExists(DISCOVERY)) {
+        $self->verbose("Found discovery configuration for path ".DISCOVERY." for $name. Skipping");
+        return;
+    };
+
     my $tree = $st->{configuration}->getTree(DHCPPATH);
     if (! $tree) {
         $self->verbose("No configuration for DHCP path ".DHCPPATH." for $name. Skipping");

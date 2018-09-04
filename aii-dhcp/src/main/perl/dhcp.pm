@@ -5,6 +5,7 @@ use Socket;
 use Exporter;
 use Sys::Hostname;
 use CAF::Lock qw (FORCE_IF_STALE);
+use CAF::FileReader;
 use CAF::FileWriter;
 use CAF::Process;
 
@@ -70,7 +71,7 @@ sub update_dhcp_config_file
         $nodes_regexp .= $node->{NAME} . '|' . $node->{FQDN} . '|';
     }
     $nodes_regexp =~ s/\|$//; # remove last '|'
-    $nodes_regexp = '\\n\s*host\s+(' . $nodes_regexp . ')\s*\{[^}]*\}';
+    $nodes_regexp = '\\n\s*host\s+(' . $nodes_regexp . ')\s*(\{(?:[^{}]|(?2))*\})';
     $text =~ s/$nodes_regexp//gm;
 
     #
@@ -136,6 +137,11 @@ sub update_dhcp_config_file
                 # TFTP server
                 if ($node->{ST_IP_TFTP}) {
                     push @newnodes, "$indent\t  next-server $node->{ST_IP_TFTP};";
+                }
+
+                # DHCP filename option
+                if ($node->{FILENAME}) {
+                    push @newnodes, "$indent\t  filename \"$node->{FILENAME}\";";
                 }
 
                 # additional options
@@ -255,14 +261,14 @@ sub update_dhcp_config {
     }
     $self->debug(3, "Locked dhcp configuration");
     $self->debug(3,"DHCP configuration file : $filename");
-    if (!open(FILE, "< $filename")) {
+    my $fh = CAF::FileReader->new($filename, log => $self);
+    if ($EC->error()) {
         $self->error("dhcp: update configuration: ".
                      "file access error $filename");
         return(1);
     }
-    local $/ = undef;
-    $text = <FILE>;
-    close (FILE);
+    $text = "$fh";
+    $fh->close();
 
     #
     # Add/removal of nodes
@@ -273,17 +279,9 @@ sub update_dhcp_config {
     }
 
     #
-    # Backup the old one
-    #
-    if (!rename ($filename, $filename . '.pre_aii')) {
-        $self->error("dhcp: error creating backup copy $filename.pre_aii");
-        return(1);
-    }
-
-    #
     # Write the new dhcp configuration file
     #
-    my $file = CAF::FileWriter->open($filename, mode => 0664, log => $this_app);
+    my $file = CAF::FileWriter->new($filename, mode => 0664, log => $this_app, backup => '.pre_aii');
     $file->print($text);
     $file->close();
 
@@ -312,11 +310,23 @@ sub Configure
     }
     my $ip = $self->get_ip($bootable, $tree);
 
+    my $server_ip = gethostbyname(hostname());
+    $server_ip = inet_ntoa($server_ip) if defined($server_ip);
+    if (!defined($server_ip)) {
+        $self->error("aii-dhcp: failed to obtain own IP address");
+        return;
+    }
+
     my $opts = $config->getElement("/system/aii/dhcp")->getTree();
     my $tftpserver = "";
+    my $filename = "";
     my $additional = "";
     if ($opts->{tftpserver}) {
         $tftpserver = $opts->{tftpserver};
+    }
+    if ($opts->{filename}) {
+        $filename = $opts->{filename};
+        $filename =~ s/BOOTSRVIP/$server_ip/;
     }
     if ($opts->{options}) {
         foreach my $k (sort keys %{$opts->{options}}) {
@@ -331,6 +341,7 @@ sub Configure
         IP         => unpack('N', Socket::inet_aton($ip)),
         MAC        => $cards->{$bootable}->{hwaddr},
         ST_IP_TFTP => $tftpserver,
+        FILENAME   => $filename,
         MORE_OPT   => $additional,
     };
     if ($this_app->option('use_fqdn')) {
@@ -373,7 +384,7 @@ sub Unconfigure
         IP   => $ip,
     };
     $self->update_dhcp_config([], [$nodeconfig]);
-    return 0;
+    return 1;
 }
 
 1;

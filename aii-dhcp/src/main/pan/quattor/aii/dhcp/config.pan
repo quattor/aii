@@ -2,24 +2,31 @@
 # ${developer-info}
 # ${author-info}
 # ${build-info}
-template quattor/aii/${project.artifactId}/config;
+template quattor/aii/dhcp/config;
 
-include 'quattor/aii/${project.artifactId}/schema';
+include 'quattor/aii/dhcp/schema';
 
-# TFTP server
-# This is optional. Only it is necessary if your TFTP server is running on
-# a different machine than the DHCP server
-#
-# "/system/aii/dhcp/options/tftpserver" = "tftp.mydomain.org"
-#
+bind "/system/aii/discovery/dhcp" = structure_dhcp_module_info;
+
+prefix "/system/aii/discovery/dhcp";
+
+@documentation{
+    Enable the plugin
+}
+"enabled" = true;
+
+bind "/system/aii/dhcp" = structure_dhcp_dhcp_info;
+
+prefix "/system/aii/dhcp";
+
+@documentation{
+    Override the TFT server for this node
+}
 variable AII_DHCP_TFTPSERVER ?= null;
-"/system/aii/dhcp/options/tftpserver" ?= AII_DHCP_TFTPSERVER;
+"tftpserver" ?= AII_DHCP_TFTPSERVER;
 
-# Additional DHCP options (optional).
-# Warning: They will be added in the host declaration of dhcpd.conf file, so
-# do not forget the ';' at the end
-#
-#"/system/aii/dhcp/addoptions" = "options blu-blo-bli bla;";
-#
+@documentation{
+    Additional options to include in the host definition
+}
 variable AII_DHCP_ADDOPTIONS ?= null;
-"/system/aii/dhcp/options/addoptions" ?= AII_DHCP_ADDOPTIONS;
+"options" ?= AII_DHCP_ADDOPTIONS;
