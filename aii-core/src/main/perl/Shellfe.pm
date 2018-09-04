@@ -49,6 +49,7 @@ use constant USEMODULE  => "use " . MODULEBASE;
 use constant PROFILEINFO => 'profiles-info.xml';
 
 use constant NODHCP     => 'nodhcp';
+use constant DISCOVERY  => '/system/aii/discovery';
 use constant OSINSTALL  => '/system/aii/osinstall';
 use constant NBP        => '/system/aii/nbp';
 use constant CDBURL     => 'cdburl';
@@ -606,6 +607,10 @@ uses the MAC of the first card marked with C<<"boot"=true>>.
 sub dhcp
 {
     my ($self, $st, $cmd, $dhcpmgr) = @_;
+
+    # If the profile has a discovery plugin configured, then don't second-guess
+    # it - it may or may not be ISC DHCP
+    return if $st->{configuration}->elementExists (DISCOVERY);
 
     my $name = $st->{name};
     my $tree = $st->{configuration}->getTree(DHCPPATH);
