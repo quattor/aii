@@ -241,6 +241,7 @@ sub ksnetwork
 {
     my ($tree, $config) = @_;
 
+    my $version = get_anaconda_version($tree);
     my @network = qw(network);
 
     if ($tree->{bootproto} eq 'dhcp') {
@@ -249,6 +250,12 @@ sub ksnetwork
         # the issue here is backwards compatibilty (a.k.a. very old behaviour)
         $this_app->debug (5, "Node configures its network via DHCP");
         push(@network, "--bootproto=dhcp");
+        if ($version >= ANACONDA_VERSION_EL_7_0) {
+            # For some reason, NetworkManager does not want to use the hostname
+            # returned by DHCP on RH7
+            my $fqdn = get_fqdn($config);
+            push(@network, "--hostname=$fqdn");
+        }
         return @network;
     }
 

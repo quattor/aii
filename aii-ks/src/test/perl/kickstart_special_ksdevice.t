@@ -21,7 +21,7 @@ foreach my $type (("bootif", "link", "mac")) {
     ok(! defined($devnet), "ksnetwork_get_dev_net for special ksdevice");
 
     NCM::Component::ks::kscommands($cfg);
-    like($fh, qr{^network\s--bootproto=dhcp$}m, "special ksdevice $type implies dhcp ks");
+    like($fh, qr{^network\s--bootproto=dhcp\s--hostname=x\.y$}m, "special ksdevice $type implies dhcp ks");
 
     # close the selected FH and reset STDOUT
     NCM::Component::ks::ksclose;
