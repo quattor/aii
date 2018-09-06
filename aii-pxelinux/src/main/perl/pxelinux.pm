@@ -416,7 +416,8 @@ sub _kernel_params
     if ($cfg->elementExists(KS)) {
         return $self->_kernel_params_ks($cfg, $variant);
     } else {
-        $self->error("No Kickstart-related parameters in configuration: no kernel parameters added.");
+        # Non-linux hosts may use pxelinux to chain-load their own bootloader
+        $self->debug (1, "No Kickstart-related parameters in configuration: no kernel parameters added.");
         return;
     }
 }
