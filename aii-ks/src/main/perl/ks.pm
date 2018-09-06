@@ -618,7 +618,7 @@ sub ksuserscript
 
     print <<EOS;
 pushd /root
-wget --output-document=userscript $url
+wget --timeout 60 --output-document=userscript $url || fail "Failed to download $url"
 chmod +x userscript
 ./userscript
 rm -f userscript
