@@ -1552,6 +1552,12 @@ sub post_install_script
 
     print <<EOF;
 
+%post --nochroot
+
+test -f /tmp/pre-log.log && cp -a /tmp/pre-log.log /mnt/sysimage/root/
+
+%end
+
 %post
 
 # %post phase. The base system has already been installed. Let's do
