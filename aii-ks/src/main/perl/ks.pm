@@ -968,6 +968,8 @@ sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
 
+    return unless @pkgs;
+
     # DISABLED_REPOS doesn't exist in 13.1
     my $disabled = [];
     if ( $config->elementExists(DISABLED_REPOS) ) {
