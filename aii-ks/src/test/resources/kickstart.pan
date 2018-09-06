@@ -50,7 +50,6 @@ prefix "/system/aii/osinstall/ks";
 "timezone" = "Europe/SomeCity";
 "packages" = list("package", "package2");
 "packages_args" = list("--ignoremissing","--resolvedeps");
-"end_script" = "EENNDD";
 "part_label" = false;
 "volgroup_required" = false;
 

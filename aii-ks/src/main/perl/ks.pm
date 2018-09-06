@@ -49,7 +49,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                CCM_CONFIG_PATH  => "/software/components/ccm",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
-               END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
@@ -541,9 +540,8 @@ EOF
             join ("\n", @packages_in_packages);
     }
     print "\n";
+    print $version >= ANACONDA_VERSION_EL_6_0 ? '%end' : '', "\n";
 
-    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '',
-          "\n";
     return $unprocessed_packages;
 
 }
@@ -852,7 +850,6 @@ EOF
 
     ksuserhooks ($config, PREENDHOOK);
 
-    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     my $kstree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($kstree);
 
@@ -871,7 +868,7 @@ echo 'End of pre section'
 # Drain remote logger (0 if not relevant)
 sleep \$drainsleep
 
-$end
+%end
 
 EOF
 
@@ -1660,14 +1657,13 @@ EOF
     }
 
     ksuserhooks ($config, PREREBOOTHOOK);
-    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     print <<EOF;
 echo 'End of post section'
 
 # Drain remote logger (0 if not relevant)
 sleep \$drainsleep
 
-$end
+%end
 
 EOF
 
