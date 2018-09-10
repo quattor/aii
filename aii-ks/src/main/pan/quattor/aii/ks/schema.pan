@@ -110,6 +110,8 @@ type structure_ks_ks_info = {
     "post_reboot_script" ? type_absoluteURI
     "repo" ? string[]
     "timezone" : string
+    @{NTP servers used by Anaconda}
+    "ntpservers" ? string[]
     "selinux" ? string with match (SELF, "disabled|enforcing|permissive")
     "xwindows" ? structure_ks_ksxinfo
     "disable_service" ? string[]

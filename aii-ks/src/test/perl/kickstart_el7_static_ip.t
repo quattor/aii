@@ -31,7 +31,7 @@ like($fh, qr{^reboot}m, 'reboot after install present');
 like($fh, qr{^skipx}m, 'skip x configuration present');
 like($fh, qr{^auth\s--enableshadow\s--passalgo=sha512}m, 'authentication parameters present');
 like($fh, qr{^install\n^url\s--url http://baseos}m, 'installtype present');
-like($fh, qr{^timezone\s--utc Europe/SomeCity}m, 'timezone present');
+like($fh, qr{^timezone\s--utc Europe/SomeCity\s--ntpservers=10.10.10.10,0.pool.ntp.org}m, 'timezone and NTP servers present');
 like($fh, qr{^rootpw\s--iscrypted veryverysecret}m, 'crypted root password present');
 like($fh, qr{^bootloader\s--location=mbr}m, 'bootloader present');
 like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');

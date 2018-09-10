@@ -410,11 +410,16 @@ sub kscommands
         }
     }
 
+    my $ntp_servers = '';
+    if ($tree->{ntpservers} && $version >= ANACONDA_VERSION_EL_7_0) {
+        $ntp_servers = ' --ntpservers=' . join(',', @{$tree->{ntpservers}});
+    }
+
     print <<EOF;
 install
 $installtype
 reboot
-timezone --utc $tree->{timezone}
+timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 

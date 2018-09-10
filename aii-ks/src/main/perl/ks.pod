@@ -137,6 +137,10 @@ LOCALHOST will be substituted with the local hostname.
 
 Your local timezone, e.g: Europe/Madrid.
 
+=item * ntpservers ? string[]
+
+List of NTP servers to be used by Anaconda.
+
 =item * selinux : string
 
 Enable SELinux on your system. Must be one of "disabled", "enforcing"
