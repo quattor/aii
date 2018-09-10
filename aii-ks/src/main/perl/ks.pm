@@ -1048,6 +1048,11 @@ sub kspostreboot_header
 # and runs the components needed to get the system correctly
 # configured.
 
+# Minimal init script compatibility
+if [ "\\\$1" != start ]; then
+    exit 0
+fi
+
 hostname $fqdn
 
 # Function to be called if there is an error in this phase.
@@ -1633,7 +1638,7 @@ Requires=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/etc/rc.d/init.d/ks-post-reboot
+ExecStart=/etc/rc.d/init.d/ks-post-reboot start
 
 [Install]
 WantedBy=multi-user.target

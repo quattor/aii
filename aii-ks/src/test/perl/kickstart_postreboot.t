@@ -33,6 +33,11 @@ my $header = <<'EOHEADER';
 # and runs the components needed to get the system correctly
 # configured.
 
+# Minimal init script compatibility
+if [ "\$1" != start ]; then
+    exit 0
+fi
+
 hostname x.y
 
 # Function to be called if there is an error in this phase.
