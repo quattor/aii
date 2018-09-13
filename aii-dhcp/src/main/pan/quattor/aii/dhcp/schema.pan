@@ -20,4 +20,6 @@ type structure_dhcp_dhcp_info = {
       the value you specify in templates.
     }
     "options" ? string{}
+    @{Verify hostname in DNS}
+    "verifyhostname" ? boolean
 };

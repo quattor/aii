@@ -295,6 +295,9 @@ sub Configure
 
     my $tree = $config->getElement("/system/network")->getTree();
     my $fqdn = $tree->{hostname} . "." . $tree->{domainname};
+
+    my $opts = $config->getElement("/system/aii/dhcp")->getTree();
+
     # Find the bootable interface
     my $cards = $config->getElement("/hardware/cards/nic")->getTree();
     my $bootable = undef;
@@ -310,6 +313,20 @@ sub Configure
     }
     my $ip = $self->get_ip($bootable, $tree);
 
+    if ($opts->{verifyhostname}) {
+        my $fqdn_ip = gethostbyname($fqdn);
+        $fqdn_ip = inet_ntoa($fqdn_ip) if defined($fqdn_ip);
+        if (defined($fqdn_ip)) {
+            if ($fqdn_ip ne $ip) {
+                $self->error("aii-dhcp: fqdn $fqdn ip $fqdn_ip does not match configured ip $ip");
+            }
+        } else {
+            $self->error("aii-dhcp: failed to obtain IP address for fqdn $fqdn");
+            return;
+        }
+    }
+
+
     my $server_ip = gethostbyname(hostname());
     $server_ip = inet_ntoa($server_ip) if defined($server_ip);
     if (!defined($server_ip)) {
@@ -317,7 +334,6 @@ sub Configure
         return;
     }
 
-    my $opts = $config->getElement("/system/aii/dhcp")->getTree();
     my $tftpserver = "";
     my $filename = "";
     my $additional = "";
