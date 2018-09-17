@@ -1028,7 +1028,8 @@ sub proxy
             $proxyhost = $spma->{proxyhost};
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
-            my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
+            my $localhost = LOCALHOST;  # need a variable, not a constant
+            my ($me) = grep { /\b$localhost\b/ } @proxies;
             $me ||= $proxies[0];
             $proxyhost = $me;
         }
