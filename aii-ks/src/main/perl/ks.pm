@@ -1589,6 +1589,10 @@ EOF
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
 
+    if (exists $tree->{selinux} && $tree->{selinux} eq 'disabled') {
+        print "\n# Disable selinux via kernel parameter\ngrubby --update-kernel=DEFAULT --args=selinux=0\n";
+    };
+
     $self->yum_setup ($config);
     $self->yum_install_packages ($config, $packages);
     ksuserscript ($config, POSTSCRIPT);
