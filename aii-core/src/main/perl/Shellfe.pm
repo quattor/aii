@@ -469,64 +469,66 @@ sub plugin_handler {
 #     of the PAN path will be used.
 sub run_plugin
 {
-    my ($self, $st, $path, $method, $modulename) = @_;
+    my ($self, $st, $path, $method, $only_modulename) = @_;
 
     return unless $st->{configuration}->elementExists ($path);
 
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
-    if (!defined($modulename)) {
-        my %rm = $st->{configuration}->getElement ($path)->getHash;
-        $modulename = (sort keys (%rm))[0];
-    }
+    my %rm = $st->{configuration}->getElement ($path)->getHash;
 
-    if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
-        $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
-        $self->{status} = PARTERR_ST;
-        return;
-    }
+    # Iterate over module names, handling each
+    foreach my $modulename (keys %rm) {
+        next if (defined($only_modulename) && $only_modulename ne $modulename);
 
-    local $@;
-    if (!exists $self->{plugins}->{$modulename}) {
-        $self->debug (4, "Loading plugin module $modulename");
-        eval (USEMODULE .  $modulename);
-        if ($@) {
-            $self->error ("Couldn't load plugin module $modulename for path $path: $@");
+        if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
+            $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
             $self->{status} = PARTERR_ST;
             return;
         }
-        $self->debug (4, "Instantiating $modulename");
-        my $class = MODULEBASE.$modulename;
 
-        # Plugins as derived from NCM::Component, so they need a name argument
-        my $module = eval { $class->new($modulename) };
-        if ($@) {
-            $self->error ("Couldn't call 'new' on plugin module $modulename: $@");
-            $self->{status} = PARTERR_ST;
+        local $@;
+        if (!exists $self->{plugins}->{$modulename}) {
+            $self->debug (4, "Loading plugin module $modulename");
+            eval (USEMODULE .  $modulename);
+            if ($@) {
+                $self->error ("Couldn't load plugin module $modulename for path $path: $@");
+                $self->{status} = PARTERR_ST;
+                return;
+            }
+            $self->debug (4, "Instantiating $modulename");
+            my $class = MODULEBASE.$modulename;
+
+            # Plugins as derived from NCM::Component, so they need a name argument
+            my $module = eval { $class->new($modulename) };
+            if ($@) {
+                $self->error ("Couldn't call 'new' on plugin module $modulename: $@");
+                $self->{status} = PARTERR_ST;
+                return;
+            }
+            $self->{plugins}->{$modulename} = $module;
+        }
+
+        my $plug = $self->{plugins}->{$modulename};
+        if ($plug->can($method)) {
+            $self->debug (4, "Running plugin module $modulename -> $method");
+            $aii_shellfev2::__EC__ = LC::Exception::Context->new;
+            $aii_shellfev2::__EC__->error_handler(sub {
+                $self->plugin_handler($modulename, @_);
+            });
+
+            if (!eval { $plug->$method ($st->{configuration}) }) {
+                $self->error ("Failed to execute plugin module's $modulename $method method");
+                $self->{status} = PARTERR_ST;
+            }
+            if ($@) {
+                $self->error ("Errors running plugin module $modulename $method method: $@");
+                $self->{status} = PARTERR_ST;
+            }
             return;
+        } else {
+            $self->debug(4, "no method $method available for plugin module $modulename");
         }
-        $self->{plugins}->{$modulename} = $module;
-    }
-
-    my $plug = $self->{plugins}->{$modulename};
-    if ($plug->can($method)) {
-        $self->debug (4, "Running plugin module $modulename -> $method");
-        $aii_shellfev2::__EC__ = LC::Exception::Context->new;
-        $aii_shellfev2::__EC__->error_handler(sub {
-            $self->plugin_handler($modulename, @_);
-        });
-
-        if (!eval { $plug->$method ($st->{configuration}) }) {
-            $self->error ("Failed to execute plugin module's $modulename $method method");
-            $self->{status} = PARTERR_ST;
-        }
-        if ($@) {
-            $self->error ("Errors running plugin module $modulename $method method: $@");
-            $self->{status} = PARTERR_ST;
-        }
-        return;
-    } else {
-        $self->debug(4, "no method $method available for plugin module $modulename");
     }
 }
 
