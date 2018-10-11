@@ -165,6 +165,13 @@ variable AII_OSINSTALL_OPTION_TIMEZONE ?= "Europe/Paris";
 
 
 #
+# NTP servers used by Anaconda
+#
+variable AII_OSINSTALL_OPTION_NTPSERVERS ?= null;
+"ntpservers" ?= AII_OSINSTALL_OPTION_NTPSERVERS;
+
+
+#
 # Root Password (for example: aii)
 # by default, derived from the account component
 #

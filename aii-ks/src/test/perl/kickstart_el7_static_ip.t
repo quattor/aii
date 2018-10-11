@@ -31,7 +31,7 @@ like($fh, qr{^reboot}m, 'reboot after install present');
 like($fh, qr{^skipx}m, 'skip x configuration present');
 like($fh, qr{^auth\s--enableshadow\s--passalgo=sha512}m, 'authentication parameters present');
 like($fh, qr{^install\n^url\s--url http://baseos}m, 'installtype present');
-like($fh, qr{^timezone\s--utc Europe/SomeCity}m, 'timezone present');
+like($fh, qr{^timezone\s--utc Europe/SomeCity\s--ntpservers=10.10.10.10,0.pool.ntp.org}m, 'timezone and NTP servers present');
 like($fh, qr{^rootpw\s--iscrypted veryverysecret}m, 'crypted root password present');
 like($fh, qr{^bootloader\s--location=mbr}m, 'bootloader present');
 like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');
@@ -44,7 +44,7 @@ like($fh, qr{^sshpw\s--username=root\sveryverysecret\s--iscrypted}m, "sshd enabl
 
 like($fh, qr{^eula --agreed$}m, 'eula agreed');
 
-like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^EENNDD\n}m, 'installtype present');
+like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^%end\n}m, 'installtype present');
 
 
 my $cfg2 = get_config_for_profile('kickstart_el7_static_ip_ipdev');

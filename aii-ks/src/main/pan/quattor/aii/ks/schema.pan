@@ -110,6 +110,8 @@ type structure_ks_ks_info = {
     "post_reboot_script" ? type_absoluteURI
     "repo" ? string[]
     "timezone" : string
+    @{NTP servers used by Anaconda}
+    "ntpservers" ? string[]
     "selinux" ? string with match (SELF, "disabled|enforcing|permissive")
     "xwindows" ? structure_ks_ksxinfo
     "disable_service" ? string[]
@@ -119,7 +121,6 @@ type structure_ks_ks_info = {
     @{Repositories to disable while SPMA is not available}
     "disabled_repos" : string[] = list()
     "packages_args" : string[] = list("--ignoremissing", "--resolvedeps")
-    "end_script" :  string = ""
     "part_label" : boolean = false # Does the "part" stanza support the --label option?
     @{Set to true if volgroup statement is required in KS config file (must not be present for SL6+)}
     'volgroup_required' : boolean = false

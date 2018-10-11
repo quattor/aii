@@ -20,32 +20,6 @@ Test the functions in the pre section
 ^\s{4}sleep 2$
 ^\}$
 ^$
-^\# Align the start of a partition$
-^align \(\) \{$
-^\s{4}local disk path n align_sect START ALIGNED$
-^\s{4}\# By passing disk/path/n separately, we don't have to worry about part_prefix$
-^\s{4}disk="\$1"$
-^\s{4}path="\$2"$
-^\s{4}n="\$3"$
-^\s{4}align_sect="\$4"$
-^$
-^\s{4}START=`fdisk -ul \$disk \| awk '\{if \(\$1 == "'\$path'"\) print \$2 == "\*" \? \$3: \$2\}'`$
-^\s{4}ALIGNED=\$\(\(\(\$START \+ \$align_sect - 1\) / \$align_sect \* \$align_sect\)\)$
-^\s{4}if \[ \$START != \$ALIGNED \]; then$
-^\s{8}echo "-----------------------------------"$
-^\s{8}echo "Aligning \$path: old start sector: \$START, new: \$ALIGNED"$
-^\s{8}fdisk \$disk <<end_of_fdisk$
-^x$
-^b$
-^\$n$
-^\$ALIGNED$
-^w$
-^end_of_fdisk$
-^$
-^\s{8}rereadpt \$disk$
-^\s{4}fi$
-^\}$
-^$
 ^disksize_MiB \(\) \{$
 ^\s{4}local path BYTES MB RET$
 ^\s{4}RET=0$

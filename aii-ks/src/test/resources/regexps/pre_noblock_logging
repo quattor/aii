@@ -15,4 +15,4 @@ Test the logging in the pre section
 ^\# Drain remote logger \(0 if not relevant\)$
 ^sleep \$drainsleep$
 ^$
-^EENNDD$
+^%end$

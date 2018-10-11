@@ -40,7 +40,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                PKG              => "/software/packages/",
                ACKURL           => "/system/aii/osinstall/ks/ackurl",
                ACKLIST          => "/system/aii/osinstall/ks/acklist",
-               CARDS            => "/hardware/cards/nic",
                SPMA             => "/software/components/spma",
                SPMA_OBSOLETES   => "/software/components/spma/process_obsoletes",
                SPMA_YUMCONF     => "/software/components/spma/main_options",
@@ -50,7 +49,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                CCM_CONFIG_PATH  => "/software/components/ccm",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
-               END_SCRIPT_FIELD => "/system/aii/osinstall/ks/end_script",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
@@ -404,26 +402,40 @@ sub kscommands
     my $installtype = $tree->{installtype};
     if ($installtype =~ /http/) {
         my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-        if ($proxyhost) {
+        if ($proxyhost && $proxytype eq "reverse") {
             if ($proxyport) {
                 $proxyhost .= ":$proxyport";
             }
-            if ($proxytype eq "reverse") {
-                $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-            }
+            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
         }
+    }
+
+    my $ntp_servers = '';
+    if ($tree->{ntpservers} && $version >= ANACONDA_VERSION_EL_7_0) {
+        $ntp_servers = ' --ntpservers=' . join(',', @{$tree->{ntpservers}});
     }
 
     print <<EOF;
 install
 $installtype
 reboot
-timezone --utc $tree->{timezone}
+timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
     if ($tree->{repo}) {
-        print "repo $_ \n" foreach @{$tree->{repo}};
+        foreach my $url (@{$tree->{repo}}) {
+            if ($url =~ /http/) {
+                my ($proxyhost, $proxyport, $proxytype) = proxy($config);
+                if ($proxyhost && $proxytype eq "reverse") {
+                    if ($proxyport) {
+                        $proxyhost .= ":$proxyport";
+                    }
+                    $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+                }
+            }
+            print "repo $url\n";
+        }
     }
 
     if ($tree->{cmdline}) {
@@ -533,9 +545,8 @@ EOF
             join ("\n", @packages_in_packages);
     }
     print "\n";
+    print $version >= ANACONDA_VERSION_EL_6_0 ? '%end' : '', "\n";
 
-    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '',
-          "\n";
     return $unprocessed_packages;
 
 }
@@ -610,7 +621,7 @@ sub ksuserscript
 
     print <<EOS;
 pushd /root
-wget --output-document=userscript $url
+wget --timeout 60 --output-document=userscript $url || fail "Failed to download $url"
 chmod +x userscript
 ./userscript
 rm -f userscript
@@ -755,32 +766,6 @@ rereadpt () {
     sleep 2
 }
 
-# Align the start of a partition
-align () {
-    local disk path n align_sect START ALIGNED
-    # By passing disk/path/n separately, we don't have to worry about part_prefix
-    disk="$1"
-    path="$2"
-    n="$3"
-    align_sect="$4"
-
-    START=`fdisk -ul $disk | awk '{if ($1 == "'$path'") print $2 == "*" ? $3: $2}'`
-    ALIGNED=$((($START + $align_sect - 1) / $align_sect * $align_sect))
-    if [ $START != $ALIGNED ]; then
-        echo "-----------------------------------"
-        echo "Aligning $path: old start sector: $START, new: $ALIGNED"
-        fdisk $disk <<end_of_fdisk
-x
-b
-$n
-$ALIGNED
-w
-end_of_fdisk
-
-        rereadpt $disk
-    fi
-}
-
 disksize_MiB () {
     local path BYTES MB RET
     RET=0
@@ -870,7 +855,6 @@ EOF
 
     ksuserhooks ($config, PREENDHOOK);
 
-    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     my $kstree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($kstree);
 
@@ -889,7 +873,7 @@ echo 'End of pre section'
 # Drain remote logger (0 if not relevant)
 sleep \$drainsleep
 
-$end
+%end
 
 EOF
 
@@ -966,9 +950,6 @@ sub ksprint_filesystems
     # Partitions go first, as of bug #26137
     $_->create_pre_ks foreach (partition_sort(@part));
 
-    foreach (partition_sort(@part)) {
-        $_->align_ks if $_->can('align_ks');
-    }
     $_->create_ks foreach @filesystems;
 
     # Ensure that all LVMs are active before formatting anything, or
@@ -988,6 +969,8 @@ EOF
 sub ksinstall_rpm
 {
     my ($config, @pkgs) = @_;
+
+    return unless @pkgs;
 
     # DISABLED_REPOS doesn't exist in 13.1
     my $disabled = [];
@@ -1064,6 +1047,11 @@ sub kspostreboot_header
 # Script to run at the first reboot. It installs the base Quattor RPMs
 # and runs the components needed to get the system correctly
 # configured.
+
+# Minimal init script compatibility
+if [ "\\\$1" != start ]; then
+    exit 0
+fi
 
 hostname $fqdn
 
@@ -1573,6 +1561,12 @@ sub post_install_script
 
     print <<EOF;
 
+%post --nochroot
+
+test -f /tmp/pre-log.log && cp -a /tmp/pre-log.log /mnt/sysimage/root/
+
+%end
+
 %post
 
 # %post phase. The base system has already been installed. Let's do
@@ -1648,7 +1642,7 @@ Requires=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/etc/rc.d/init.d/ks-post-reboot
+ExecStart=/etc/rc.d/init.d/ks-post-reboot start
 
 [Install]
 WantedBy=multi-user.target
@@ -1677,14 +1671,13 @@ EOF
     }
 
     ksuserhooks ($config, PREREBOOTHOOK);
-    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
     print <<EOF;
 echo 'End of post section'
 
 # Drain remote logger (0 if not relevant)
 sleep \$drainsleep
 
-$end
+%end
 
 EOF
 
