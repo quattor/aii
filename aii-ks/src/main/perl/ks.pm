@@ -1228,9 +1228,9 @@ sub kspostreboot_tail
 success
 
 if [ -x /usr/bin/systemctl ]; then
-    /usr/bin/systemctl mask ks-post-reboot.service
-    # is the reload needed with mask command?
-    /usr/bin/systemctl daemon-reload
+    rm -f /etc/systemd/system/system-update.target.wants/ks-post-reboot.service
+    rm -f /etc/systemd/system.conf.d/ks-post-reboot.conf
+    rmdir --ignore-fail-on-non-empty /etc/systemd/system.conf.d
 else
     rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
 fi
@@ -1240,7 +1240,11 @@ echo 'End of ks-post-reboot'
 # Drain remote logger (0 if not relevant)
 sleep \\\$drainsleep
 
-shutdown -r now
+if [ -x /usr/bin/systemctl ]; then
+    /usr/bin/systemctl --no-wall reboot
+else
+    shutdown -r now
+fi
 
 EOF
 }
@@ -1637,20 +1641,45 @@ if [ -x /usr/bin/systemctl ]; then
     cat <<EOF_reboot_unit > /usr/lib/systemd/system/ks-post-reboot.service
 [Unit]
 Description=Quattor AII Post reboot
-After=network.target syslog.target syslog.socket rsyslog.service sshd.service
+DefaultDependencies=no
+Requires=sysinit.target
 Requires=network.target
+After=sysinit.target
+After=system-update-pre.target
+After=systemd-journald.socket
+After=network.target
+After=network-online.target
+After=network.service
+Before=shutdown.target
+Before=system-update.target
+Before=system-update-cleanup.service
+Wants=network-online.target
+Wants=network.service
 
 [Service]
 Type=oneshot
 ExecStart=/etc/rc.d/init.d/ks-post-reboot start
-
-[Install]
-WantedBy=multi-user.target
-
+ExecStop=/bin/true
+ExecStopPost=/usr/bin/rm -fv /system-update
+FailureAction=reboot
+TimeoutSec=7200
+KillMode=control-group
+KillSignal=SIGKILL
 EOF_reboot_unit
 
-    /usr/bin/systemctl daemon-reload
-    /usr/bin/systemctl enable ks-post-reboot.service
+    # /system-update is expected to be a symlink, identifying which update script to run
+    ln -sf /etc/rc.d/init.d/ks-post-reboot /system-update
+
+    # The documentation recommends creating the .wants symlink directly instead of using [Install] and 'systemctl enable'
+    ln -s /usr/lib/systemd/system/ks-post-reboot.service /etc/systemd/system/system-update.target.wants/
+
+    # systemd debugging is a tricky business, so make it verbose during the first boot, just in case
+    mkdir -p /etc/systemd/system.conf.d
+    cat <<EOF_systemd_logging > /etc/systemd/system.conf.d/ks-post-reboot.conf
+[Manager]
+LogLevel=debug
+EOF_systemd_logging
+
 else
     ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
 fi
