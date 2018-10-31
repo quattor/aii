@@ -397,6 +397,10 @@ sub _kernel_params_ks
         foreach my $ns (@$nms) {
             push(@kernel_params, "nameserver=$ns");
         }
+
+        if($kst->{selinux} && $kst->{selinux} eq 'disabled') {
+            push(@kernel_params, "selinux=0");
+        }
     }
 
     my $custom_append = $pxe_config->{append};
