@@ -37,7 +37,7 @@ like($fh, qr{^lang\sen_US.UTF-8}m, 'lang setting present');
 like($fh, qr{^keyboard\sus}m, 'keyboard present');
 like($fh, qr{^firewall\s--disabled }m, 'firwewall disabled present');
 like($fh, qr{^network\s--bootproto=dhcp}m, 'network dhcp present');
-like($fh, qr{^zerombr yes}m, 'zerombr present');
+like($fh, qr{^zerombr$}m, 'zerombr present');
 like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n}m, 'packages present');

@@ -239,6 +239,7 @@ sub ksnetwork
 {
     my ($tree, $config) = @_;
 
+    my $version = get_anaconda_version($tree);
     my @network = qw(network);
 
     if ($tree->{bootproto} eq 'dhcp') {
@@ -247,6 +248,12 @@ sub ksnetwork
         # the issue here is backwards compatibilty (a.k.a. very old behaviour)
         $this_app->debug (5, "Node configures its network via DHCP");
         push(@network, "--bootproto=dhcp");
+        if ($version >= ANACONDA_VERSION_EL_7_0) {
+            # For some reason, NetworkManager does not want to use the hostname
+            # returned by DHCP on RH7
+            my $fqdn = get_fqdn($config);
+            push(@network, "--hostname=$fqdn");
+        }
         return @network;
     }
 
@@ -508,9 +515,7 @@ EOF
     print join(" ",ksnetwork ($tree, $config)), "\n";
 
     print "driverdisk --source=$_\n" foreach @{$tree->{driverdisk}};
-    if ($tree->{clearmbr}) {
-        print "zerombr", $version >= ANACONDA_VERSION_EL_7_0 ? "" : " yes", "\n";
-    }
+    print "zerombr\n" if ($tree->{clearmbr});
     if ($tree->{ignoredisk} &&
         scalar (@{$tree->{ignoredisk}})) {
         print "ignoredisk --drives=",
@@ -858,16 +863,19 @@ EOF
     my $kstree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($kstree);
 
+    print <<EOF;
+
+# De-activate logical volumes. Needed on RHEL6, see:
+# https://bugzilla.redhat.com/show_bug.cgi?id=652417
+lvm vgchange -an
+EOF
+
     # mdadm devices should be stopped at the end of the pre-ks phase on EL7
     if ($version >= ANACONDA_VERSION_EL_7_0) {
         print "mdadm --stop --scan\n";
     }
 
     print <<EOF;
-
-# De-activate logical volumes. Needed on RHEL6, see:
-# https://bugzilla.redhat.com/show_bug.cgi?id=652417
-lvm vgchange -an
 echo 'End of pre section'
 
 # Drain remote logger (0 if not relevant)
@@ -1003,7 +1011,8 @@ sub proxy
             $proxyhost = $spma->{proxyhost};
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
-            my ($me) = grep { /\b@(LOCALHOST)\b/ } @proxies;
+            my $localhost = LOCALHOST;  # need a variable, not a constant
+            my ($me) = grep { /\b$localhost\b/ } @proxies;
             $me ||= $proxies[0];
             $proxyhost = $me;
         }

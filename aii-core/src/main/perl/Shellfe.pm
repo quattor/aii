@@ -179,10 +179,6 @@ sub app_options
          HELP    => 'URL for CDB location',
          DEFAULT => undef },
 
-       { NAME    => 'localnclcache=s',
-         HELP    => 'Local cache for NCL library',
-         DEFAULT => '/usr/lib/aii/aii_ncl_cache' },
-
        { NAME    => 'file=s',
          HELP    => 'File with the nodes and the actions to perform',
          DEFAULT => undef },
@@ -746,6 +742,8 @@ sub fetch_profiles
             print $cfg_fh "cache_root $ccmdir\n";
             print $cfg_fh "json_typed $json_typed\n";
             print $cfg_fh "tabcompletion 0\n";
+            # This is needed to prevent CCM messing with the umask
+            print $cfg_fh "world_readable 1\n";
 
             my $opts = $self->_download_options('ccm');
             foreach my $optname (sort keys %$opts) {

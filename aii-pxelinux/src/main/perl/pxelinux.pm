@@ -73,7 +73,7 @@ sub _variant_enabled
     my ($self, $variant) = @_;
     my $nbpdir = $self->_variant_attribute('nbpdir_opt', $variant);
     $self->debug(2, "Using option '$nbpdir' to check if variant ", $self->_variant_attribute('name',$variant), " is enabled");
-    my $enabled = $this_app->option_exists($nbpdir) &&
+    my $enabled = $this_app->option_exists($nbpdir) && $this_app->option($nbpdir) &&
                   ($this_app->option($nbpdir) ne NBPDIR_VARIANT_DISABLED);
     return $enabled;
 }
@@ -596,6 +596,8 @@ sub Status
 
     foreach my $variant_constant (@PXE_VARIANTS) {
         my $variant = __PACKAGE__->$variant_constant;
+        next unless $self->_variant_enabled($variant);
+
         my $dir = $self->_variant_option('nbpdir_opt', $variant);
         my $boot = $this_app->option (LOCALBOOT);
         my $fqdn = $self->_get_fqdn($cfg);
@@ -649,6 +651,8 @@ sub Unconfigure
 
     foreach my $variant_constant (@PXE_VARIANTS) {
         my $variant = __PACKAGE__->$variant_constant;
+        next unless $self->_variant_enabled($variant);
+
         my $pxe_config_file = $self->_file_path ($cfg, $variant);
         # Remove the PXEe config file for the current host
         $self->debug(1, "Removing PXE config file $pxe_config_file (PXE variant=",
@@ -677,9 +681,9 @@ sub Unconfigure
                 };
             };
         };
-        $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
     }
 
+    $self->_exec_userhooks ($cfg, REMOVE_HOOK_PATH);
     return 1;
 }
 

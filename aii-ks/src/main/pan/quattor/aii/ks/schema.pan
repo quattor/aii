@@ -19,7 +19,7 @@ type structure_ks_ksxinfo = {
     "noprobe" ? string
     "vsync" ? long
     "hsync" ? long
-    "defaultdesktop" : string with match (SELF, "^(GNOME|KDE)$")
+    "defaultdesktop" ? string with match (SELF, "^(GNOME|KDE)$")
     "resolution" ? string with {deprecated(0, "resolution unsupported in EL6+"); match(SELF, '^\d+x\d+$'); }
     "videoram" ? long
     "startxonboot" : boolean = true
