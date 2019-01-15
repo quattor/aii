@@ -379,12 +379,23 @@ variable AII_OSINSTALL_PACKAGES ?= list(
 # If is not true, the following variables should be set to define the PXE server:
 #    AII_ACK_SRV : the name of the PXE server
 #    AII_ACK_CGI : the location of the acknowledgement script to end the installation
+#    AII_ACK_LIST: list of URLs to try if the acknowledgement needs to be sent
+#                  to multiple servers. If AII_ACK_LIST is set, then AII_ACK_SRV and
+#                  AII_ACK_CGI are not used here.
 #
 # If the variables are undefined, the defaults are set below.
 #
 variable AII_ACK_SRV ?= AII_OSINSTALL_SRV;
 variable AII_ACK_CGI ?= "/cgi-bin/aii-installack.cgi";
-"ackurl" = "http://" + AII_ACK_SRV + AII_ACK_CGI;
+variable AII_ACK_LIST ?= null;
+"acklist" = AII_ACK_LIST;
+"ackurl" = {
+    if (!is_defined(value("/system/aii/osinstall/ks/acklist"))) {
+        "http://" + AII_ACK_SRV + AII_ACK_CGI;
+    } else {
+        null;
+    };
+};
 
 
 #
