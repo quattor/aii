@@ -1,9 +1,9 @@
 #${PMpre} NCM::Component::ks${PMpost}
 
 use EDG::WP4::CCM::Path qw (escape unescape);
-use NCM::Filesystem;
+use NCM::Filesystem 18.12.0;
 use NCM::Partition qw (partition_sort);
-use NCM::BlockdevFactory 18.3.1 qw (build);
+use NCM::BlockdevFactory 18.12.0 qw (build);
 
 use LC::Exception qw (throw_error);
 use CAF::FileWriter;
