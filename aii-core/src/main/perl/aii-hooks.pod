@@ -111,6 +111,12 @@ These hooks run at the end of the Kickstart directives section.
 
 These hooks are run after the partitioning code has been generated.
 
+=item C<post_install_nochroot> for C<%post --nochroot> phase hooks.
+
+These hooks are run outside of the sysinstall chroot, before the
+standard <%post> script actions, and e.g. allow copying data generated
+by earlier installer actions to the target image.
+
 =item C<post_install> for C<%post> phase hooks.
 
 These hooks are run before any kernel installations are done, on the
@@ -155,10 +161,10 @@ The following methods are exposed:
 
 Class constructor, without arguments.
 
-=item C<pre_install> C<post_install> C<post_reboot> C<install> C<boot>
-C<rescue> C<remove>
+=item C<pre_install> C<post_install_nochroot> C<post_install> C<post_reboot>
+C<install> C<boot> C<rescue> C<remove>
 
-For running pre_install, post_install and post_reboot actions on the
+For running pre_install, post_install_nochroot, post_install and post_reboot actions on the
 Kickstart, and install, boot, rescue or remove actions on the NBP
 configuration.
 
