@@ -592,22 +592,10 @@ EOF
         next if defined($aii) && !$aii;
 
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
-                                           $config);
+                                           $config, anaconda_version => $version);
         next if ($fstree->{block_device}->{holding_dev} &&
                  $ignoredisk{$fstree->{block_device}->{holding_dev}->{devname}});
         $this_app->debug (5, "Pre-processing filesystem $fstree->{mountpoint}");
-
-        # EL7+ anaconda does not allow a preformatted / filesystem.
-        # EL7+ anaconda does not write a preformatted swap partition to /etc/fstab
-        if ($version >= ANACONDA_VERSION_EL_7_0 &&
-                ($fstree->{mountpoint} eq '/' || $fstree->{type} eq 'swap')  &&
-                ! $fstree->{ksfsformat}) {
-            $fstree->{ksfsformat}=1;
-        }
-        if ($version >= ANACONDA_VERSION_EL_7_0) {
-             $fstree->{useexisting_md} = 1;
-             $fstree->{useexisting_lv} = 1;
-        }
 
         $fstree->print_ks;
     }
@@ -917,7 +905,7 @@ sub ksprint_filesystems
         next if defined($aii) && !$aii;
 
         my $fstree = NCM::Filesystem->new ($fs->getPath->toString,
-                                           $config);
+                                           $config, anaconda_version => $version);
         $fstree->del_pre_ks;
         push (@filesystems, $fstree);
     }
@@ -926,7 +914,7 @@ sub ksprint_filesystems
     # (clearpart_ks wipes disk and sets boot label, any parttion cleanup
     # is useless after that)
     foreach (@$clear) {
-        my $disk = build ($config, "physical_devs/".escape($_));
+        my $disk = build ($config, "physical_devs/".escape($_), anaconda_version => $version);
         $disk->clearpart_ks;
     }
 
@@ -940,7 +928,7 @@ sub ksprint_filesystems
         next if defined($aii) && !$aii;
 
         my $pt = NCM::Partition->new ($p->getPath->toString,
-                                      $config);
+                                      $config, anaconda_version => $version);
 
         # EL7+ parted doesn't seem to understand/like logical partitions
         # without clear offset
