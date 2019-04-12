@@ -3,7 +3,7 @@
   <groupId>org.quattor.maven</groupId>
   <artifactId>server</artifactId>
   <packaging>pom</packaging>
-  <version>18.12.0-rc6</version>
+  <version>18.12.0-rc7-SNAPSHOT</version>
   <name>AII server part</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
