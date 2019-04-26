@@ -480,7 +480,7 @@ sub run_plugin
         if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
             $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
             $self->{status} = PARTERR_ST;
-            return;
+            next;
         }
 
         local $@;
@@ -490,7 +490,7 @@ sub run_plugin
             if ($@) {
                 $self->error ("Couldn't load plugin module $modulename for path $path: $@");
                 $self->{status} = PARTERR_ST;
-                return;
+                next;
             }
             $self->debug (4, "Instantiating $modulename");
             my $class = MODULEBASE.$modulename;
@@ -500,7 +500,7 @@ sub run_plugin
             if ($@) {
                 $self->error ("Couldn't call 'new' on plugin module $modulename: $@");
                 $self->{status} = PARTERR_ST;
-                return;
+                next;
             }
             $self->{plugins}->{$modulename} = $module;
         }
@@ -521,7 +521,6 @@ sub run_plugin
                 $self->error ("Errors running plugin module $modulename $method method: $@");
                 $self->{status} = PARTERR_ST;
             }
-            return;
         } else {
             $self->debug(4, "no method $method available for plugin module $modulename");
         }
