@@ -183,6 +183,12 @@ List of switches to add to the kickstart "%packages" line.
 Defaults to "--resolvedeps --ignoremissing"; you probably
 want to keep those in the list.
 
+=item * end_script : string
+
+Closing tag used for Kickstart scripts C<%pre> and C<%post> and C<%packages> section 
+(usually either empty or "%end"). Early Anaconda versions (< 6) did not have such a closing 
+tag. Later the use of %end became optional, and recent Anaconda releases made it mandatory.
+
 =item * part_label: boolean
 
 If set to true, then the "part" stanzas in the kickstart configuration will
