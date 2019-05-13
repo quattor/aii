@@ -552,7 +552,8 @@ EOF
     }
     print "\n";
 
-    print $version >= ANACONDA_VERSION_EL_6_0 ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '',
+    my $end = $config->elementExists(END_SCRIPT_FIELD) ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '%end';
+    print $version >= ANACONDA_VERSION_EL_6_0 ? $end : '',
           "\n";
     return $unprocessed_packages;
 
@@ -862,7 +863,7 @@ EOF
 
     ksuserhooks ($config, PREENDHOOK);
 
-    my $end = $config->getElement(END_SCRIPT_FIELD)->getValue();
+    my $end = $config->elementExists(END_SCRIPT_FIELD) ? $config->getElement(END_SCRIPT_FIELD)->getValue() : '%end';
     my $kstree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($kstree);
 

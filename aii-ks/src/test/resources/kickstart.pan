@@ -51,7 +51,6 @@ prefix "/system/aii/osinstall/ks";
 "ntpservers" = list("10.10.10.10", "0.pool.ntp.org");
 "packages" = list("package", "package2");
 "packages_args" = list("--ignoremissing","--resolvedeps");
-"end_script" = "EENNDD";
 "part_label" = false;
 "volgroup_required" = false;
 

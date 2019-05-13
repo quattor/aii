@@ -44,7 +44,7 @@ like($fh, qr{^sshpw\s--username=root\sveryverysecret\s--iscrypted}m, "sshd enabl
 
 like($fh, qr{^eula --agreed$}m, 'eula agreed');
 
-like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^EENNDD\n}m, 'installtype present');
+like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n^%end\n}m, 'installtype present');
 
 
 my $cfg2 = get_config_for_profile('kickstart_el7_static_ip_ipdev');
