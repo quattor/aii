@@ -13,6 +13,7 @@ prefix "/system/aii/osinstall/ks";
 "mouse" = null;
 "langsupport" = null;
 
+"end_script" = "%end";
 "part_label" = true;
 "volgroup_required" = false;
 
