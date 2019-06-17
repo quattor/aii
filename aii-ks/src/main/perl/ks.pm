@@ -1,9 +1,9 @@
 #${PMpre} NCM::Component::ks${PMpost}
 
 use EDG::WP4::CCM::Path qw (escape unescape);
-use NCM::Filesystem 18.12.0;
+use NCM::Filesystem 19.12.1;
 use NCM::Partition qw (partition_sort);
-use NCM::BlockdevFactory 18.12.0 qw (build);
+use NCM::BlockdevFactory 19.12.1 qw (build);
 
 use LC::Exception qw (throw_error);
 use CAF::FileWriter;
@@ -804,21 +804,6 @@ EOF
     }
 
     print <<'EOF';
-
-# Hack for RHEL 6: force re-reading the partition table
-#
-# fdisk often fails to re-read the partition table on RHEL 6, so we have to do
-# it explicitely. We also have to make sure that udev had enough time to create
-# the device nodes.
-rereadpt () {
-    [ -x /sbin/udevadm ] && udevadm settle
-    # hdparm can still fail with EBUSY without the wait...
-    sleep 2
-    hdparm -q -z "$1"
-    [ -x /sbin/udevadm ] && udevadm settle
-    # Just in case...
-    sleep 2
-}
 
 disksize_MiB () {
     local path BYTES MB RET
