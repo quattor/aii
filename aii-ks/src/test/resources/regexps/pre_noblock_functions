@@ -5,21 +5,6 @@ Test the functions in the pre section
 ^set -x$
 ^$
 ^$
-^\# Hack for RHEL 6: force re-reading the partition table$
-^\#$
-^\# fdisk often fails to re-read the partition table on RHEL 6, so we have to do$
-^\# it explicitely. We also have to make sure that udev had enough time to create$
-^\# the device nodes.$
-^rereadpt \(\) \{$
-^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
-^\s{4}\# hdparm can still fail with EBUSY without the wait...$
-^\s{4}sleep 2$
-^\s{4}hdparm -q -z "\$1"$
-^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
-^\s{4}\# Just in case...$
-^\s{4}sleep 2$
-^\}$
-^$
 ^disksize_MiB \(\) \{$
 ^\s{4}local path BYTES MB RET$
 ^\s{4}RET=0$
