@@ -83,6 +83,7 @@ use constant   KSDIROPT         => 'osinstalldir';
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
 use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
+use constant ANACONDA_VERSION_EL_8_0 => version->new("29.19");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 
@@ -423,8 +424,11 @@ sub kscommands
         $ntp_servers = ' --ntpservers=' . join(',', @{$tree->{ntpservers}});
     }
 
+    if ($version < ANACONDA_VERSION_EL_8_0) {
+        print "install\n";
+    }
+
     print <<EOF;
-install
 $installtype
 reboot
 timezone --utc $tree->{timezone}$ntp_servers
@@ -1242,6 +1246,7 @@ success
 
 if [ -x /usr/bin/systemctl ]; then
     rm -f /etc/systemd/system/system-update.target.wants/ks-post-reboot.service
+    rmdir --ignore-fail-on-non-empty /etc/systemd/system/system-update.target.wants
     rm -f /etc/systemd/system.conf.d/ks-post-reboot.conf
     rmdir --ignore-fail-on-non-empty /etc/systemd/system.conf.d
 else
@@ -1684,6 +1689,7 @@ EOF_reboot_unit
     ln -sf /etc/rc.d/init.d/ks-post-reboot /system-update
 
     # The documentation recommends creating the .wants symlink directly instead of using [Install] and 'systemctl enable'
+    mkdir -p /etc/systemd/system/system-update.target.wants
     ln -s /usr/lib/systemd/system/ks-post-reboot.service /etc/systemd/system/system-update.target.wants/
 
     # systemd debugging is a tricky business, so make it verbose during the first boot, just in case
