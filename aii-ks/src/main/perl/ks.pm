@@ -988,12 +988,16 @@ sub ksinstall_rpm
 
     return unless @pkgs;
 
+    my $tree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($tree);
+
     # DISABLED_REPOS doesn't exist in 13.1
     my $disabled = [];
     if ( $config->elementExists(DISABLED_REPOS) ) {
         $disabled = $config->getElement(DISABLED_REPOS)->getTree();
     }
-    my $cmd = "yum -c /tmp/aii/yum/yum.conf -y install ";
+    my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
+    my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y install ";
 
     $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
