@@ -34,6 +34,7 @@ use constant { KS               => "/system/aii/osinstall/ks",
                POSTREBOOTHOOK   => "/system/aii/hooks/post_reboot",
                POSTREBOOTENDHOOK        => "/system/aii/hooks/post_reboot_end",
                POSTSCRIPT       => "/system/aii/osinstall/ks/post_install_script",
+               POSTNOCHROOTHOOK => "/system/aii/hooks/post_install_nochroot",
                POSTHOOK         => "/system/aii/hooks/post_install",
                ANACONDAHOOK     => "/system/aii/hooks/anaconda",
                PREREBOOTHOOK    => "/system/aii/hooks/pre_reboot",
@@ -1563,6 +1564,11 @@ sub post_install_script
 %post --nochroot
 
 test -f /tmp/pre-log.log && cp -a /tmp/pre-log.log /mnt/sysimage/root/
+EOF
+
+    ksuserhooks ($config, POSTNOCHROOTHOOK);
+
+    print <<EOF;
 
 %end
 
