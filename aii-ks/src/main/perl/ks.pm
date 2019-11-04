@@ -1159,16 +1159,6 @@ sub ksquattor_config
 {
     my $config = shift;
 
-    # Hack to prevent ncm-network failing when the order of interfaces does not
-    # match its expectations
-    my $clear_netcfg = 0;
-    if ($config->elementExists("/system/network/set_hwaddr") &&
-            $config->getElement("/system/network/set_hwaddr")->getValue &&
-            $config->elementExists("/system/aii/nbp/pxelinux/ksdevicemode") &&
-            $config->getElement("/system/aii/nbp/pxelinux/ksdevicemode")->getValue eq 'mac') {
-        $clear_netcfg = 1;
-    }
-
     print <<EOF;
 
 # SPMA transactions may open HUGE amounts of files at the same time.
@@ -1209,14 +1199,6 @@ EOF
 service nscd start
 sleep 5 # give nscd time to initialize
 EOF
-
-    if ($clear_netcfg) {
-        # TODO adjust the eth* glob to also delete lots of other devices?
-        print <<EOF;
-rm -f /etc/udev.d/rules.d/70-persistent-net.rules
-rm -f /etc/sysconfig/network-scripts/ifcfg-eth*
-EOF
-    }
 
     my $init_spma_ign_deps = "";
     $init_spma_ign_deps = "--ignore-errors-from-dependencies" if (
