@@ -1657,9 +1657,13 @@ ExecStart=/etc/rc.d/init.d/ks-post-reboot start
 ExecStop=/bin/true
 ExecStopPost=/usr/bin/rm -fv /system-update
 FailureAction=reboot
-TimeoutSec=7200
+TimeoutSec=18000
 KillMode=control-group
 KillSignal=SIGKILL
+StandardInput=tty
+TTYPath=/dev/console
+TTYReset=yes
+TTYVHangup=yes
 EOF_reboot_unit
 
     # /system-update is expected to be a symlink, identifying which update script to run
