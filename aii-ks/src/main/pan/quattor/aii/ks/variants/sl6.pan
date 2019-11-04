@@ -13,7 +13,7 @@ prefix "/system/aii/osinstall/ks";
 "mouse" = null;
 "langsupport" = null;
 
-"end_script" = "%end";
+"end_script" = "%end";  # TODO: remove - no longer used
 "part_label" = true;
 "volgroup_required" = false;
 
