@@ -75,7 +75,7 @@ type structure_ks_mail = {
     for user customization are under /system/ks/hooks/.
 }
 type structure_ks_ks_info = {
-    "ackurl" : type_absoluteURI
+    "ackurl" ? type_absoluteURI
     "acklist" ? type_absoluteURI[]
     "auth" : string[] = list ("enableshadow", "passalgo=sha512")
     "bootloader_location" : string = "mbr"
