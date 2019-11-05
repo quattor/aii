@@ -415,16 +415,8 @@ sub kscommands
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
 
-    my $installtype = $tree->{installtype};
-    if ($installtype =~ /http/) {
-        my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-        if ($proxyhost && $proxytype eq "reverse") {
-            if ($proxyport) {
-                $proxyhost .= ":$proxyport";
-            }
-            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-        }
-    }
+    my $proxy_config = [proxy($config)];
+    my $installtype = proxy_url($proxy_config, $tree->{installtype});
 
     my $ntp_servers = '';
     if ($tree->{ntpservers} && $version >= ANACONDA_VERSION_EL_7_0) {
@@ -442,19 +434,12 @@ timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    if ($tree->{repo}) {
-        foreach my $url (@{$tree->{repo}}) {
-            if ($url =~ /http/) {
-                my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-                if ($proxyhost && $proxytype eq "reverse") {
-                    if ($proxyport) {
-                        $proxyhost .= ":$proxyport";
-                    }
-                    $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-                }
-            }
-            print "repo $url\n";
+    foreach my $url (@{$tree->{repo} || []}) {
+        if ($url =~ m/^@(.+)$/) {
+        } else {
+            $url = proxy_url($proxy_config, $url);
         }
+        print "repo $url\n";
     }
 
     if ($tree->{cmdline}) {
@@ -1031,6 +1016,24 @@ sub proxy
     return ($proxyhost, $proxyport, $proxytype);
 }
 
+# adapt url with proxy settings
+# returns possibly modified url
+sub proxy_url
+{
+    my ($proxy_config, $url) = @_;
+
+    if ($url =~ /http/) {
+        my ($proxyhost, $proxyport, $proxytype) = @$proxy_config;
+        if ($proxyhost && $proxytype eq "reverse") {
+            if ($proxyport) {
+                $proxyhost .= ":$proxyport";
+            }
+            $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+        }
+    }
+
+    return $url;
+}
 
 # Prints the header functions and definitions of the post_reboot
 # script.
