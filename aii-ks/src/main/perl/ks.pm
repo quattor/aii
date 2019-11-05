@@ -1333,17 +1333,14 @@ EOF
 }
 
 
-sub yum_setup
+# create repo information with baseurl and proxy settings
+# return hashref with key the repo name
+sub get_repos
 {
-    my ($self, $config) = @_;
+    my ($config) = @_;
 
-    $self->debug(5,"Configuring YUM repositories...");
+    my %res;
 
-    # SPMA_OBSOLETES doesn't exist in 13.1 , assume false by default
-    my $obsoletes = 0;
-    if ( $config->elementExists(SPMA_OBSOLETES) ) {
-        $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
-    }
     my $repos;
     unless ( $config->elementExists(REPO) ) {
       $this_app->error(REPO." not defined in configuration");
@@ -1351,11 +1348,54 @@ sub yum_setup
     }
     $repos = $config->getElement (REPO)->getTree();
 
+    my ($phost, $pport, $ptype) = proxy($config);
+
+    foreach my $repo (@$repos) {
+        if ($ptype && $ptype eq 'reverse') {
+            $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
+        }
+
+        $repo->{baseurl} = $repo->{protocols}->[0]->{url};
+
+        # mandatory in 16.4 schema
+        #   these values are the default values in the schema
+        $repo->{enabled} = 1 if(! defined($repo->{enabled}));
+        $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
+
+        if (! $repo->{proxy} &&
+            $ptype &&
+            $ptype eq 'forward') {
+            $repo->{proxy} = "http://$phost:$pport/";
+        }
+
+        $res{$repo->{name}} = $repo;
+
+    }
+
+    return \%res;
+}
+
+
+sub yum_setup
+{
+    my ($self, $config) = @_;
+
+    $self->debug(5, "Configuring YUM repositories...");
+
+    # SPMA_OBSOLETES doesn't exist in 13.1 , assume false by default
+    my $obsoletes = 0;
+    if ( $config->elementExists(SPMA_OBSOLETES) ) {
+        $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
+    }
+
+    my $repos = get_repos($config);
+    # error reported in get_repos
+    return if ! $repos;
+
     my $extra_yum_opts = {};
     if ( $config->elementExists(SPMA_YUMCONF) ) {
         $extra_yum_opts = $config->getElement (SPMA_YUMCONF)->getTree();
     }
-
 
     print <<EOF;
 mkdir -p /tmp/aii/yum/repos
@@ -1391,29 +1431,19 @@ end_of_yum_conf
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
 EOF
 
-    my ($phost, $pport, $ptype) = proxy($config);
+    $self->debug(5, "Adding YUM repositories...");
 
-    $self->debug(5,"    Adding YUM repositories...");
-
-    foreach my $repo (@$repos) {
-        if ($ptype && $ptype eq 'reverse') {
-            $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
-        }
-        # mandatory in 16.4 schema
-        #   these values are the default values in the schema
-        $repo->{enabled} = 1 if(! defined($repo->{enabled}));
-        $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
+    foreach my $name (sort keys %$repos) {
+        my $repo = $repos->{$name};
 
         print <<EOF;
-[$repo->{name}]
-name=$repo->{name}
-baseurl=$repo->{protocols}->[0]->{url}
+[$name]
+name=$name
+baseurl=$repo->{baseurl}
 skip_if_unavailable=1
 EOF
         if ($repo->{proxy}) {
             print "proxy=$repo->{proxy}\n";
-        } elsif ($ptype && $ptype eq 'forward') {
-            print "proxy=http://$phost:$pport/\n";
         }
 
         # Handle inconsistent name mapping
