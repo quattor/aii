@@ -5,3 +5,6 @@ object template kickstart_commands;
 
 include 'kickstart';
 
+prefix "/system/aii/osinstall/ks";
+"repo/0" = "someurl";
+"repo/1" = "@po1";  # should match repo1, not repo0

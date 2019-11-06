@@ -25,7 +25,9 @@ select($fh);
 my $ks = NCM::Component::ks->new('ks');
 my $cfg = get_config_for_profile('kickstart_yum_setup');
 
-NCM::Component::ks::yum_setup($ks, $cfg);
+my $repos = NCM::Component::ks::get_repos($cfg);
+
+NCM::Component::ks::yum_setup($ks, $cfg, $repos);
 
 diag "$fh";
 

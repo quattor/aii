@@ -23,7 +23,7 @@ select($fh);
 my $ks = NCM::Component::ks->new('ks');
 my $cfg = get_config_for_profile('kickstart_packagesinpost');
 
-my $packref = NCM::Component::ks::kscommands($cfg);
+my ($packref, $repos) = NCM::Component::ks::kscommands($cfg);
 like($fh, qr{^%packages --ignoremissing --resolvedeps\n-notthispackage\n%end}m, "Only disabled packages in packages section");
 unlike($fh, qr{package2}, "No package2 in commands"); # one of the packages
 unlike($fh, qr{bind-utils}, "No bind-utils in commands"); # one of the auto-added packages

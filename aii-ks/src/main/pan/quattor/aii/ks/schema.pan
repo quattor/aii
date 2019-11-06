@@ -108,6 +108,9 @@ type structure_ks_ks_info = {
     "pre_install_script" ? type_absoluteURI
     "post_install_script" ? type_absoluteURI
     "post_reboot_script" ? type_absoluteURI
+    @{List of repositories (string in exact kickstart repo command syntax).
+      If a string starts with a '@', the repository is generated based on
+      the SPMA repositories with name(s) matching this pattern (without the leading '@').}
     "repo" ? string[]
     "timezone" : string
     @{NTP servers used by Anaconda}

@@ -434,12 +434,31 @@ timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
+    my $repos = get_repos($config);
+    # error reported in get_repos
+    return if ! $repos;
+
     foreach my $url (@{$tree->{repo} || []}) {
         if ($url =~ m/^@(.+)$/) {
+            # find at least one repo with matching name
+            my $pattern = $1;
+            my @matches = grep {m/$pattern/} sort keys %$repos;
+            if (@matches) {
+                foreach my $reponame (@matches) {
+                    print "repo";
+                    foreach my $key (qw(name baseurl proxy includepkgs excludepkgs)) {
+                        my $val = $repos->{$reponame}->{$key};
+                        print " --$key=". (ref($val) eq 'ARRAY' ? join(',', @$val) : $val) if defined($val);
+                    }
+                    print "\n";
+                }
+            } else {
+                $this_app->error("kickstart repo: no spma repositories that match $pattern");
+            }
         } else {
             $url = proxy_url($proxy_config, $url);
+            print "repo $url\n";
         }
-        print "repo $url\n";
     }
 
     if ($tree->{cmdline}) {
@@ -549,8 +568,7 @@ EOF
     print "\n";
     print $version >= ANACONDA_VERSION_EL_6_0 ? '%end' : '', "\n";
 
-    return $unprocessed_packages;
-
+    return $unprocessed_packages, $repos;
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -639,9 +657,9 @@ EOF
     # ends with the %postconfig section
     ksuserhooks ($config, ANACONDAHOOK);
 
-    my $packages = kscommands ($config);
+    my ($packages, $repos) = kscommands ($config);
 
-    return $packages;
+    return $packages, $repos;
 }
 
 # Create the action to be taken on the log files
@@ -1378,7 +1396,7 @@ sub get_repos
 
 sub yum_setup
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $repos) = @_;
 
     $self->debug(5, "Configuring YUM repositories...");
 
@@ -1387,10 +1405,6 @@ sub yum_setup
     if ( $config->elementExists(SPMA_OBSOLETES) ) {
         $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
     }
-
-    my $repos = get_repos($config);
-    # error reported in get_repos
-    return if ! $repos;
 
     my $extra_yum_opts = {};
     if ( $config->elementExists(SPMA_YUMCONF) ) {
@@ -1583,7 +1597,7 @@ EOF
 # this method.
 sub post_install_script
 {
-    my ($self, $config, $packages) = @_;
+    my ($self, $config, $packages, $repos) = @_;
 
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
@@ -1626,7 +1640,7 @@ EOF
         print "\n# Disable selinux via kernel parameter\ngrubby --update-kernel=DEFAULT --args=selinux=0\n";
     };
 
-    $self->yum_setup ($config);
+    $self->yum_setup ($config, $repos);
     $self->yum_install_packages ($config, $packages);
     ksuserscript ($config, POSTSCRIPT);
 
@@ -1807,9 +1821,9 @@ sub Configure
     }
 
     $self->ksopen ($config);
-    my $packages = $self->install ($config);
+    my ($packages, $repos) = $self->install ($config);
     $self->pre_install_script ($config);
-    $self->post_install_script ($config, $packages);
+    $self->post_install_script ($config, $packages, $repos);
     $self->ksclose;
     return 1;
 }

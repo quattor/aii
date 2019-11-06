@@ -39,6 +39,9 @@ like($fh, qr{^firewall\s--disabled }m, 'firwewall disabled present');
 like($fh, qr{^network\s--bootproto=dhcp}m, 'network dhcp present');
 like($fh, qr{^zerombr$}m, 'zerombr present');
 like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
+like($fh, qr{^repo someurl}m, "repo as string");
+like($fh, qr{^repo --name=repo1 --baseurl=http://www.example.com --includepkgs=everything,else --excludepkgs=woo,hoo\*}m, "repo from pattern");
+unlike($fh, qr{^repo --name=repo0}m, "repo from pattern did not match other repo");
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n}m, 'packages present');
 
