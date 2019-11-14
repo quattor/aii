@@ -19,24 +19,20 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}align_sec=\$\(\(opt_io / sectsize\)\)$
 ^\s{4}offset=\$\(blockdev --getalignoff /dev/sdb\)$
 ^\s{4}offset_sec=\$\(\(offset / sectsize\)\)$
-^$
 ^\s{4}echo "Creating partition sdb1"$
 ^\s{4}prev=`parted /dev/sdb -s u s p \| awk '\$1==0 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
-^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
 ^\s{8}begin=\$\(\(align_sec \+ offset_sec\)\)
 ^\s{4}else$
-^\s{8}begin=\$\(\(\(\(\${prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
+^\s{8}begin=\$\(\(\(\(\$\{prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 100 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart primary \$begin \$end$
-^\s{4}rereadpt /dev/sdb$
 ^\s{4}if \[ "primary" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb1 1$
 ^\s{4}fi$
-^$
 ^\s{4}echo /dev/sdb1 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -60,21 +56,18 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^$
 ^\s{4}echo "Creating partition sdb2"$
 ^\s{4}prev=`parted /dev/sdb -s u s p \| awk '\$1==1 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
-^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
 ^\s{8}begin=\$\(\(align_sec \+ offset_sec\)\)
 ^\s{4}else$
-^\s{8}begin=\$\(\(\(\(\${prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
+^\s{8}begin=\$\(\(\(\(\$\{prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 100 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart primary \$begin \$end$
-^\s{4}rereadpt /dev/sdb$
 ^\s{4}if \[ "primary" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb2 1$
 ^\s{4}fi$
-^$
 ^\s{4}echo /dev/sdb2 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -95,24 +88,20 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}align_sec=\$\(\(opt_io / sectsize\)\)$
 ^\s{4}offset=\$\(blockdev --getalignoff /dev/sdb\)$
 ^\s{4}offset_sec=\$\(\(offset / sectsize\)\)$
-^$
 ^\s{4}echo "Creating partition sdb3"$
 ^\s{4}prev=`parted /dev/sdb -s u s p \| awk '\$1==2 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
-^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
 ^\s{8}begin=\$\(\(align_sec \+ offset_sec\)\)
 ^\s{4}else$
-^\s{8}begin=\$\(\(\(\(\${prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
+^\s{8}begin=\$\(\(\(\(\$\{prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 2500 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart extended \$begin \$end$
-^\s{4}rereadpt /dev/sdb$
 ^\s{4}if \[ "extended" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb3 1$
 ^\s{4}fi$
-^$
 ^\s{4}echo /dev/sdb3 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -133,24 +122,20 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}align_sec=\$\(\(opt_io / sectsize\)\)$
 ^\s{4}offset=\$\(blockdev --getalignoff /dev/sdb\)$
 ^\s{4}offset_sec=\$\(\(offset / sectsize\)\)$
-^$
 ^\s{4}echo "Creating partition sdb4"$
 ^\s{4}prev=`parted /dev/sdb -s u s p \| awk '\$1==3 \{print \$5=="extended_no_msdos_label" \? \$2:\$3\}'`$
-^$
 ^\s{4}if \[ -z \$prev \]$
 ^\s{4}then$
 ^\s{8}begin=\$\(\(align_sec \+ offset_sec\)\)
 ^\s{4}else$
-^\s{8}begin=\$\(\(\(\(\${prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
+^\s{8}begin=\$\(\(\(\(\$\{prev/s} \+ align_sec - 1\) / align_sec\) \* align_sec \+ offset_sec\)\)
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 1024 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart logical \$begin \$end$
-^\s{4}rereadpt /dev/sdb$
 ^\s{4}if \[ "logical" != "extended_no_msdos_label" \]$
 ^\s{4}then$
 ^\s{8}wipe_metadata /dev/sdb4 1$
 ^\s{4}fi$
-^$
 ^\s{4}echo /dev/sdb4 >> /tmp/created_partitions$
 ^fi$
 ^lvm vgscan --mknodes$
