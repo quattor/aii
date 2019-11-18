@@ -992,7 +992,7 @@ sub ksinstall_rpm
         $disabled = $config->getElement(DISABLED_REPOS)->getTree();
     }
     my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
-    my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y install ";
+    my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y -x 'kernel*debug*' install ";
 
     $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
