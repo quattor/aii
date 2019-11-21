@@ -23,6 +23,7 @@ use constant KS => "/system/aii/osinstall/ks";
 use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
 use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
+use constant ANACONDA_VERSION_EL_8_0 => version->new("29.19");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 # Import PXE-related constants shared with other modules
