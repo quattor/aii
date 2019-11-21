@@ -34,7 +34,7 @@ foreach my $test (@tests) {
     # close the selected FH and reset STDOUT for diag/note output
     NCM::Component::ks::ksclose;
 
-    note("PRE text $test $fh");
+    diag("PRE text $test $fh");
     my @regexps = qw(functions logging blockdevices);
     foreach my $regexptest (@regexps) {
         my $regexp = "$regexpdir/pre_${test}_$regexptest";
