@@ -32,6 +32,8 @@ use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
 
+use NCM::Component::metaconfig 18.6.0;
+
 our $profiles_info = undef;
 use AII::DHCP;
 use NCM::Component::PXELINUX::constants qw(:pxe_constants);
@@ -461,8 +463,9 @@ sub plugin_handler {
 # 2: the PAN path of the plug-in to be run. If the path does not
 #     exist, nothing will be done.
 # 3: the method to be run.
-# 4: optional modulename: when none is provided, the first sorted key
-#     of the PAN path will be used.
+# 4: optional modulename: when provided, use module with that name
+#     (PAN path is ignored when determining module(s) to use).
+#     when none is provided, all keys of the PAN path will be used as modules.
 sub run_plugin
 {
     my ($self, $st, $path, $method, $only_modulename) = @_;
@@ -473,10 +476,10 @@ sub run_plugin
     # problems when they get out of scope.
     my %rm = $st->{configuration}->getElement ($path)->getHash;
 
-    # Iterate over module names, handling each
-    foreach my $modulename (keys %rm) {
-        next if (defined($only_modulename) && $only_modulename ne $modulename);
+    my @modules = $only_modulename ? ($only_modulename) : sort keys %rm;
 
+    # Iterate over module names, handling each
+    foreach my $modulename (@modules) {
         if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
             $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
             $self->{status} = PARTERR_ST;
@@ -486,7 +489,7 @@ sub run_plugin
         local $@;
         if (!exists $self->{plugins}->{$modulename}) {
             $self->debug (4, "Loading plugin module $modulename");
-            eval (USEMODULE .  $modulename);
+            eval (USEMODULE . $modulename);
             if ($@) {
                 $self->error ("Couldn't load plugin module $modulename for path $path: $@");
                 $self->{status} = PARTERR_ST;
