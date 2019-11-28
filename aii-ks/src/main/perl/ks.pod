@@ -22,6 +22,8 @@ All these paths are relative to /system/aii/osinstall/ks.
 
 =item * ackurl : absolute URI
 
+Deprecated - use acklist instead.
+
 The absolute URL where the aii-installack.cgi script is located. This
 script will change the PXE state for the node from network boot
 ("install") to local boot ("boot"). This field is set automatically

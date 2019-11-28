@@ -387,16 +387,8 @@ variable AII_OSINSTALL_PACKAGES ?= list(
 #
 variable AII_ACK_SRV ?= AII_OSINSTALL_SRV;
 variable AII_ACK_CGI ?= "/cgi-bin/aii-installack.cgi";
-variable AII_ACK_LIST ?= null;
-"acklist" = AII_ACK_LIST;
-"ackurl" = {
-    if (!is_defined(value("/system/aii/osinstall/ks/acklist"))) {
-        "http://" + AII_ACK_SRV + AII_ACK_CGI;
-    } else {
-        null;
-    };
-};
-
+variable AII_ACK_LIST ?= list("http://" + AII_ACK_SRV + AII_ACK_CGI);
+"acklist" ?= AII_ACK_LIST;
 
 #
 # Set the location of the node profile
