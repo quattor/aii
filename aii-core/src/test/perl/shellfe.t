@@ -1,8 +1,9 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor;
+use Test::Quattor qw(metaconfig);
 use AII::Shellfe;
+use Cwd;
 
 use Readonly;
 use File::Basename qw(basename);
@@ -45,5 +46,14 @@ $cli = AII::Shellfe->new('name',
                          '--cfgfile', $AII_CONFIG_EMPTY);
 is_deeply($cli->_download_options('lwp'), {}, "empty config returns hashref for lwp");
 is_deeply($cli->_download_options('ccm'), {}, "empty config returns hashref for ccm");
+
+# Test metaconfig
+my $cfg = get_config_for_profile('metaconfig');
+$cli->_metaconfig("somenode", {configuration => $cfg});
+
+my $fh = get_file(getcwd . "/target/test/cache/metaconfig/metaconfig/etc/something");
+is("$fh", "a=1\n\n", "metaconfig option rendered file in cache dir");
+
+
 
 done_testing;
