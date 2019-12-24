@@ -140,4 +140,16 @@ is($text, $header, "ks postreboot header generated (see diff header)");
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;
 
+my $fh2 = CAF::FileWriter->new("target/test/ks2");
+# This module simply prints to the default filehandle.
+select($fh2);
+
+NCM::Component::ks::post_install_script($ks, $cfg, [qw(onepkg twopkg)]);
+diag "full postinstall \n$fh2";
+like($fh2, qr{^efibootmgr=/usr/sbin/efibootmgr$}m, "pxeboot enables efibootmgr test");
+
+
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
 done_testing();

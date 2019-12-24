@@ -53,7 +53,6 @@ NCM::Component::ks::kscommands($cfg2);
 like($fh, qr{network --bootproto=static --device=eth0 --hostname=x.y --nameserver=nm1 --ip=9.8.7.6 --netmask=255.0.0.0 --gateway=1.2.3.4}m,
      "ip config from ipdev");
 
-
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;
 

@@ -231,8 +231,7 @@ sub ksnetwork_get_dev_net
 
     }
 
-    return ($dev, $net, @networkopts);
-
+    return ($dev, $ipdev, $ifaces->{$dev}, $net, @networkopts);
 }
 
 
@@ -261,7 +260,7 @@ sub ksnetwork
 
     push(@network, "--bootproto=static");
 
-    my ($dev, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
+    my ($dev, $ipdev, $devnet, $net, @networkopts) = ksnetwork_get_dev_net($tree, $config);
     push(@network, @networkopts);
 
     $this_app->debug (5, "Node will boot from $dev");
@@ -278,11 +277,15 @@ sub ksnetwork
     # check for bridge: if $dev is a bridge interface,
     # continue with network settings on the bridge device
     # (do this here, i.e. after --device is set)
-    my $brdev = $net->{bridge} || $net->{ovs_bridge};
+    my $brdev = $devnet->{bridge} || $devnet->{ovs_bridge};
     if ($brdev) {
         $this_app->debug (5, "Device $dev is a bridge interface for bridge $brdev.");
         # continue with network settings for the bridge device
-        $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        if ($ipdev && $ipdev ne $brdev) {
+            $this_app->verbose("Using ipdev $ipdev configured instead of bridge device $brdev")
+        } else {
+            $net = $config->getElement("/system/network/interfaces/$brdev")->getTree;
+        }
         # warning: $dev is changed here to the bridge device to create correct log
         # messages in remainder of this method. as there is not bridge device
         # in anaconda phase, the new value of $dev is not an actual network device!
@@ -1593,6 +1596,40 @@ EOF
     # in any case, no grub on EL70+
     if ($tree->{bootloader_location} eq "mbr" && $version < ANACONDA_VERSION_EL_7_0) {
         ksfix_grub;
+    }
+
+    # restore UEFI pxeboot first
+    if ($tree->{pxeboot}) {
+        print <<EOF;
+#
+# restore pxeboot as first boot order in case efibootmgr is around
+#
+efibootmgr=/usr/sbin/efibootmgr
+function join { local IFS=","; echo "\$*"; }
+if [ -x \$efibootmgr ]; then
+    ordertxt=\$(\$efibootmgr |grep BootOrder | sed "s/.*: \\?//")
+    order=(\$(echo \$ordertxt | tr ',' ' '))
+    pxe=(\$(\$efibootmgr -v | grep -ie ' \\(NIC\\|PXE\\|Network\\) ' | sed "s/*\\? .*//;s/^Boot//" | sort ))
+    neworder=("\${pxe[@]}")
+    for idx in "\${order[@]}"; do
+        add=1
+        for pxeidx in "\${pxe[@]}"; do
+            if [ \$pxeidx == \$idx ]; then
+                add=0
+            fi
+        done
+        if [ \$add -eq 1 ]; then
+            neworder+=(\$idx)
+        fi
+    done
+    newordertxt=\$(join "\${neworder[@]}")
+    if [ \$newordertxt != \$ordertxt ]; then
+        echo "Found PXE indices \${pxe[@]}; old bootorder \$ordertxt, new bootorder \$newordertxt"
+        \$efibootmgr -o \$newordertxt
+    fi
+fi
+
+EOF
     }
 
     # delete services, if any
