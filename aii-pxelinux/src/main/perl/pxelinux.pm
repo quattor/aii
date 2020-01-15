@@ -484,9 +484,17 @@ sub _write_grub2_config
         return 0;
     };
     my $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
-    $kernel_root = '' unless defined($kernel_root);
-    my $kernel_path = "$kernel_root/$pxe_config->{kernel}";
-    my $initrd_path = "$kernel_root/$pxe_config->{initrd}";
+    my $prefix = defined($kernel_root) ? "$kernel_root/" : "";
+
+    # Avoid having an uncoditional "/" at the beginning, because that would
+    # break if the kernel/initrd location uses the "(http,XXXX)/..." or
+    # "(tftp,XXXX)/..." syntax
+    my ($kernel_path, $initrd_path);
+    $kernel_path = $pxe_config->{kernel} =~ m/^\((http|tftp),/ ? "" : $prefix;
+    $initrd_path = $pxe_config->{kernel} =~ m/^\((http|tftp),/ ? "" : $prefix;
+
+    $kernel_path .= $pxe_config->{kernel};
+    $initrd_path .= $pxe_config->{initrd};
 
     $kernel_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
     $initrd_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
