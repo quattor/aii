@@ -1440,10 +1440,11 @@ sub process_pkgs
 
     my @ret;
     if (%$ver) {
-        while (my ($version, $arch) = each(%$ver)) {
+        foreach my $version (sort keys %$ver) {
+            my $arch = $ver->{$version};
             my $p = sprintf("%s-%s", $pkg, unescape($version));
             if ($arch) {
-                push(@ret, map("$p.$_", keys(%{$arch->{arch}})));
+                push(@ret, map("$p.$_", sort keys(%{$arch->{arch}})));
             } else {
                 push(@ret, $p);
             }
@@ -1495,8 +1496,8 @@ sub simple_version_glob {
     };
 
     # add remainder unlocked non-matching packages
-    foreach my $ref (values %pkgs) {
-        push (@res, @$ref) ;
+    foreach my $key (sort keys %pkgs) {
+        push (@res, @{$pkgs{$key}}) ;
     };
     return @res;
 }
