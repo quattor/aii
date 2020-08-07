@@ -29,7 +29,6 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 100 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart primary \$begin \$end$
-^\s{4}wipe_metadata /dev/sdb1$
 ^\s{4}echo /dev/sdb1 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -61,7 +60,6 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 100 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart primary \$begin \$end$
-^\s{4}wipe_metadata /dev/sdb2$
 ^\s{4}echo /dev/sdb2 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -92,7 +90,6 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 2500 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart extended \$begin \$end$
-^\s{4}wipe_metadata /dev/sdb3$
 ^\s{4}echo /dev/sdb3 >> /tmp/created_partitions$
 ^fi$
 ^valid_disksize_MiB /dev/sdb 3996 400[34]$
@@ -123,7 +120,6 @@ Test the blockdevice generation in the pre section with disk with valid size def
 ^\s{4}fi$
 ^\s{4}end=\$\(\(begin \+ 1024 \* \(1024 \* 1024 / sectsize\) - 1\)\)
 ^\s{4}parted /dev/sdb -s -- u s mkpart logical \$begin \$end$
-^\s{4}wipe_metadata /dev/sdb4$
 ^\s{4}echo /dev/sdb4 >> /tmp/created_partitions$
 ^fi$
 ^lvm vgscan --mknodes$
