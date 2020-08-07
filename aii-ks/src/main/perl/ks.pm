@@ -415,8 +415,8 @@ sub kscommands
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
 
-    my $proxy_config = [proxy($config)];
-    my $installtype = proxy_url($proxy_config, $tree->{installtype});
+    my $proxy = proxy($config);
+    my $installtype = proxy_url($proxy, $tree->{installtype});
 
     my $ntp_servers = '';
     if ($tree->{ntpservers} && $version >= ANACONDA_VERSION_EL_7_0) {
@@ -441,10 +441,12 @@ EOF
     foreach my $url (@{$tree->{repo} || []}) {
         if ($url =~ m/^@(.+)$/) {
             # find at least one repo with matching name
-            my $pattern = $1;
-            my @matches = grep {m/$pattern/} sort keys %$repos;
+            my $glob_pattern = $1;
+            my @matches = match_glob($glob_pattern, sort keys %$repos);
             if (@matches) {
                 foreach my $reponame (@matches) {
+                    next if ! $repos->{$reponame}->{enabled};
+
                     print "repo";
                     foreach my $key (qw(name baseurl proxy includepkgs excludepkgs)) {
                         my $val = $repos->{$reponame}->{$key};
@@ -453,10 +455,10 @@ EOF
                     print "\n";
                 }
             } else {
-                $this_app->error("kickstart repo: no spma repositories that match $pattern");
+                $this_app->error("kickstart repo: no spma repositories that match $glob_pattern");
             }
         } else {
-            $url = proxy_url($proxy_config, $url);
+            $url = proxy_url($proxy, $url);
             print "repo $url\n";
         }
     }
@@ -997,13 +999,14 @@ sub ksinstall_rpm
     $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
     print $cmd, join("\\\n    ", @pkgs),
-         "|| fail 'Unable to install packages'\n";
+         " || fail 'Unable to install packages'\n";
 }
 
 sub proxy
 {
     my ($config) = @_;
-    my ($proxyhost, $proxyport, $proxytype);
+
+    my $proxy = {};
 
     my $spma = $config->getTree(SPMA);
     my $use_proxy = $spma->{proxy} || 0;
@@ -1015,36 +1018,37 @@ sub proxy
         my @proxies = split /,/, $tmp_proxyhost;
         if (scalar(@proxies) == 1) {
             # there's only one proxy specified
-            $proxyhost = $spma->{proxyhost};
+            $proxy->{host} = $spma->{proxyhost};
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
             my $localhost = LOCALHOST;  # need a variable, not a constant
             my ($me) = grep { /\b$localhost\b/ } @proxies;
             $me ||= $proxies[0];
-            $proxyhost = $me;
+            $proxy->{host} = $me;
         }
+
         if ($spma->{proxyport}) {
-            $proxyport = $spma->{proxyport};
+            $proxy->{port} = $spma->{proxyport};
         }
         if ($spma->{proxytype}) {
-            $proxytype = $spma->{proxytype};
+            $proxy->{type} = $spma->{proxytype};
         }
     }
 
-    return ($proxyhost, $proxyport, $proxytype);
+    return $proxy;
 }
 
-# adapt url with proxy settings
+# adapt url with reverse proxy settings
 # returns possibly modified url
 sub proxy_url
 {
-    my ($proxy_config, $url) = @_;
+    my ($proxy, $url) = @_;
 
     if ($url =~ /http/) {
-        my ($proxyhost, $proxyport, $proxytype) = @$proxy_config;
-        if ($proxyhost && $proxytype eq "reverse") {
-            if ($proxyport) {
-                $proxyhost .= ":$proxyport";
+        if ($proxy->{host} && ($proxy->{type} || '') eq "reverse") {
+            my $proxyhost = $proxy->{host};
+            if ($proxy->{port}) {
+                $proxyhost .= ":$proxy->{port}";
             }
             $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
         }
@@ -1366,12 +1370,10 @@ sub get_repos
     }
     $repos = $config->getElement (REPO)->getTree();
 
-    my ($phost, $pport, $ptype) = proxy($config);
+    my $proxy = proxy($config);
 
     foreach my $repo (@$repos) {
-        if ($ptype && $ptype eq 'reverse') {
-            $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
-        }
+        $repo->{protocols}->[0]->{url} = proxy_url($proxy, $repo->{protocols}->[0]->{url});
 
         $repo->{baseurl} = $repo->{protocols}->[0]->{url};
 
@@ -1381,9 +1383,8 @@ sub get_repos
         $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
 
         if (! $repo->{proxy} &&
-            $ptype &&
-            $ptype eq 'forward') {
-            $repo->{proxy} = "http://$phost:$pport/";
+            ($proxy->{type} || '') eq 'forward') {
+            $repo->{proxy} = "http://$proxy->{host}:$proxy->{port}/";
         }
 
         $res{$repo->{name}} = $repo;
