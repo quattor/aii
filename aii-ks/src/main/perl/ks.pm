@@ -51,7 +51,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
                BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
-               DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
                INIT_SPMA_IGN_DEPS   => "/system/aii/osinstall/ks/init_spma_ignore_deps",
            };
@@ -988,15 +987,8 @@ sub ksinstall_rpm
     my $tree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($tree);
 
-    # DISABLED_REPOS doesn't exist in 13.1
-    my $disabled = [];
-    if ( $config->elementExists(DISABLED_REPOS) ) {
-        $disabled = $config->getElement(DISABLED_REPOS)->getTree();
-    }
     my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
     my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y -x 'kernel*debug*' install ";
-
-    $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
 
     print $cmd, join("\\\n    ", @pkgs),
          " || fail 'Unable to install packages'\n";
@@ -1355,6 +1347,53 @@ EOF
 }
 
 
+# match based on length of glob
+# assuming the longest glob is the most specific
+# return list of (glob, action_value) sorted on decreasing length of glob
+#    -1: ignore
+#    0: disable
+#    1: enable
+sub make_enable_disable_ignore_repo_filter {
+    my ($config) = @_;
+
+    my $ks = $config->getTree(KS);
+
+    my %value_map = (
+        ignore => -1,
+        disable => 0,
+        enable => 1,
+    );
+
+    my %filter = map {$_ => ($ks->{$_."d_repos"} || [])} qw(enable disable ignore);
+
+    my @res = ();
+
+    foreach my $action (sort keys %filter) {
+        push(@res, map {[$_, $value_map{$action}]} @{$filter{$action}});
+    }
+
+    # reverse ordered length of glob sort
+    return [sort {length($b->[0]) <=> length($a->[0])} @res]
+};
+
+# first match of filter wins
+# return values
+#    undef: no match -> continue
+#    -1: ignore
+#    0: disable
+#    1: enable
+sub enable_disable_ignore_repo {
+    my ($name, $filter) = @_;
+
+    foreach my $op (@$filter) {
+        return $op->[1] if match_glob($op->[0], $name);
+    }
+
+    return undef;
+}
+
+
+
 # create repo information with baseurl and proxy settings
 # return hashref with key the repo name
 sub get_repos
@@ -1363,16 +1402,30 @@ sub get_repos
 
     my %res;
 
-    my $repos;
     unless ( $config->elementExists(REPO) ) {
       $this_app->error(REPO." not defined in configuration");
       return
     }
-    $repos = $config->getElement (REPO)->getTree();
+
+    my $repos = $config->getTree(REPO);
+
+    my $filter = make_enable_disable_ignore_repo_filter($config);
 
     my $proxy = proxy($config);
 
     foreach my $repo (@$repos) {
+        my $name = $repo->{name};
+        my $edi = enable_disable_ignore_repo($name, $filter);
+        if (defined($edi)) {
+            if ($edi == -1) {
+                $this_app->debug(5, "Ignore YUM repository $name");
+                next;
+            } else {
+                $this_app->debug(5, 'Force ', ($edi ? 'enable' : 'disable'), " YUM repository $name");
+                $repo->{enabled} = $edi;
+            }
+        }
+
         $repo->{protocols}->[0]->{url} = proxy_url($proxy, $repo->{protocols}->[0]->{url});
 
         $repo->{baseurl} = $repo->{protocols}->[0]->{url};
@@ -1387,7 +1440,7 @@ sub get_repos
             $repo->{proxy} = "http://$proxy->{host}:$proxy->{port}/";
         }
 
-        $res{$repo->{name}} = $repo;
+        $res{$name} = $repo;
 
     }
 

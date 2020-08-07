@@ -122,8 +122,12 @@ type structure_ks_ks_info = {
     "ignoredisk" ? string[]
     @{Base packages needed for a Quattor client to run (CAF, CCM...)}
     "base_packages" : string[]
-    @{Repositories to disable while SPMA is not available}
+    @{Repositories to disable while SPMA is not available (evaluated as glob matching the repository name)}
     "disabled_repos" : string[] = list()
+    @{Repositories to enable while SPMA is not available (evaluated as glob matching the repository name)}
+    "enabled_repos" : string[] = list()
+    @{Repositories to ignore while SPMA is not available (evaluated as glob matching the repository name)}
+    "ignored_repos" : string[] = list()
     "packages_args" : string[] = list("--ignoremissing", "--resolvedeps")
     "end_script" ? string with {
         deprecated(0, "end_script is deprecated and will be removed in a future release");
