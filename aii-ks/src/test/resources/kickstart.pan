@@ -39,7 +39,7 @@ prefix "/software/repositories/1";
 "name" = "repo1";
 "owner" = "me@example.com";
 "protocols/0/name" = "http";
-"protocols/0/url" = "http://www.example.com";
+"protocols/0/url" = "http://www.example1.com";
 "excludepkgs" = list('woo', 'hoo*');
 "includepkgs" = list('everything', 'else');
 

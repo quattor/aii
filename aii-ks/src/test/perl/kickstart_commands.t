@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(kickstart_commands);
+use Test::Quattor qw(kickstart_commands kickstart_commands_glob);
 use NCM::Component::ks;
 use CAF::FileWriter;
 use CAF::Object;
@@ -39,11 +39,24 @@ like($fh, qr{^firewall\s--disabled }m, 'firwewall disabled present');
 like($fh, qr{^network\s--bootproto=dhcp}m, 'network dhcp present');
 like($fh, qr{^zerombr$}m, 'zerombr present');
 like($fh, qr{^services\s--disabled=disable1,DISABLE2\s--enabled=enable1,ENABLE2}m, "--dis/enable services present");
-like($fh, qr{^repo someurl}m, "repo as string");
-like($fh, qr{^repo --name=repo1 --baseurl=http://www.example.com --includepkgs=everything,else --excludepkgs=woo,hoo\*}m, "repo from pattern");
-unlike($fh, qr{^repo --name=repo0}m, "repo from pattern did not match other repo");
 
 like($fh, qr{^%packages\s--ignoremissing\s--resolvedeps\n^package\n^package2\nbind-utils\n}m, 'packages present');
+
+# close the selected FH and reset STDOUT
+NCM::Component::ks::ksclose;
+
+
+$fh = CAF::FileWriter->new("target/test/ks");
+select($fh);
+$cfg = get_config_for_profile('kickstart_commands_glob');
+NCM::Component::ks::kscommands($cfg);
+
+like($fh, qr{^url\s--url=http://www.example.com/some/extra/whatever\s--noverifyssl}m, 'installtype present (glob)');
+
+like($fh, qr{^repo someurl}m, "repo as string (no glob)");
+like($fh, qr{^repo --abc=def --baseurl=http://www.example1.com/weird --other=option --excludepkgs=woo,hoo\* --includepkgs=everything,else --name=repo1}m,
+     "repo from pattern (glob)");
+unlike($fh, qr{^repo --name=repo0}m, "repo from pattern did not match other repo (glob)");
 
 # close the selected FH and reset STDOUT
 NCM::Component::ks::ksclose;

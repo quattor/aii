@@ -90,6 +90,10 @@ type structure_ks_ks_info = {
     @{deprecated boolean. when defined, precedes value of mail/success.}
     "email_success" ? boolean with {deprecated(0, "email_success is deprecated; use mail/success instead"); true; }
     "firewall" ? structure_ks_ksfirewall
+    @{Kickstart installtype (string in exact kickstart repo command syntax).
+      If this contains a '@pattern@' substring, the installtype
+        (including the url and optional proxy option) is generated based on
+        the (first) enabled SPMA repository with name matching this glob pattern (without the '@').}
     "installtype" : string
     "installnumber" ? string
     "lang" : string = "en_US.UTF-8"
@@ -109,8 +113,10 @@ type structure_ks_ks_info = {
     "post_install_script" ? type_absoluteURI
     "post_reboot_script" ? type_absoluteURI
     @{List of repositories (string in exact kickstart repo command syntax).
-      If a string starts with a '@', the repository is generated based on
-      the enabled SPMA repositories with name(s) matching this glob pattern (without the leading '@').
+      If a string contains a '@pattern@' substring, the repository
+        (including the baseurl and optional proxy, includepkgs and exclude pkgs options)
+        is generated based on the enabled SPMA repositories
+        with name(s) matching this glob pattern (without the '@').
       }
     "repo" ? string[]
     "timezone" : string

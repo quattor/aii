@@ -17,7 +17,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm get_repos replace_repo_glob);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
@@ -414,8 +414,25 @@ sub kscommands
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
 
+    my $repos = get_repos($config);
+    # error reported in get_repos
+    return if ! $repos;
+
     my $proxy = proxy($config);
-    my $installtype = proxy_url($proxy, $tree->{installtype});
+
+    my $installtype = $tree->{installtype};
+    my $proxy_noglob = sub {
+        my $txt = shift;
+        return [proxy_url($proxy, $txt)]
+    };
+    my $inst_msg = "installtype $installtype";
+    my $inst_globbed = replace_repo_glob($installtype, $repos, $proxy_noglob, 'url', {proxy => 'proxy'}, $inst_msg);
+    if (defined($inst_globbed)) {
+        $installtype = $inst_globbed->[0];
+    } else {
+        $this_app->error("$inst_msg glob had no matches");
+        return;
+    }
 
     my $ntp_servers = '';
     if ($tree->{ntpservers} && $version >= ANACONDA_VERSION_EL_7_0) {
@@ -433,32 +450,17 @@ timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    my $repos = get_repos($config);
-    # error reported in get_repos
-    return if ! $repos;
+    my %repo_opt_map = map {$_ => $_} (qw(name proxy includepkgs excludepkgs));
 
     foreach my $url (@{$tree->{repo} || []}) {
-        if ($url =~ m/^@(.+)$/) {
-            # find at least one repo with matching name
-            my $glob_pattern = $1;
-            my @matches = match_glob($glob_pattern, sort keys %$repos);
-            if (@matches) {
-                foreach my $reponame (@matches) {
-                    next if ! $repos->{$reponame}->{enabled};
-
-                    print "repo";
-                    foreach my $key (qw(name baseurl proxy includepkgs excludepkgs)) {
-                        my $val = $repos->{$reponame}->{$key};
-                        print " --$key=". (ref($val) eq 'ARRAY' ? join(',', @$val) : $val) if defined($val);
-                    }
-                    print "\n";
-                }
-            } else {
-                $this_app->error("kickstart repo: no spma repositories that match $glob_pattern");
+        my $globbed = replace_repo_glob($url, $repos, $proxy_noglob, 'baseurl', \%repo_opt_map);
+        if (defined($globbed)) {
+            foreach my $newurl (@$globbed) {
+                print "repo $newurl\n";
             }
         } else {
-            $url = proxy_url($proxy, $url);
-            print "repo $url\n";
+            $this_app->error("repo url $url glob had no matches");
+            return;
         }
     }
 
@@ -1447,6 +1449,63 @@ sub get_repos
     return \%res;
 }
 
+
+# Given a string $txt and hashref $repos, replace any occurence of glob @pattern@ with matching
+# repository converted in options. There can only be one glob.
+# $baseurl_key is the optionname that is prefixed to the glob (--<baseurl_key>=<repo{baseurl}>)
+#    unless it is not defined
+# $opt_map is the optional mapping to the generated text appended at the end: --<key>=$repo{<value>}
+# it returns a arrayref with all replaced text (empty list when there is a glob, but no repo was matched)
+# noglob is an anonymous sub that is called on the original $txt when there is no glob present
+#    this sub must return an arrayref
+# If only_one_txt is defined, the result is checked if there is exactly one, and the text is used
+#   to generate a warning
+# returns undef when there is no match
+sub replace_repo_glob
+{
+    my ($txt, $repos, $noglob, $baseurl_key, $opt_map, $only_one_txt) = @_;
+
+    my $res;
+
+    if ($txt =~ m/^([^@]*)@([^@]+)@([^@]*)$/) {
+        $res = [];
+
+        my $begin = $1;
+        my $glob_pattern = $2;
+        my $end = $3;
+
+        # find at least one repo with matching name
+        my @matches = match_glob($glob_pattern, sort keys %$repos);
+        if (@matches) {
+            foreach my $reponame (@matches) {
+                my $repo = $repos->{$reponame};
+                next if ! $repo->{enabled};
+
+                my $txt = (defined($baseurl_key) ? "--$baseurl_key=" : '').$repo->{baseurl};
+
+                my @opts;
+                foreach my $key (sort keys %{$opt_map || {}}) {
+                    my $val = $repo->{$opt_map->{$key}};
+                    push(@opts, "--$key=". (ref($val) eq 'ARRAY' ? join(',', @$val) : $val)) if defined($val);
+                }
+                push(@$res, join(' ', "$begin$txt$end", @opts));
+            }
+
+            if ($only_one_txt && (scalar @$res > 1)) {
+                $this_app->warn("$only_one_txt glob had more than one match.",
+                                "Only using first match. All matches: ", join('|', @$res));
+            };
+            $this_app->debug(5, "replace_repo_glob: pattern $glob_pattern matches ", join(',', @matches),
+                             " (from text $txt) with ", join('|', @$res));
+        } else {
+            $this_app->error("replace_repo_glob: no spma repositories that match $glob_pattern (from text $txt)");
+        }
+    } else {
+        $res = $noglob->($txt);
+    }
+
+    return $res;
+};
 
 sub yum_setup
 {
