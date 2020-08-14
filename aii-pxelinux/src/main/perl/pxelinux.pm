@@ -491,7 +491,7 @@ sub _write_grub2_config
     $kernel_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
     $initrd_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
 
-    my @kernel_params = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX);
+    my @kernel_params = $self->_kernel_params($cfg, PXE_VARIANT_GRUB2);
     @kernel_params = () unless @kernel_params;
     my $kernel_params_text = join(' ', @kernel_params);
     $kernel_params_text = ' ' . $kernel_params_text if $kernel_params_text;
