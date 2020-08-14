@@ -3,7 +3,7 @@
 use Sys::Hostname;
 use CAF::FileWriter;
 use CAF::Object qw(SUCCESS CHANGED);
-use NCM::Component::ks qw (ksuserhooks);
+use NCM::Component::ks qw (ksuserhooks get_repos replace_repo_glob);
 use File::stat;
 use File::Basename qw(dirname);
 use Time::localtime;
@@ -310,7 +310,7 @@ sub _pxe_network_bonding {
 # create a list with all kernel parameters for the kickstart installation
 sub _kernel_params_ks
 {
-    my ($self, $cfg, $variant) = @_;
+    my ($self, $cfg, $variant, $initrd_path) = @_;
 
     my $pxe_config = $cfg->getElement (PXEROOT)->getTree;
 
@@ -340,9 +340,7 @@ sub _kernel_params_ks
     # with previous AII versions for easier comparisons.
     my @kernel_params =  ("ramdisk=32768");
     if ($variant == PXE_VARIANT_PXELINUX) {
-        my $initrd = $pxe_config->{initrd};
-        $initrd =~ s{\bLOCALHOST\b}{LOCALHOST}e;
-        push @kernel_params, "initrd=$initrd";
+        push @kernel_params, "initrd=$initrd_path";
     }
     push (@kernel_params, "${keyprefix}ks=$ksloc");
 
@@ -421,16 +419,44 @@ sub _kernel_params_ks
 # create a list with all required kernel parameters, based on the configuration
 sub _kernel_params
 {
-    my ($self, $cfg, $variant) = @_;
+    my ($self, $cfg, $variant, $initrd_path) = @_;
 
     if ($cfg->elementExists(KS)) {
-        return $self->_kernel_params_ks($cfg, $variant);
+        return $self->_kernel_params_ks($cfg, $variant, $initrd_path);
     } else {
         # Non-linux hosts may use pxelinux to chain-load their own bootloader
         $self->debug (1, "No Kickstart-related parameters in configuration: no kernel parameters added.");
         return;
     }
 }
+
+sub _kernel_initrd_path
+{
+    my ($self, $cfg, $prefix) = @_;
+
+    my $repos = get_repos($cfg);
+
+    my $localhost_noglob = sub {
+        my $txt = shift;
+        $txt =~ s{\bLOCALHOST\b}{LOCALHOST}e;
+        return [$txt];
+    };
+
+    my $pxe_config = $cfg->getTree(PXEROOT);
+
+    my @res;
+    foreach my $key (qw(kernel initrd)) {
+        my $val = $pxe_config->{$key};
+        my $globbed = replace_repo_glob($prefix.$val, $repos, $localhost_noglob, undef, undef, "$key $val");
+        if (!defined($globbed)) {
+            $this_app->error("$key $val glob had no matches");
+            return;
+        }
+        push(@res, $globbed->[0]);
+    }
+
+    return @res;
+};
 
 # Write the PXELINUX configuration file.
 sub _write_pxelinux_config
@@ -440,12 +466,11 @@ sub _write_pxelinux_config
     my $fh = CAF::FileWriter->open ($self->_file_path ($cfg, PXE_VARIANT_PXELINUX),
                     log => $self, mode => 0644);
 
-    my $appendtxt = '';
-    my @appendoptions = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX);
-    $appendtxt = join(" ", "append", @appendoptions) if @appendoptions;
+    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, "");
 
-    my $kernel = $pxe_config->{kernel};
-    $kernel =~ s{\bLOCALHOST\b}{LOCALHOST}e;
+    my $appendtxt = '';
+    my @appendoptions = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX, $initrd_path);
+    $appendtxt = join(" ", "append", @appendoptions) if @appendoptions;
 
     my $entry_label = "Install $pxe_config->{label}";
     print $fh <<EOF;
@@ -454,7 +479,7 @@ sub _write_pxelinux_config
 default $entry_label
 
 label $entry_label
-    kernel $kernel
+    kernel $kernel_path
     $appendtxt
 EOF
 
@@ -485,11 +510,8 @@ sub _write_grub2_config
     };
     my $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
     $kernel_root = '' unless defined($kernel_root);
-    my $kernel_path = "$kernel_root/$pxe_config->{kernel}";
-    my $initrd_path = "$kernel_root/$pxe_config->{initrd}";
 
-    $kernel_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
-    $initrd_path =~ s{\bLOCALHOST\b}{LOCALHOST}e;
+    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, "$kernel_root/");
 
     my @kernel_params = $self->_kernel_params($cfg, PXE_VARIANT_GRUB2);
     @kernel_params = () unless @kernel_params;
