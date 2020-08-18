@@ -149,6 +149,8 @@ type structure_ks_ks_info = {
     @{agree with EULA (EL7+)}
     'eula' ? boolean
     'packagesinpost' ? boolean
+    @{install the correct kernel rpms as defined in /software/packages (if any)}
+    'kernelinpost' : boolean = true
     @{configure bonding (when not defined, it will be tried best-effort depending on OS version and configuration)}
     'bonding' ? boolean
     'lvmforce' ? boolean

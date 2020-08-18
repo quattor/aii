@@ -50,7 +50,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                CCM_CONFIG_PATH  => "/software/components/ccm",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
-               BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
                LOCALHOST        => hostname(),
                INIT_SPMA_IGN_DEPS   => "/system/aii/osinstall/ks/init_spma_ignore_deps",
            };
@@ -1678,12 +1677,18 @@ sub yum_install_packages
 {
     my ($self, $config, $packages) = @_;
 
-    $self->debug(5,"Adding packages to install with YUM...");
+    $self->debug(5, "Adding packages to install with YUM...");
 
     my @pkgs;
-    my $t = $config->getElement (PKG)->getTree();
+    my $pkgtree = $config->getTree(PKG);
+    my $ks = $config->getTree(KS);
 
-    my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
+    my %base = map(($_ => 1), @{$ks->{base_packages}});
+
+
+    my @install = ("ncm-spma", "ncm-grub");
+    push(@install, "kernel") if $ks->{kernelinpost};
+    my $pattern = '^('.join('|', @install).')';
 
     print <<EOF;
 # This one will be reinstalled by Yum in the correct version for our
@@ -1693,10 +1698,10 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
-    foreach my $pkg (sort keys %$t) {
+    foreach my $pkg (sort keys %$pkgtree) {
         my $pkgst = unescape($pkg);
-        if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-            push (@pkgs, [$pkgst, $t->{$pkg}]);
+        if ($pkgst =~ m{$pattern} || exists($base{$pkgst})) {
+            push (@pkgs, [$pkgst, $pkgtree->{$pkg}]);
         }
     }
 
@@ -1722,9 +1727,9 @@ sub post_install_script
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
 
-    $self->debug(5,"Adding postinstall script...");
+    $self->debug(5, "Adding postinstall script...");
 
-    my $logfile='/tmp/post-log.log';
+    my $logfile = '/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
 
     print <<EOF;
