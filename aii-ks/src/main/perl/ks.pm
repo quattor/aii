@@ -558,9 +558,15 @@ EOF
     my @packages_in_packages = @packages;
     if ($tree->{packagesinpost}) {
         # to be installed later in %post using all repos
-        # disabled/ignored packages cannot be handled in packagesinpost
+        # disabled/ignored packages can be handled in packagesinpost (at least in EL7+),
+        # but better make sure they are not pulled in via some other method, so adding them here as well
         my $pattern = '^-';
         @packages_in_packages = grep {m/$pattern/} @packages;
+
+        # for EL7+, use never matching pattern, so all packages are also carried over
+        # to the %post section (incl the ones starting with a -)
+        $pattern = '$^' if $version >= ANACONDA_VERSION_EL_7_0;
+
         push(@$unprocessed_packages, grep {$_ !~ m/$pattern/} @packages);
     }
 
@@ -990,10 +996,11 @@ sub ksinstall_rpm
     my $version = get_anaconda_version($tree);
 
     my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
-    my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y -x 'kernel*debug*' install ";
-
-    print $cmd, join("\\\n    ", @pkgs),
-         " || fail 'Unable to install packages'\n";
+    print join("\\\n    ",
+               "$packager -c /tmp/aii/yum/yum.conf -y install",
+               (map {s/^-//; "-x '$_'"} grep {$_ =~ /^-/} @pkgs),
+               (grep {$_ !~ /^-/} @pkgs)
+        ), " || fail 'Unable to install packages'\n";
 }
 
 sub proxy
