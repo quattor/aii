@@ -1532,6 +1532,8 @@ sub yum_setup
 
     print <<EOF;
 mkdir -p /tmp/aii/yum/repos
+chmod 700 /tmp/aii
+
 cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
 [main]
 EOF
@@ -1750,6 +1752,9 @@ EOF
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
 $logaction
+
+chmod 600 $logfile
+
 echo 'Begin of post section'
 set -x
 
