@@ -436,6 +436,9 @@ sub _kernel_initrd_path
 
     my $repos = get_repos($cfg);
 
+    use Data::Dumper;
+    $self->debug(1, "repos ".Dumper($repos));
+
     my $localhost_noglob = sub {
         my $txt = shift;
         $txt =~ s{\bLOCALHOST\b}{LOCALHOST}e;
@@ -447,12 +450,29 @@ sub _kernel_initrd_path
     my @res;
     foreach my $key (qw(kernel initrd)) {
         my $val = $pxe_config->{$key};
-        my $globbed = replace_repo_glob($prefix.$val, $repos, $localhost_noglob, undef, undef, "$key $val");
+        # assuming the prefix contains no part of the globs
+        my $globbed = replace_repo_glob($val, $repos, $localhost_noglob, undef, undef, "$key $val");
         if (!defined($globbed)) {
             $this_app->error("$key $val glob had no matches");
             return;
         }
-        push(@res, $globbed->[0]);
+
+        my $res = $globbed->[0];
+
+        if (defined($prefix)) {
+            # aka EFI
+            if ($res =~ m{^(http(?:s)?)://([^/]+)/(.*)$}) {
+                # typically from the glob, as this is not a valid kernel/initrd path
+                $res = "($1,$2)/$3";
+            } else {
+                # Avoid having an uncoditional "/" at the beginning, because that would
+                # break if the kernel/initrd location uses the "(http,XXXX)/..." or
+                # "(tftp,XXXX)/..." syntax
+                $res = ($res =~ m/^\((http|tftp),/ ? "" : $prefix) . $res;
+            };
+        };
+
+        push(@res, $res);
     }
 
     return @res;
@@ -466,7 +486,8 @@ sub _write_pxelinux_config
     my $fh = CAF::FileWriter->open ($self->_file_path ($cfg, PXE_VARIANT_PXELINUX),
                     log => $self, mode => 0644);
 
-    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, "");
+    # pass undef, this is not EFI
+    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, undef);
 
     my $appendtxt = '';
     my @appendoptions = $self->_kernel_params($cfg, PXE_VARIANT_PXELINUX, $initrd_path);
@@ -509,9 +530,8 @@ sub _write_grub2_config
         return 0;
     };
     my $kernel_root = $this_app->option(GRUB2_EFI_KERNEL_ROOT);
-    $kernel_root = '' unless defined($kernel_root);
 
-    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, "$kernel_root/");
+    my ($kernel_path, $initrd_path) = $self->_kernel_initrd_path($cfg, defined($kernel_root) ? "$kernel_root/" : "");
 
     my @kernel_params = $self->_kernel_params($cfg, PXE_VARIANT_GRUB2);
     @kernel_params = () unless @kernel_params;

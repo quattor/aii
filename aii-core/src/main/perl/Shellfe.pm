@@ -389,6 +389,9 @@ sub _initialize
             $kernel_root = '' if ( $kernel_root eq '/' );
             $self->{CONFIG}->set(GRUB2_EFI_KERNEL_ROOT, $kernel_root);
         }
+    } else {
+        $self->{CONFIG}->set(GRUB2_EFI_KERNEL_ROOT, undef)
+            if $self->option(GRUB2_EFI_KERNEL_ROOT) eq NBPDIR_VARIANT_DISABLED;
     }
     # GRUB2_EFI_INITRD_CMD is always derived from GRUB2_EFI_LINUX_CMD as
     # Grub2 has a set of linux/initrd command pairs that must match together.
