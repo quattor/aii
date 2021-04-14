@@ -8,6 +8,7 @@ use File::stat;
 use File::Basename qw(dirname);
 use Time::localtime;
 use Readonly;
+use Socket;
 
 use parent qw (NCM::Component CAF::Path);
 
@@ -436,9 +437,6 @@ sub _kernel_initrd_path
 
     my $repos = get_repos($cfg);
 
-    use Data::Dumper;
-    $self->debug(1, "repos ".Dumper($repos));
-
     my $localhost_noglob = sub {
         my $txt = shift;
         $txt =~ s{\bLOCALHOST\b}{LOCALHOST}e;
@@ -470,6 +468,12 @@ sub _kernel_initrd_path
                 # "(tftp,XXXX)/..." syntax
                 $res = ($res =~ m/^\((http|tftp),/ ? "" : $prefix) . $res;
             };
+        };
+
+        if ($pxe_config->{efi_name_lookup} &&
+            $res =~ m{^\((tftp|http(?:s)?),([^/:]+)(:\d+)?\)/(.*)$}) {
+            my $address = inet_ntoa(inet_aton($2));
+            $res = "($1,$address$3)/$4";
         };
 
         push(@res, $res);
