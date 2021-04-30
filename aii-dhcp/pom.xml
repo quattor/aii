@@ -3,7 +3,7 @@
   <groupId>org.quattor.maven</groupId>
   <artifactId>dhcp</artifactId>
   <packaging>pom</packaging>
-  <version>21.4.0-rc2-SNAPSHOT</version>
+  <version>21.4.0-rc2</version>
   <name>AII DHCP configuration generator</name>
   <url>http://quattor.org/cfg-modules/</url>
   <parent>
