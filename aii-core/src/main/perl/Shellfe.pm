@@ -45,6 +45,7 @@ use constant PROFILEINFO => 'profiles-info.xml';
 use constant NODHCP     => 'nodhcp';
 use constant NONBP      => 'nonbp';
 use constant NOOSINSTALL=> 'noosinstall';
+use constant DISCOVERY  => '/system/aii/discovery';
 use constant OSINSTALL  => '/system/aii/osinstall';
 use constant NBP        => '/system/aii/nbp';
 use constant CDBURL     => 'cdburl';
@@ -536,6 +537,10 @@ sub run_plugin
 sub dhcp
 {
     my ($self, $node, $st, $cmd, $dhcpmgr) = @_;
+
+    # If the profile has a discovery plugin configured, then don't second-guess
+    # it - it may or may not be ISC DHCP
+    return if $st->{configuration}->elementExists (DISCOVERY);
 
     return unless $st->{configuration}->elementExists (DHCPPATH);
 
