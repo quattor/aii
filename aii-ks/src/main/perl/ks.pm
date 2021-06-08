@@ -1,9 +1,9 @@
 #${PMpre} NCM::Component::ks${PMpost}
 
 use EDG::WP4::CCM::Path qw (escape unescape);
-use NCM::Filesystem 18.12.0;
+use NCM::Filesystem 19.12.1;
 use NCM::Partition qw (partition_sort);
-use NCM::BlockdevFactory 18.12.0 qw (build);
+use NCM::BlockdevFactory 19.12.1 qw (build);
 
 use LC::Exception qw (throw_error);
 use CAF::FileWriter;
@@ -732,6 +732,9 @@ sub pre_install_script
     my $logfile = '/tmp/pre-log.log';
     my $logaction = log_action($config, $logfile);
 
+    my $kstree = $config->getElement(KS)->getTree;
+    my $version = get_anaconda_version($kstree);
+
     print <<EOF;
 %pre
 
@@ -750,22 +753,57 @@ set -x
 
 EOF
 
-    print <<'EOF';
+    if ($version < ANACONDA_VERSION_EL_6_0) {
+        print <<'EOF';
+wipe_metadata () {
+    local path clear SIZE ENDSEEK ENDSEEK_OFFSET
+    path="$1"
 
-# Hack for RHEL 6: force re-reading the partition table
-#
-# fdisk often fails to re-read the partition table on RHEL 6, so we have to do
-# it explicitely. We also have to make sure that udev had enough time to create
-# the device nodes.
-rereadpt () {
-    [ -x /sbin/udevadm ] && udevadm settle
-    # hdparm can still fail with EBUSY without the wait...
-    sleep 2
-    hdparm -q -z "$1"
-    [ -x /sbin/udevadm ] && udevadm settle
-    # Just in case...
-    sleep 2
+    # default to 1
+    clearmb="${2:-1}"
+
+    # wipe at least 4 MiB at begin and end
+    ENDSEEK_OFFSET=4
+    if [ "$clearmb" -gt $ENDSEEK_OFFSET ]; then
+        ENDSEEK_OFFSET=$clearmb
+    fi
+
+    # try to get the size with fdisk
+    SIZE=`disksize_MiB "$path"`
+
+    # if empty, assume we failed and try with parted
+    if [ $SIZE -eq 0 ]; then
+        # the SIZE has not been determined,
+        # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped.
+        SIZE=$ENDSEEK_OFFSET
+        echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
+    fi
+
+    let ENDSEEK=$SIZE-$ENDSEEK_OFFSET
+    if [ $ENDSEEK -lt 0 ]; then
+        ENDSEEK=0
+    fi
+    echo "[INFO] wipe path $path with SIZE $SIZE and ENDSEEK $ENDSEEK"
+    # dd with 1 MiB blocksize (unit used by disksize_MiB and faster then e.g. bs=512)
+    dd if=/dev/zero of="$path" bs=1048576 count=$ENDSEEK_OFFSET
+    dd if=/dev/zero of="$path" bs=1048576 seek=$ENDSEEK
+    sync
 }
+EOF
+    } else {
+        my $force = $version >= ANACONDA_VERSION_EL_7_0 ? " --force" : "";
+        print <<"EOF";
+wipe_metadata () {
+    local path
+    path="\$1"
+
+    wipefs --all$force "\$path"
+    dmsetup remove --retry "\$path" 2>/dev/null
+}
+EOF
+    }
+
+    print <<'EOF';
 
 disksize_MiB () {
     local path BYTES MB RET
@@ -809,41 +847,6 @@ valid_disksize_MiB () {
     return $RET
 }
 
-wipe_metadata () {
-    local path clear SIZE ENDSEEK ENDSEEK_OFFSET
-    path="$1"
-
-    # default to 1
-    clearmb="${2:-1}"
-
-    # wipe at least 4 MiB at begin and end
-    ENDSEEK_OFFSET=4
-    if [ "$clearmb" -gt $ENDSEEK_OFFSET ]; then
-        ENDSEEK_OFFSET=$clearmb
-    fi
-
-    # try to get the size with fdisk
-    SIZE=`disksize_MiB "$path"`
-
-    # if empty, assume we failed and try with parted
-    if [ $SIZE -eq 0 ]; then
-        # the SIZE has not been determined,
-        # set it equal to ENDSEEK_OFFSET, the entire disk gets wiped.
-        SIZE=$ENDSEEK_OFFSET
-        echo "[WARN] Could not determine the size of device $path with both fdisk and parted. Wiping whole drive instead"
-    fi
-
-    let ENDSEEK=$SIZE-$ENDSEEK_OFFSET
-    if [ $ENDSEEK -lt 0 ]; then
-        ENDSEEK=0
-    fi
-    echo "[INFO] wipe path $path with SIZE $SIZE and ENDSEEK $ENDSEEK"
-    # dd with 1 MiB blocksize (unit used by disksize_MiB and faster then e.g. bs=512)
-    dd if=/dev/zero of="$path" bs=1048576 count=$ENDSEEK_OFFSET
-    dd if=/dev/zero of="$path" bs=1048576 seek=$ENDSEEK
-    sync
-}
-
 EOF
 
     # Hook handling should come here, to allow NIKHEF to override
@@ -855,9 +858,6 @@ EOF
     ksuserscript ($config, PRESCRIPT);
 
     ksuserhooks ($config, PREENDHOOK);
-
-    my $kstree = $config->getElement(KS)->getTree;
-    my $version = get_anaconda_version($kstree);
 
     print <<EOF;
 

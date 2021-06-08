@@ -5,21 +5,6 @@ Test the functions in the pre section
 ^set -x$
 ^$
 ^$
-^\# Hack for RHEL 6: force re-reading the partition table$
-^\#$
-^\# fdisk often fails to re-read the partition table on RHEL 6, so we have to do$
-^\# it explicitely. We also have to make sure that udev had enough time to create$
-^\# the device nodes.$
-^rereadpt \(\) \{$
-^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
-^\s{4}\# hdparm can still fail with EBUSY without the wait...$
-^\s{4}sleep 2$
-^\s{4}hdparm -q -z "\$1"$
-^\s{4}\[ -x /sbin/udevadm \] && udevadm settle$
-^\s{4}\# Just in case...$
-^\s{4}sleep 2$
-^\}$
-^$
 ^disksize_MiB \(\) \{$
 ^\s{4}local path BYTES MB RET$
 ^\s{4}RET=0$
@@ -62,36 +47,3 @@ Test the functions in the pre section
 ^\s{4}return \$RET$
 ^\}$
 ^$
-^wipe_metadata \(\) \{$
-^\s{4}local path clear SIZE ENDSEEK ENDSEEK_OFFSET$
-^\s{4}path="\$1"$
-^$
-^\s{4}# default to 1$
-^\s{4}clearmb="\$\{2:-1\}"$
-^$
-^\s{4}# wipe at least 4 MiB at begin and end$
-^\s{4}ENDSEEK_OFFSET=4$
-^\s{4}if \[ "\$clearmb" -gt \$ENDSEEK_OFFSET \]; then$
-^\s{8}ENDSEEK_OFFSET=\$clearmb$
-^\s{4}fi$
-^\s{4}\# try to get the size with fdisk$
-^\s{4}SIZE=`disksize_MiB "\$path"`$
-^$
-^\s{4}\# if empty, assume we failed and try with parted$
-^\s{4}if \[ \$SIZE -eq 0 \]; then$
-^\s{8}\# the SIZE has not been determined,$
-^\s{8}\# set it equal to ENDSEEK_OFFSET, the entire disk gets wiped.$
-^\s{8}SIZE=\$ENDSEEK_OFFSET$
-^\s{8}echo "\[WARN\] Could not determine the size of device \$path with both fdisk and parted. Wiping whole drive instead"$
-^\s{4}fi$
-^$
-^\s{4}let ENDSEEK=\$SIZE-\$ENDSEEK_OFFSET$
-^\s{4}if \[ \$ENDSEEK -lt 0 \]; then$
-^\s{8}ENDSEEK=0$
-^\s{4}fi$
-^\s{4}echo "\[INFO\] wipe path \$path with SIZE \$SIZE and ENDSEEK \$ENDSEEK"$
-^\s{4}\# dd with 1 MiB blocksize \(unit used by disksize_MiB and faster then e.g. bs=512\)$
-^\s{4}dd if=/dev/zero of="\$path" bs=1048576 count=\$ENDSEEK_OFFSET$
-^\s{4}dd if=/dev/zero of="\$path" bs=1048576 seek=\$ENDSEEK$
-^\s{4}sync$
-^\}$
