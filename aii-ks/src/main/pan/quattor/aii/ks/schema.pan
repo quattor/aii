@@ -75,6 +75,7 @@ type structure_ks_mail = {
     for user customization are under /system/ks/hooks/.
 }
 type structure_ks_ks_info = {
+    "plugin_modulename" ? string
     "ackurl" ? type_absoluteURI with {deprecated(0, "ackurl is deprecated, use acklist instead"); true; }
     "acklist" ? type_absoluteURI[]
     "auth" : string[] = list ("enableshadow", "passalgo=sha512")
