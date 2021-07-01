@@ -41,24 +41,24 @@ my $cfg_3 = { configuration => get_config_for_profile('shellfe-dhcp-3') };
 my $cfg_4 = { configuration => get_config_for_profile('shellfe-dhcp-4') };
 my $cfg_b = { configuration => get_config_for_profile('shellfe-dhcp-b') };
 
-my %configure = ( 
-    'host1.example.com' => $cfg_1,
-    'host2.example.com' => $cfg_2,
-    'host3.example1.com' => $cfg_3,
-    'host4.example.com' => $cfg_4,
+sub mk_node_state
+{
+  return map {("host$_.example".(($_ == 3 || $_ == 6) ? 1 : '').".com" => {
+                                       name => "host$_.example".(($_ == 3 || $_ == 6) ? 1 : '').".com",
+                                       configuration => get_config_for_profile("shellfe-dhcp-".($_ > 4 ? 'b' : $_ ))
+                                      }
+             )} @_;
+}
+
+my %configure = mk_node_state(1, 2, 3, 4);
+my %remove = mk_node_state(1, 5, 6);
+
+my @opts = qw(script
+    --logfile target/test/shellfe-dhcp.log
+    --cfgfile src/test/resources/shellfe.cfg
+    --dhcpcfg src/test/resources/dhcp.cfg
+    --debug 5
 );
-
-my %remove = (
-    'host1.example.com' => $cfg_1,
-    'host5.example.com' => $cfg_b,
-    'host6.example1.com' => $cfg_b,
-);
-
-
-
-
-
-my @opts = qw(script --logfile=target/test/dhcp.log  --cfgfile=src/test/resources/shellfe.cfg --dhcpcfg=src/test/resources/dhcp.cfg);
 
 
 my $dhcpd = <<EOF;
