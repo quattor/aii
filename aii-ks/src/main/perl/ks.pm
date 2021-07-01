@@ -17,7 +17,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm get_repos replace_repo_glob);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm get_repos replace_repo_glob get_fqdn);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
@@ -110,21 +110,36 @@ sub get_anaconda_version
     return $version;
 }
 
+sub _ks_filename
+{
+    my ($self, $ksdir, $fqdn) = @_;
+    return "$ksdir/$fqdn.ks";
+}
 
-# Opens the kickstart file and sets its handle as the default.
-sub ksopen
+sub ks_filename
 {
     my ($self, $cfg) = @_;
 
     my $fqdn = get_fqdn($cfg);
 
     my $ksdir = $this_app->option (KSDIROPT);
-    $self->debug(3,"Kickstart file directory = $ksdir");
+    $self->debug(3, "Kickstart file directory = $ksdir");
 
-    my $ks = CAF::FileWriter->open ("$ksdir/$fqdn.ks",
-                                    mode => 0664,
-                                    log => $this_app
-                                    );
+    return $self->_ks_filename($ksdir, $fqdn);
+}
+
+
+# Opens the kickstart file and sets its handle as the default.
+sub ksopen
+{
+    my ($self, $cfg) = @_;
+
+    my $ks = CAF::FileWriter->open(
+        $self->ks_filename($cfg),
+        mode => 0664,
+        log => $this_app
+        );
+
     select ($ks);
 }
 
@@ -1736,7 +1751,9 @@ EOF
 # this method.
 sub post_install_script
 {
-    my ($self, $config, $packages, $repos) = @_;
+    my ($self, $config, $packages, $repos, $is_kickstart) = @_;
+
+    $is_kickstart = 1 if ! defined($is_kickstart);
 
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
@@ -1746,20 +1763,27 @@ sub post_install_script
     my $logfile = '/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
 
-    print <<EOF;
+    if ($is_kickstart) {
+        print <<EOF;
 
 %post --nochroot
 
 test -f /tmp/pre-log.log && cp -a /tmp/pre-log.log /mnt/sysimage/root/
 EOF
 
-    ksuserhooks ($config, POSTNOCHROOTHOOK);
+        ksuserhooks ($config, POSTNOCHROOTHOOK);
 
-    print <<EOF;
+        print <<EOF;
 
 %end
 
 %post
+
+EOF
+
+    };
+
+    print <<EOF;
 
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
@@ -1934,10 +1958,15 @@ echo 'End of post section'
 # Drain remote logger (0 if not relevant)
 sleep \$drainsleep
 
+EOF
+
+    if ($is_kickstart) {
+        print <<EOF;
+
 %end
 
 EOF
-
+    };
 }
 
 # Closes the Kickstart file and returns everything to its normal
@@ -1979,7 +2008,8 @@ sub Unconfigure
         return 1;
     }
 
-    my $ksdir = $main::this_app->option (KSDIROPT);
-    unlink ("$ksdir/$fqdn.ks");
+    unlink ($self->ks_filename($config));
     return 1;
 }
+
+1;
