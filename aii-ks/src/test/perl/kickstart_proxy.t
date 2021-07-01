@@ -25,14 +25,12 @@ use NCM::Component::ks;
 
 my $cfg = get_config_for_profile('kickstart_proxy');
 
-is_deeply([NCM::Component::ks::proxy($cfg)],
-          [qw(proxy.server2 1234 forward)],
+is_deeply(NCM::Component::ks::proxy($cfg),
+          {host => 'proxy.server2', port => 1234, type => 'forward'},
           "Return expected proxy config");
 
 $cfg = get_config_for_profile('kickstart_noproxy');
 
-is_deeply([NCM::Component::ks::proxy($cfg)],
-          [undef,undef,undef],
-          "undef/disabled proxy config");
+is_deeply(NCM::Component::ks::proxy($cfg), {}, "empty/disabled proxy config");
 
 done_testing();

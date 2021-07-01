@@ -32,7 +32,7 @@ Test the yum_setup
 ^\s{4}ftp://because/ftp/and/security/go/well/together$
 ^\[repo1\]$
 ^name=repo1$
-^baseurl=http://www.example.com$
+^baseurl=http://www.example1.com$
 ^skip_if_unavailable=1$
 ^exclude=woo hoo\*$
 ^enabled=1$

@@ -14,17 +14,17 @@ prefix "/system/network";
 "nameserver/0" = 'nm1';
 "nameserver/1" = 'nm2';
 "default_gateway" = "133.2.85.1";
-"interfaces/eth0" = nlist("ip", "133.2.85.234",
-                          "netmask", "255.255.255.0",
-                         );
-"interfaces/eth1" = nlist("onboot", "no",
-                         );
-
+"interfaces/eth0" = dict(
+    "ip", "133.2.85.234",
+    "netmask", "255.255.255.0",
+    );
+"interfaces/eth1" = dict(
+    "onboot", "no",
+    );
 
 prefix "/hardware/cards/nic";
 "eth0/hwaddr" = "00:11:22:33:44:55";
 "eth1/hwaddr" = "00:11:22:33:44:66";
-
 
 prefix "/system/aii/nbp/pxelinux";
 "initrd" = "path/to/initrd";
@@ -35,4 +35,3 @@ prefix "/system/aii/nbp/pxelinux";
 "firmware" = "firmware.cfg";
 "livecd" = "livecd.cfg";
 "rescue" = "rescue.cfg";
-

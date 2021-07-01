@@ -14,7 +14,7 @@ use strict;
 use warnings;
 use parent qw(Exporter);
 
-our @EXPORT_OK = qw(ksuserhooks get_ks_userhook_args);
+our @EXPORT_OK = qw(ksuserhooks get_ks_userhook_args get_repos replace_repo_glob);
 
 my $_args;
 
@@ -24,5 +24,20 @@ sub get_ks_userhook_args {
 }
 
 sub ksuserhooks { $_args = \@_; }
+
+sub get_repos
+{
+    my ($config) = @_;
+
+    return {};
+}
+
+
+sub replace_repo_glob
+{
+    my ($txt, $repos, $noglob, $baseurl_key, $opt_map, $only_one_txt) = @_;
+
+    return $noglob->($txt);
+}
 
 1;
