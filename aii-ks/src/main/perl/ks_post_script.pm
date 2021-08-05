@@ -51,13 +51,16 @@ sub Configure
     }
 
     $self->ksopen($config);
+    my ($packages, $repos) = $self->install ($config);
+    $self->ksclose();
 
+    $self->ksopen($config);
     # ignore the packages that are treated in install for now
     #   for now assume, all is there already
     # this is not kickstart
     #    won't generate the POSTNOCHROOTHOOK
     #    no repos passed
-    $self->post_install_script ($config, [], {}, 0);
+    $self->post_install_script ($config, [], $repos, 0);
 
     my $post_script = $self->ksclose();
 
