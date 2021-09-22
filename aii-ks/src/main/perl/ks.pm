@@ -148,9 +148,11 @@ sub ksopen
 # only the post_reboot script.
 sub kspostreboot_hereopen
 {
+    my ($self, $dest) = @_;
+
     print <<EOF;
 
-cat <<End_Of_Post_Reboot > /etc/rc.d/init.d/ks-post-reboot
+cat <<End_Of_Post_Reboot > $dest
 EOF
 }
 
@@ -1265,13 +1267,18 @@ EOF
 
 sub kspostreboot_tail
 {
-    my $config = shift;
+    my ($config, $as_service) = @_;
 
     ksuserscript ($config, POSTREBOOTSCRIPT);
 
     print <<EOF;
 
 success
+
+EOF
+
+    if ($as_service) {
+        print <<EOF;
 
 if [ -x /usr/bin/systemctl ]; then
     rm -f /etc/systemd/system/system-update.target.wants/ks-post-reboot.service
@@ -1282,10 +1289,21 @@ else
     rm -f /etc/rc.d/rc3.d/S86ks-post-reboot
 fi
 
+EOF
+    }
+
+    print <<EOF;
+
 echo 'End of ks-post-reboot'
 
 # Drain remote logger (0 if not relevant)
 sleep \\\$drainsleep
+
+EOF
+
+    if ($as_service) {
+        # don't trigger the reboot if this is not run as a service
+        print <<EOF;
 
 if [ -x /usr/bin/systemctl ]; then
     /usr/bin/systemctl --no-wall reboot
@@ -1294,19 +1312,20 @@ else
 fi
 
 EOF
+    }
 }
 
 
 # Prints the post_reboot script.
 sub post_reboot_script
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $kspi_filename, $kspi_as_service) = @_;
 
-    kspostreboot_header ($config);
+    kspostreboot_header ($config, $kspi_filename);
     ksuserhooks ($config, POSTREBOOTHOOK);
     ksquattor_config ($config);
     ksuserhooks ($config, POSTREBOOTENDHOOK);
-    kspostreboot_tail ($config);
+    kspostreboot_tail ($config, $kspi_as_service);
 }
 
 # The way Anaconda handles the bootloader and MBR can screw software
@@ -1755,6 +1774,11 @@ sub post_install_script
 
     $is_kickstart = 1 if ! defined($is_kickstart);
 
+    # Location where to put the ks-post-install script
+    my $kspi_filename = $is_kickstart ? "/etc/rc.d/init.d/ks-post-reboot" : "/root/ks-post-reboot-script";
+    # Run ks-post-install script as service/unit or not
+    my $kspi_as_service = $is_kickstart;
+
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
 
@@ -1797,8 +1821,8 @@ set -x
 
 EOF
 
-    $self->kspostreboot_hereopen;
-    $self->post_reboot_script ($config);
+    $self->kspostreboot_hereopen($kspi_filename);
+    $self->post_reboot_script ($config, $kspi_filename, $is_kickstart);
     $self->kspostreboot_hereclose;
     ksuserhooks ($config, POSTHOOK);
 
@@ -1817,7 +1841,7 @@ EOF
     }
 
     # restore UEFI pxeboot first
-    if ($tree->{pxeboot}) {
+    if ($is_kickstart && $tree->{pxeboot}) {
         print <<EOF;
 #
 # restore pxeboot as first boot order in case efibootmgr is around
@@ -1871,18 +1895,23 @@ EOF
         };
     };
 
-    # Systemd unit file
-    #   Targets
-    #     basic.target is default dependency
-    #     we need network.target
-    #       and ks-post-reboot needs to be started after it (not in parallel)
-    #     syslog/rsyslog and sshd are a nice-to-have
-    #   Type oneshot disables timeout and is blocking
-    #     other services/targets can be started in parallel
+        print <<EOF;
 
-    print <<EOF;
+chmod 640 $kspi_filename
 
-chmod +x /etc/rc.d/init.d/ks-post-reboot
+EOF
+
+    if ($kspi_as_service) {
+        # Systemd unit file
+        #   Targets
+        #     basic.target is default dependency
+        #     we need network.target
+        #       and ks-post-reboot needs to be started after it (not in parallel)
+        #     syslog/rsyslog and sshd are a nice-to-have
+        #   Type oneshot disables timeout and is blocking
+        #     other services/targets can be started in parallel
+
+        print <<EOF;
 
 if [ -x /usr/bin/systemctl ]; then
     cat <<EOF_reboot_unit > /usr/lib/systemd/system/ks-post-reboot.service
@@ -1905,7 +1934,7 @@ Wants=network.service
 
 [Service]
 Type=oneshot
-ExecStart=/etc/rc.d/init.d/ks-post-reboot start
+ExecStart=$kspi_filename start
 ExecStop=/bin/true
 ExecStopPost=/usr/bin/rm -fv /system-update
 FailureAction=reboot
@@ -1919,7 +1948,7 @@ TTYVHangup=yes
 EOF_reboot_unit
 
     # /system-update is expected to be a symlink, identifying which update script to run
-    ln -sf /etc/rc.d/init.d/ks-post-reboot /system-update
+    ln -sf $kspi_filename /system-update
 
     # The documentation recommends creating the .wants symlink directly instead of using [Install] and 'systemctl enable'
     mkdir -p /etc/systemd/system/system-update.target.wants
@@ -1933,10 +1962,19 @@ LogLevel=debug
 EOF_systemd_logging
 
 else
-    ln -s /etc/rc.d/init.d/ks-post-reboot /etc/rc.d/rc3.d/S86ks-post-reboot
+    ln -s $kspi_filename /etc/rc.d/rc3.d/S86ks-post-reboot
 fi
 
 EOF
+    } else {
+        # Run the script
+        print <<EOF;
+
+$kspi_filename start
+
+EOF
+
+    }
 
     my @acklist;
     if ($config->elementExists (ACKLIST) ) {
