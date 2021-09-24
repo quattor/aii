@@ -1887,7 +1887,7 @@ EOF
 
         print <<EOF;
 
-chmod 640 $kspi_filename
+chmod 550 $kspi_filename
 
 EOF
 
