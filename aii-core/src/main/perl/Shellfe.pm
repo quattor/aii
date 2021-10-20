@@ -60,7 +60,7 @@ use constant LOCKFILE   => '/var/lock/quattor/aii';
 use constant RETRIES    => 6;
 use constant TIMEOUT    => 60;
 use constant PARTERR_ST => 16;
-use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status metaconfig);
+use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status metaconfig ansible);
 use constant INCLUDE    => 'include';
 use constant CAFILE     => 'ca_file';
 use constant CADIR      => 'ca_dir';
@@ -188,6 +188,12 @@ sub app_options
 
        { NAME    => 'metaconfig=s',
          HELP    => 'Node(s) to generate all metaconfig services for, ' .
+                    'relative to the cachemanager cachepath for that host' .
+                    '(can be a regexp)',
+         DEFAULT => undef },
+
+       { NAME    => 'ansible=s',
+         HELP    => 'Node(s) to generate all ansible playbooks for, ' .
                     'relative to the cachemanager cachepath for that host' .
                     '(can be a regexp)',
          DEFAULT => undef },
@@ -576,6 +582,14 @@ sub run_plugin
             # Set active config
             if ($plug->can('set_active_config')) {
                 $plug->set_active_config($st->{configuration});
+            }
+
+            if ($method == 'ansible_command') {
+                # make role for component name, and also pass it via configuration hack
+                # AII code does not support aliased components
+                my $role = $configuration->{ansible}->{playbook}->add_role(component name);
+                # placeholder for current/last active role
+                $configuration->{ansible}->{role} = $role;
             }
 
             # The plugin method has to return success
@@ -1120,6 +1134,26 @@ sub _metaconfig
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin($st, '/software/components/metaconfig', 'aii_command', 'metaconfig');
+}
+
+=item _metaconfig
+
+Runs the ansible_command method of all components of the node.
+
+=cut
+
+sub _ansible
+{
+    my ($self, $node, $st) = @_;
+    my $playbook = AII::Playbook->new($node, log => $self);
+
+    # ugly hack: pass it to the component via the configuration instance
+    $st->{configuration}->{ansible}->{playbook} = $playbook;
+
+    $self->run_plugin($st, '/software/components', 'ansible_command');
+
+    # for now, write it in the cache dir
+    $playbook->write($st->{configuration}->{cache_path}. "/ansible");
 }
 
 =item get_cache_time

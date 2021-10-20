@@ -55,6 +55,13 @@ $cli->_metaconfig("somenode", {configuration => $cfg});
 my $fh = get_file(getcwd . "/target/test/cache/metaconfig/metaconfig/etc/something");
 is("$fh", "a=1\n\n", "metaconfig option rendered file in cache dir");
 
+# Test ansible
+$cfg = get_config_for_profile('metaconfig');
+$cli->_ansible("somenode", {configuration => $cfg});
+
+$fh = get_file(getcwd . "/target/test/cache/metaconfig/ansible/metaconfig.yml");
+is("$fh", "abc", "metaconfig playbook rendered in cache dir");
+
 # test modulename
 $cfg = get_config_for_profile('modulename_not_exists');
 
