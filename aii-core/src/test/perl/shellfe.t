@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(metaconfig modulename_exists modulename_not_exists);
+use Test::Quattor qw(metaconfig modulename_exists modulename_not_exists ansible);
 use AII::Shellfe;
 use Cwd;
 use CAF::FileReader;
@@ -50,17 +50,22 @@ is_deeply($cli->_download_options('ccm'), {}, "empty config returns hashref for 
 
 # Test metaconfig
 my $cfg = get_config_for_profile('metaconfig');
-$cli->_metaconfig("somenode", {configuration => $cfg});
+$cli->_metaconfig("somenode", {configuration => $cfg, name => 'somename'});
 
 my $fh = get_file(getcwd . "/target/test/cache/metaconfig/metaconfig/etc/something");
 is("$fh", "a=1\n\n", "metaconfig option rendered file in cache dir");
 
 # Test ansible
-$cfg = get_config_for_profile('metaconfig');
-$cli->_ansible("somenode", {configuration => $cfg});
+$cfg = get_config_for_profile('ansible');
+$cli->_ansible("ansinode", {configuration => $cfg, name => 'ansiname'});
 
-$fh = get_file(getcwd . "/target/test/cache/metaconfig/ansible/metaconfig.yml");
-is("$fh", "abc", "metaconfig playbook rendered in cache dir");
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/main.yml");
+is("$fh", "---\n- hosts: ansinode\n  roles:\n  - ansible\n  - myalias\n", "ansible playbook rendered in cache dir");
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/roles/ansible.yml");
+is("$fh", "---\n- tasks:\n  - name: mytask\n", "ansible role1 rendered in cache dir");
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/roles/myalias.yml");
+is("$fh", "---\n- tasks:\n  - name: mytask\n", "ansible role2 rendered in cache dir");
+
 
 # test modulename
 $cfg = get_config_for_profile('modulename_not_exists');

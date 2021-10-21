@@ -36,6 +36,7 @@ use File::Basename qw(basename dirname);
 use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
+use AII::Playbook;
 
 use NCM::Component::metaconfig 18.6.0;
 
@@ -535,12 +536,19 @@ sub run_plugin
 
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
-    my @modules = $only_modulename ? ($only_modulename) : map {$tree->{$_}->{plugin_modulename} || $_} sort keys %$tree;
+    my %pmodules;
+    if ($only_modulename) {
+        $pmodules{$only_modulename} = $only_modulename;
+    } else {
+        %pmodules = map {$_ => $tree->{$_}->{plugin_modulename} || $tree->{$_}->{'ncm-module'} || $_} keys %$tree;
+    }
 
     # Iterate over module names, handling each
-    foreach my $modulename (@modules) {
+    #    TODO: when dealing with ansible, this order should be resolved via the dependencies
+    foreach my $pname (sort keys %pmodules) {
+        my $modulename = $pmodules{$pname};
         if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
-            $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
+            $self->error ("Invalid Perl identifier $modulename specified as a plug-in for $pname. Skipping.");
             $self->{status} = PARTERR_ST;
             next;
         }
@@ -553,7 +561,7 @@ sub run_plugin
             $self->debug (4, "Loading plugin module $modulename");
             eval (USEMODULE . $modulename);
             if ($@) {
-                $self->error ("Couldn't load plugin module $modulename for path $path: $@");
+                $self->error ("Couldn't load plugin module $modulename for $pname for path $path: $@");
                 $self->{status} = PARTERR_ST;
                 next;
             }
@@ -579,17 +587,17 @@ sub run_plugin
                 $self->plugin_handler($modulename, @_);
             });
 
+            if ($method eq 'ansible_command') {
+                my $ansible = $st->{configuration}->{ansible};
+                # make role for component name, and also pass it via configuration hack
+                my $role = $ansible->{playbook}->add_role($pname);
+                # placeholder for current/last active role
+                $ansible->{role} = $role;
+            }
+
             # Set active config
             if ($plug->can('set_active_config')) {
                 $plug->set_active_config($st->{configuration});
-            }
-
-            if ($method == 'ansible_command') {
-                # make role for component name, and also pass it via configuration hack
-                # AII code does not support aliased components
-                my $role = $configuration->{ansible}->{playbook}->add_role(component name);
-                # placeholder for current/last active role
-                $configuration->{ansible}->{role} = $role;
             }
 
             # The plugin method has to return success
