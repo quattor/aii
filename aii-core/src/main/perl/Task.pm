@@ -6,15 +6,14 @@ use parent qw(CAF::Object);
 # name: name of task
 sub _initialize
 {
-    my ($self, $name, %opts) = @_;
+    my ($self, $name, $data, %opts) = @_;
 
     %opts = () if !%opts;
 
     $self->{log} = $opts{log} if $opts{log};
 
     $self->{name} = $name;
-    $self->{data} = {
-    };
+    $self->{data} = $data || {};
 
     return SUCCESS;
 }

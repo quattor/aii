@@ -24,8 +24,8 @@ sub _initialize
 
 sub add_task
 {
-    my ($self, $name) = @_;
-    my $task = AII::Task->new($name, log => $self);
+    my ($self, $name, $data) = @_;
+    my $task = AII::Task->new($name, $data, log => $self);
     push @{$self->{tasks}}, $task;
     return $task;
 }
