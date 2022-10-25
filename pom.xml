@@ -8,7 +8,7 @@
     <artifactId>oss-parent</artifactId>
     <version>7</version>
   </parent>
-  <version>21.12.1-rc2-SNAPSHOT</version>
+  <version>21.12.1-rc2</version>
   <name>AII</name>
   <scm>
     <connection>scm:git:git://github.com/quattor/aii.git</connection>
