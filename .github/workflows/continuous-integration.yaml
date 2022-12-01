@@ -15,7 +15,7 @@ jobs:
     - name: set up dependencies
       run: |
         yum -y install epel-release http://yum.quattor.org/devel/quattor-release-1-1.noarch.rpm
-        yum -y install maven perl-Test-Quattor panc libselinux-utils wget
+        yum -y install maven perl-Test-Quattor panc libselinux-utils wget perl-Parallel-ForkManager ncm-metaconfig ncm-ncd ncm-filesystems perl-Text-Glob
     - name: set up template library core from git master
       run: |
         cd /tmp
