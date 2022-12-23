@@ -1,11 +1,11 @@
-@{ 
-Profile to test kickstart bonding configuration 
+@{
+Profile to test kickstart bonding configuration
 @}
 object template kickstart_bonding;
 
 include 'kickstart';
 
-prefix "/system/network"; 
+prefix "/system/network";
 "interfaces/bond0/ip" = "1.2.3.0";
 "interfaces/bond0/netmask" = "255.255.255.0";
 "interfaces/bond0/bonding_opts" = nlist(
@@ -23,6 +23,6 @@ prefix "/system/network";
     );
 
 prefix "/system/aii/osinstall/ks";
-"bootproto" = "static"; 
+"bootproto" = "static";
 "version" = "13.21";
-"bonding" = true; 
+"bonding" = true;

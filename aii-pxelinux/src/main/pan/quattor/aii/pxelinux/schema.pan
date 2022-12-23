@@ -11,9 +11,18 @@ include 'pan/types';
     PXE configuration
 }
 type structure_pxelinux_pxe_info = {
-    "initrd" : string
+    @{Kernel path (string in exact syntax).
+      If this contains a '@pattern@' substring, the kernel path is generated based on
+        the (first) enabled SPMA repository with name matching this glob pattern (without the '@').}
     "kernel" : string
-    "ksdevice"  : string with match(SELF, '^(bootif|link)$') || is_hwaddr(SELF) || exists("/system/network/interfaces/" + escape(SELF))
+    @{Initrd path (string in exact syntax).
+      If this contains a '@pattern@' substring, the initrd path is generated based on
+        the (first) enabled SPMA repository with name matching this glob pattern (without the '@').}
+    "initrd" : string
+    @{try to resolve the hostname (when relevant) for EFI kernel and/or initrd; to use the ip instead of the hostname}
+    "efi_name_lookup" ? boolean
+    "ksdevice"  : string with match(SELF, '^(bootif|link)$') || is_hwaddr(SELF) ||
+        exists("/system/network/interfaces/" + escape(SELF))
     "kslocation" : type_absoluteURI
     "label"  : string
     "append" ? string

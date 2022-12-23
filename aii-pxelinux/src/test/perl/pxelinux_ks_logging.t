@@ -51,7 +51,7 @@ for my $variant_constant (@PXE_VARIANTS) {
 
     $comp->$config_method($cfg);
     my $fh = get_file($fp);
-    
+
     like($fh, qr{^\s{4}$kernel_params_cmd\s.*?\ssyslog=logserver:514\sloglevel=debug(\s|$)}m, "append line (variant=$variant_name)");
 };
 
@@ -67,7 +67,7 @@ for my $variant_constant (@PXE_VARIANTS) {
 
     $comp->$config_method($cfg);
     my $fh = get_file($fp);
-    
+
     unlike($fh, qr{\ssyslog}, "no syslog config (variant=$variant_name)");
     unlike($fh, qr{\sloglevel}, "no loglevel config (variant=$variant_name)");
 };

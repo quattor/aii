@@ -17,7 +17,7 @@ our $EC = LC::Exception::Context->new->will_store_all;
 
 our $this_app = $main::this_app;
 # Modules that may be interesting for hooks.
-our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm);
+our @EXPORT_OK = qw (ksuserhooks ksinstall_rpm get_repos replace_repo_glob);
 
 # PAN paths for some of the information needed to generate the
 # Kickstart.
@@ -50,8 +50,6 @@ use constant { KS               => "/system/aii/osinstall/ks",
                CCM_CONFIG_PATH  => "/software/components/ccm",
                NAMESERVER       => "/system/network/nameserver/0",
                FORWARDPROXY     => "forward",
-               BASE_PKGS        => "/system/aii/osinstall/ks/base_packages",
-               DISABLED_REPOS   => "/system/aii/osinstall/ks/disabled_repos",
                LOCALHOST        => hostname(),
                INIT_SPMA_IGN_DEPS   => "/system/aii/osinstall/ks/init_spma_ignore_deps",
            };
@@ -415,15 +413,24 @@ sub kscommands
     my @packages = @{$tree->{packages}};
     push(@packages, 'bind-utils'); # required for nslookup usage in ks-post-install
 
+    my $repos = get_repos($config);
+    # error reported in get_repos
+    return if ! $repos;
+
+    my $proxy = proxy($config);
+
     my $installtype = $tree->{installtype};
-    if ($installtype =~ /http/) {
-        my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-        if ($proxyhost && $proxytype eq "reverse") {
-            if ($proxyport) {
-                $proxyhost .= ":$proxyport";
-            }
-            $installtype =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-        }
+    my $proxy_noglob = sub {
+        my $txt = shift;
+        return [proxy_url($proxy, $txt)]
+    };
+    my $inst_msg = "installtype $installtype";
+    my $inst_globbed = replace_repo_glob($installtype, $repos, $proxy_noglob, 'url', {proxy => 'proxy'}, $inst_msg);
+    if (defined($inst_globbed)) {
+        $installtype = $inst_globbed->[0];
+    } else {
+        $this_app->error("$inst_msg glob had no matches");
+        return;
     }
 
     my $ntp_servers = '';
@@ -442,18 +449,17 @@ timezone --utc $tree->{timezone}$ntp_servers
 rootpw --iscrypted $tree->{rootpw}
 EOF
 
-    if ($tree->{repo}) {
-        foreach my $url (@{$tree->{repo}}) {
-            if ($url =~ /http/) {
-                my ($proxyhost, $proxyport, $proxytype) = proxy($config);
-                if ($proxyhost && $proxytype eq "reverse") {
-                    if ($proxyport) {
-                        $proxyhost .= ":$proxyport";
-                    }
-                    $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
-                }
+    my %repo_opt_map = map {$_ => $_} (qw(name proxy includepkgs excludepkgs));
+
+    foreach my $url (@{$tree->{repo} || []}) {
+        my $globbed = replace_repo_glob($url, $repos, $proxy_noglob, 'baseurl', \%repo_opt_map);
+        if (defined($globbed)) {
+            foreach my $newurl (@$globbed) {
+                print "repo $newurl\n";
             }
-            print "repo $url\n";
+        } else {
+            $this_app->error("repo url $url glob had no matches");
+            return;
         }
     }
 
@@ -551,9 +557,15 @@ EOF
     my @packages_in_packages = @packages;
     if ($tree->{packagesinpost}) {
         # to be installed later in %post using all repos
-        # disabled/ignored packages cannot be handled in packagesinpost
+        # disabled/ignored packages can be handled in packagesinpost (at least in EL7+),
+        # but better make sure they are not pulled in via some other method, so adding them here as well
         my $pattern = '^-';
         @packages_in_packages = grep {m/$pattern/} @packages;
+
+        # for EL7+, use never matching pattern, so all packages are also carried over
+        # to the %post section (incl the ones starting with a -)
+        $pattern = '$^' if $version >= ANACONDA_VERSION_EL_7_0;
+
         push(@$unprocessed_packages, grep {$_ !~ m/$pattern/} @packages);
     }
 
@@ -564,8 +576,7 @@ EOF
     print "\n";
     print $version >= ANACONDA_VERSION_EL_6_0 ? '%end' : '', "\n";
 
-    return $unprocessed_packages;
-
+    return $unprocessed_packages, $repos;
 }
 
 # Writes the mountpoint definitions and LVM and MD settings
@@ -654,9 +665,9 @@ EOF
     # ends with the %postconfig section
     ksuserhooks ($config, ANACONDAHOOK);
 
-    my $packages = kscommands ($config);
+    my ($packages, $repos) = kscommands ($config);
 
-    return $packages;
+    return $packages, $repos;
 }
 
 # Create the action to be taken on the log files
@@ -983,24 +994,19 @@ sub ksinstall_rpm
     my $tree = $config->getElement(KS)->getTree;
     my $version = get_anaconda_version($tree);
 
-    # DISABLED_REPOS doesn't exist in 13.1
-    my $disabled = [];
-    if ( $config->elementExists(DISABLED_REPOS) ) {
-        $disabled = $config->getElement(DISABLED_REPOS)->getTree();
-    }
     my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
-    my $cmd = "$packager -c /tmp/aii/yum/yum.conf -y install ";
-
-    $cmd .= " --disablerepo=" . join(",", @$disabled) . " " if @$disabled;
-
-    print $cmd, join("\\\n    ", @pkgs),
-         "|| fail 'Unable to install packages'\n";
+    print join("\\\n    ",
+               "$packager -c /tmp/aii/yum/yum.conf -y install",
+               (map {s/^-//; "-x '$_'"} grep {$_ =~ /^-/} @pkgs),
+               (grep {$_ !~ /^-/} @pkgs)
+        ), " || fail 'Unable to install packages'\n";
 }
 
 sub proxy
 {
     my ($config) = @_;
-    my ($proxyhost, $proxyport, $proxytype);
+
+    my $proxy = {};
 
     my $spma = $config->getTree(SPMA);
     my $use_proxy = $spma->{proxy} || 0;
@@ -1012,25 +1018,44 @@ sub proxy
         my @proxies = split /,/, $tmp_proxyhost;
         if (scalar(@proxies) == 1) {
             # there's only one proxy specified
-            $proxyhost = $spma->{proxyhost};
+            $proxy->{host} = $spma->{proxyhost};
         } elsif (scalar(@proxies) > 1) {
             # optimize by picking the responding server as the proxy
             my $localhost = LOCALHOST;  # need a variable, not a constant
             my ($me) = grep { /\b$localhost\b/ } @proxies;
             $me ||= $proxies[0];
-            $proxyhost = $me;
+            $proxy->{host} = $me;
         }
+
         if ($spma->{proxyport}) {
-            $proxyport = $spma->{proxyport};
+            $proxy->{port} = $spma->{proxyport};
         }
         if ($spma->{proxytype}) {
-            $proxytype = $spma->{proxytype};
+            $proxy->{type} = $spma->{proxytype};
         }
     }
 
-    return ($proxyhost, $proxyport, $proxytype);
+    return $proxy;
 }
 
+# adapt url with reverse proxy settings
+# returns possibly modified url
+sub proxy_url
+{
+    my ($proxy, $url) = @_;
+
+    if ($url =~ /http/) {
+        if ($proxy->{host} && ($proxy->{type} || '') eq "reverse") {
+            my $proxyhost = $proxy->{host};
+            if ($proxy->{port}) {
+                $proxyhost .= ":$proxy->{port}";
+            }
+            $url =~ s{(https?)://([^/]*)/}{$1://$proxyhost/};
+        }
+    }
+
+    return $url;
+}
 
 # Prints the header functions and definitions of the post_reboot
 # script.
@@ -1330,32 +1355,185 @@ EOF
 }
 
 
+# match based on length of glob
+# assuming the longest glob is the most specific
+# return list of (glob, action_value) sorted on decreasing length of glob
+#    -1: ignore
+#    0: disable
+#    1: enable
+sub make_enable_disable_ignore_repo_filter {
+    my ($config) = @_;
+
+    my $ks = $config->getTree(KS);
+
+    my %value_map = (
+        ignore => -1,
+        disable => 0,
+        enable => 1,
+    );
+
+    my %filter = map {$_ => ($ks->{$_."d_repos"} || [])} qw(enable disable ignore);
+
+    my @res = ();
+
+    foreach my $action (sort keys %filter) {
+        push(@res, map {[$_, $value_map{$action}]} @{$filter{$action}});
+    }
+
+    # reverse ordered length of glob sort
+    return [sort {length($b->[0]) <=> length($a->[0])} @res]
+};
+
+# first match of filter wins
+# return values
+#    undef: no match -> continue
+#    -1: ignore
+#    0: disable
+#    1: enable
+sub enable_disable_ignore_repo {
+    my ($name, $filter) = @_;
+
+    foreach my $op (@$filter) {
+        return $op->[1] if match_glob($op->[0], $name);
+    }
+
+    return undef;
+}
+
+
+
+# create repo information with baseurl and proxy settings
+# return hashref with key the repo name
+sub get_repos
+{
+    my ($config) = @_;
+
+    my %res;
+
+    unless ( $config->elementExists(REPO) ) {
+      $this_app->error(REPO." not defined in configuration");
+      return
+    }
+
+    my $repos = $config->getTree(REPO);
+
+    my $filter = make_enable_disable_ignore_repo_filter($config);
+
+    my $proxy = proxy($config);
+
+    foreach my $repo (@$repos) {
+        my $name = $repo->{name};
+        my $edi = enable_disable_ignore_repo($name, $filter);
+        if (defined($edi)) {
+            if ($edi == -1) {
+                $this_app->debug(5, "Ignore YUM repository $name");
+                next;
+            } else {
+                $this_app->debug(5, 'Force ', ($edi ? 'enable' : 'disable'), " YUM repository $name");
+                $repo->{enabled} = $edi;
+            }
+        }
+
+        $repo->{protocols}->[0]->{url} = proxy_url($proxy, $repo->{protocols}->[0]->{url});
+
+        $repo->{baseurl} = $repo->{protocols}->[0]->{url};
+
+        # mandatory in 16.4 schema
+        #   these values are the default values in the schema
+        $repo->{enabled} = 1 if(! defined($repo->{enabled}));
+        $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
+
+        if (! $repo->{proxy} &&
+            ($proxy->{type} || '') eq 'forward') {
+            $repo->{proxy} = "http://$proxy->{host}:$proxy->{port}/";
+        }
+
+        $res{$name} = $repo;
+
+    }
+
+    return \%res;
+}
+
+
+# Given a string $txt and hashref $repos, replace any occurence of glob @pattern@ with matching
+# repository converted in options. There can only be one glob.
+# $baseurl_key is the optionname that is prefixed to the glob (--<baseurl_key>=<repo{baseurl}>)
+#    unless it is not defined
+# $opt_map is the optional mapping to the generated text appended at the end: --<key>=$repo{<value>}
+# it returns a arrayref with all replaced text (empty list when there is a glob, but no repo was matched)
+# noglob is an anonymous sub that is called on the original $txt when there is no glob present
+#    this sub must return an arrayref
+# If only_one_txt is defined, the result is checked if there is exactly one, and the text is used
+#   to generate a warning
+# returns undef when there is no match
+sub replace_repo_glob
+{
+    my ($txt, $repos, $noglob, $baseurl_key, $opt_map, $only_one_txt) = @_;
+
+    my $res;
+
+    if ($txt =~ m/^([^@]*)@([^@]+)@([^@]*)$/) {
+        $res = [];
+
+        my $begin = $1;
+        my $glob_pattern = $2;
+        my $end = $3;
+
+        # find at least one repo with matching name
+        my @matches = match_glob($glob_pattern, sort keys %$repos);
+        if (@matches) {
+            foreach my $reponame (@matches) {
+                my $repo = $repos->{$reponame};
+                next if ! $repo->{enabled};
+
+                my $txt = (defined($baseurl_key) ? "--$baseurl_key=" : '').$repo->{baseurl};
+
+                my @opts;
+                foreach my $key (sort keys %{$opt_map || {}}) {
+                    my $val = $repo->{$opt_map->{$key}};
+                    push(@opts, "--$key=". (ref($val) eq 'ARRAY' ? join(',', @$val) : $val)) if defined($val);
+                }
+                push(@$res, join(' ', "$begin$txt$end", @opts));
+            }
+
+            if ($only_one_txt && (scalar @$res > 1)) {
+                $this_app->warn("$only_one_txt glob had more than one match.",
+                                "Only using first match. All matches: ", join('|', @$res));
+            };
+            $this_app->debug(5, "replace_repo_glob: pattern $glob_pattern matches ", join(',', @matches),
+                             " (from text $txt) with ", join('|', @$res));
+        } else {
+            $this_app->error("replace_repo_glob: no spma repositories that match $glob_pattern (from text $txt)");
+        }
+    } else {
+        $res = $noglob->($txt);
+    }
+
+    return $res;
+};
+
 sub yum_setup
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $repos) = @_;
 
-    $self->debug(5,"Configuring YUM repositories...");
+    $self->debug(5, "Configuring YUM repositories...");
 
     # SPMA_OBSOLETES doesn't exist in 13.1 , assume false by default
     my $obsoletes = 0;
     if ( $config->elementExists(SPMA_OBSOLETES) ) {
         $obsoletes = $config->getElement (SPMA_OBSOLETES)->getTree();
     }
-    my $repos;
-    unless ( $config->elementExists(REPO) ) {
-      $this_app->error(REPO." not defined in configuration");
-      return
-    }
-    $repos = $config->getElement (REPO)->getTree();
 
     my $extra_yum_opts = {};
     if ( $config->elementExists(SPMA_YUMCONF) ) {
         $extra_yum_opts = $config->getElement (SPMA_YUMCONF)->getTree();
     }
 
-
     print <<EOF;
 mkdir -p /tmp/aii/yum/repos
+chmod 700 /tmp/aii
+
 cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
 [main]
 EOF
@@ -1388,29 +1566,19 @@ end_of_yum_conf
 cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
 EOF
 
-    my ($phost, $pport, $ptype) = proxy($config);
+    $self->debug(5, "Adding YUM repositories...");
 
-    $self->debug(5,"    Adding YUM repositories...");
-
-    foreach my $repo (@$repos) {
-        if ($ptype && $ptype eq 'reverse') {
-            $repo->{protocols}->[0]->{url} =~ s{://[^/]*}{://$phost:$pport};
-        }
-        # mandatory in 16.4 schema
-        #   these values are the default values in the schema
-        $repo->{enabled} = 1 if(! defined($repo->{enabled}));
-        $repo->{gpgcheck} = 0 if(! defined($repo->{gpgcheck}));
+    foreach my $name (sort keys %$repos) {
+        my $repo = $repos->{$name};
 
         print <<EOF;
-[$repo->{name}]
-name=$repo->{name}
-baseurl=$repo->{protocols}->[0]->{url}
+[$name]
+name=$name
+baseurl=$repo->{baseurl}
 skip_if_unavailable=1
 EOF
         if ($repo->{proxy}) {
             print "proxy=$repo->{proxy}\n";
-        } elsif ($ptype && $ptype eq 'forward') {
-            print "proxy=http://$phost:$pport/\n";
         }
 
         # Handle inconsistent name mapping
@@ -1511,12 +1679,18 @@ sub yum_install_packages
 {
     my ($self, $config, $packages) = @_;
 
-    $self->debug(5,"Adding packages to install with YUM...");
+    $self->debug(5, "Adding packages to install with YUM...");
 
     my @pkgs;
-    my $t = $config->getElement (PKG)->getTree();
+    my $pkgtree = $config->getTree(PKG);
+    my $ks = $config->getTree(KS);
 
-    my %base = map(($_ => 1), @{$config->getElement (BASE_PKGS)->getTree()});
+    my %base = map(($_ => 1), @{$ks->{base_packages}});
+
+
+    my @install = ("ncm-spma", "ncm-grub");
+    push(@install, "kernel") if $ks->{kernelinpost};
+    my $pattern = '^('.join('|', @install).')';
 
     print <<EOF;
 # This one will be reinstalled by Yum in the correct version for our
@@ -1526,10 +1700,10 @@ rpm -e --nodeps kernel-firmware
 # it's needed at all, it will be reinstalled by the SPMA component.
 rpm -e --nodeps yum-conf
 EOF
-    foreach my $pkg (sort keys %$t) {
+    foreach my $pkg (sort keys %$pkgtree) {
         my $pkgst = unescape($pkg);
-        if ($pkgst =~ m{^(kernel|ncm-spma|ncm-grub)} || exists($base{$pkgst})) {
-            push (@pkgs, [$pkgst, $t->{$pkg}]);
+        if ($pkgst =~ m{$pattern} || exists($base{$pkgst})) {
+            push (@pkgs, [$pkgst, $pkgtree->{$pkg}]);
         }
     }
 
@@ -1550,14 +1724,14 @@ EOF
 # this method.
 sub post_install_script
 {
-    my ($self, $config, $packages) = @_;
+    my ($self, $config, $packages, $repos) = @_;
 
     my $tree = $config->getElement (KS)->getTree;
     my $version = get_anaconda_version($tree);
 
-    $self->debug(5,"Adding postinstall script...");
+    $self->debug(5, "Adding postinstall script...");
 
-    my $logfile='/tmp/post-log.log';
+    my $logfile = '/tmp/post-log.log';
     my $logaction = log_action($config, $logfile);
 
     print <<EOF;
@@ -1578,6 +1752,9 @@ EOF
 # %post phase. The base system has already been installed. Let's do
 # some minor changes and prepare it for being configured.
 $logaction
+
+chmod 600 $logfile
+
 echo 'Begin of post section'
 set -x
 
@@ -1593,7 +1770,7 @@ EOF
         print "\n# Disable selinux via kernel parameter\ngrubby --update-kernel=DEFAULT --args=selinux=0\n";
     };
 
-    $self->yum_setup ($config);
+    $self->yum_setup ($config, $repos);
     $self->yum_install_packages ($config, $packages);
     ksuserscript ($config, POSTSCRIPT);
 
@@ -1774,9 +1951,9 @@ sub Configure
     }
 
     $self->ksopen ($config);
-    my $packages = $self->install ($config);
+    my ($packages, $repos) = $self->install ($config);
     $self->pre_install_script ($config);
-    $self->post_install_script ($config, $packages);
+    $self->post_install_script ($config, $packages, $repos);
     $self->ksclose;
     return 1;
 }

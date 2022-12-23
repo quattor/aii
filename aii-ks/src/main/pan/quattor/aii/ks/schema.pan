@@ -90,6 +90,10 @@ type structure_ks_ks_info = {
     @{deprecated boolean. when defined, precedes value of mail/success.}
     "email_success" ? boolean with {deprecated(0, "email_success is deprecated; use mail/success instead"); true; }
     "firewall" ? structure_ks_ksfirewall
+    @{Kickstart installtype (string in exact kickstart repo command syntax).
+      If this contains a '@pattern@' substring, the installtype
+        (including the url and optional proxy option) is generated based on
+        the (first) enabled SPMA repository with name matching this glob pattern (without the '@').}
     "installtype" : string
     "installnumber" ? string
     "lang" : string = "en_US.UTF-8"
@@ -108,6 +112,12 @@ type structure_ks_ks_info = {
     "pre_install_script" ? type_absoluteURI
     "post_install_script" ? type_absoluteURI
     "post_reboot_script" ? type_absoluteURI
+    @{List of repositories (string in exact kickstart repo command syntax).
+      If a string contains a '@pattern@' substring, the repository
+        (including the baseurl and optional proxy, includepkgs and exclude pkgs options)
+        is generated based on the enabled SPMA repositories
+        with name(s) matching this glob pattern (without the '@').
+      }
     "repo" ? string[]
     "timezone" : string
     @{NTP servers used by Anaconda}
@@ -118,8 +128,12 @@ type structure_ks_ks_info = {
     "ignoredisk" ? string[]
     @{Base packages needed for a Quattor client to run (CAF, CCM...)}
     "base_packages" : string[]
-    @{Repositories to disable while SPMA is not available}
+    @{Repositories to disable while SPMA is not available (evaluated as glob matching the repository name)}
     "disabled_repos" : string[] = list()
+    @{Repositories to enable while SPMA is not available (evaluated as glob matching the repository name)}
+    "enabled_repos" : string[] = list()
+    @{Repositories to ignore while SPMA is not available (evaluated as glob matching the repository name)}
+    "ignored_repos" : string[] = list()
     "packages_args" : string[] = list("--ignoremissing", "--resolvedeps")
     "end_script" ? string with {
         deprecated(0, "end_script is deprecated and will be removed in a future release");
@@ -135,6 +149,8 @@ type structure_ks_ks_info = {
     @{agree with EULA (EL7+)}
     'eula' ? boolean
     'packagesinpost' ? boolean
+    @{install the correct kernel rpms as defined in /software/packages (if any)}
+    'kernelinpost' : boolean = true
     @{configure bonding (when not defined, it will be tried best-effort depending on OS version and configuration)}
     'bonding' ? boolean
     'lvmforce' ? boolean
