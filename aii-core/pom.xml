@@ -223,6 +223,7 @@
             <mappings>
               <mapping>
                 <directory>/usr/sbin</directory>
+                <documentation>false</documentation>
                 <filemode>755</filemode>
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
@@ -240,6 +241,7 @@
               </mapping>
               <mapping>
                 <directory>/usr/lib</directory>
+                <documentation>false</documentation>
                 <directoryIncluded>false</directoryIncluded>
                 <sources>
                   <source>
