@@ -1787,27 +1787,25 @@ EOF
 # restore pxeboot as first boot order in case efibootmgr is around
 #
 efibootmgr=/usr/sbin/efibootmgr
-function join { local IFS=","; echo "\$*"; }
 if [ -x \$efibootmgr ]; then
-    ordertxt=\$(\$efibootmgr |grep BootOrder | sed "s/.*: \\?//")
-    order=(\$(echo \$ordertxt | tr ',' ' '))
-    pxe=(\$(\$efibootmgr -v | grep -Pi '\\s(NIC|PXE|Network)\\s' | sed "s/*\\? .*//;s/^Boot//" | sort ))
-    neworder=("\${pxe[@]}")
-    for idx in "\${order[@]}"; do
-        add=1
-        for pxeidx in "\${pxe[@]}"; do
-            if [ \$pxeidx == \$idx ]; then
-                add=0
+    boot_current=\$(\$efibootmgr -v | grep BootCurrent | cut -d' ' -f2-)
+    boot_order=\$(\$efibootmgr -v | grep BootOrder | cut -d' ' -f2-)
+    first_boot_nr_hex=\$(echo \${boot_order} | awk -F, '{print \$1}')
+
+    if [ "\${first_boot_nr_hex}" != "\${boot_current}" ]
+    then
+        new_boot_order=\${boot_current}
+        for entry in \$(echo \$boot_order | sed -e 's/,/ /g')
+        do
+            if [ \${entry} != \${boot_current} ]
+            then
+                new_boot_order="\$new_boot_order,\${entry}"
             fi
         done
-        if [ \$add -eq 1 ]; then
-            neworder+=(\$idx)
-        fi
-    done
-    newordertxt=\$(join "\${neworder[@]}")
-    if [ \$newordertxt != \$ordertxt ]; then
-        echo "Found PXE indices \${pxe[@]}; old bootorder \$ordertxt, new bootorder \$newordertxt"
-        \$efibootmgr -o \$newordertxt
+
+        echo "Setting entry  \${boot_current} first in boot order list"
+        \$efibootmgr -o "\$new_boot_order" -q
+        echo "New boot order: \$(\$efibootmgr -v | grep BootOrder | cut -d' ' -f2-)"
     fi
 fi
 
