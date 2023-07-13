@@ -1791,7 +1791,7 @@ function join { local IFS=","; echo "\$*"; }
 if [ -x \$efibootmgr ]; then
     ordertxt=\$(\$efibootmgr |grep BootOrder | sed "s/.*: \\?//")
     order=(\$(echo \$ordertxt | tr ',' ' '))
-    pxe=(\$(\$efibootmgr -v | grep -Pi '\\s(NIC|PXE|Network)\\s' | sed "s/*\\? .*//;s/^Boot//" | sort ))
+    pxe=(\$(\$efibootmgr -v | egrep -i 'NIC|PXE|Network' | egrep -v '\\sBoot\\s' | grep -vi HTTP | sed "s/*\\? .*//;s/^Boot//" | sort ))
     neworder=("\${pxe[@]}")
     for idx in "\${order[@]}"; do
         add=1
