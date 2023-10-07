@@ -1,9 +1,10 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(metaconfig);
+use Test::Quattor qw(metaconfig modulename_exists modulename_not_exists ansible);
 use AII::Shellfe;
 use Cwd;
+use CAF::FileReader;
 
 use Readonly;
 use File::Basename qw(basename);
@@ -49,11 +50,38 @@ is_deeply($cli->_download_options('ccm'), {}, "empty config returns hashref for 
 
 # Test metaconfig
 my $cfg = get_config_for_profile('metaconfig');
-$cli->_metaconfig("somenode", {configuration => $cfg});
+$cli->_metaconfig("somenode", {configuration => $cfg, name => 'somename'});
 
 my $fh = get_file(getcwd . "/target/test/cache/metaconfig/metaconfig/etc/something");
 is("$fh", "a=1\n\n", "metaconfig option rendered file in cache dir");
 
+# Test ansible
+$cfg = get_config_for_profile('ansible');
+$cli->_ansible("ansinode", {configuration => $cfg, name => 'ansiname'});
+
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/main.yml");
+is("$fh", "---\n- hosts: ansinode\n  roles:\n  - ansible\n  - myalias\n", "ansible playbook rendered in cache dir");
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/roles/ansible.yml");
+is("$fh", "---\n- tasks:\n  - name: mytask\n", "ansible role1 rendered in cache dir");
+$fh = get_file(getcwd . "/target/test/cache/ansible/ansible/roles/myalias.yml");
+is("$fh", "---\n- tasks:\n  - name: mytask\n", "ansible role2 rendered in cache dir");
+
+
+# test modulename
+$cfg = get_config_for_profile('modulename_not_exists');
+
+$cli->{status} = 0;
+$cli->run_plugin({configuration => $cfg}, "/system/aii/osinstall", 'Test');
+is($cli->{status}, 16, "Failure");
+my $text;
+{local $/; open(my $fh, '<', $AII_LOG_FILE); $text = <$fh>;}
+like($text, qr{ERROR.*?Couldn't load plugin module doesnotexist},
+     "Failure due to osinstall module missing");
+
+$cli->{status} = 0;
+$cfg = get_config_for_profile('modulename_exists');
+$cli->run_plugin({configuration => $cfg}, "/system/aii/osinstall", 'Test');
+is($cli->{status}, 0, "No failure");
 
 
 done_testing;
