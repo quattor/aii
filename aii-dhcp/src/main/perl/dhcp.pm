@@ -340,10 +340,16 @@ sub Configure
     if ($opts->{tftpserver}) {
         $tftpserver = $opts->{tftpserver};
     }
+
     if ($opts->{filename}) {
         $filename = $opts->{filename};
         $filename =~ s/BOOTSRVIP/$server_ip/;
     }
+
+    if ($opts->{rescue}) {
+        $filename = $opts->{rescue};
+    }
+
     if ($opts->{options}) {
         foreach my $k (sort keys %{$opts->{options}}) {
             $additional .= "option $k $opts->{options}->{$k};\n";
