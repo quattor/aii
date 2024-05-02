@@ -1,0 +1,55 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+unique template quattor/aii/@COMP@/schema;
+
+function validate_aii_@COMP@_config_hooks = {
+    foreach (hook; modlist; SELF) {
+        found = false;
+        foreach(i; v; modlist) {
+            if (exists(v['module']) && v['module'] == "@COMP@") {
+                found = true;
+                if (exists(v['packages']) && hook != "post_reboot" && hook != "post_reboot_end") {
+                    # In post_install you should use AII_OSINSTALL_EXTRAPKGS
+                    error("@COMP@: package installs are only supported in the post-reboot hooks. ")
+                }
+            };
+        };
+
+        if (found && hook != "post_reboot" && hook != "post_reboot_end" && hook != "post_install") {
+            error("@COMP@: calling from the " + hook + " hook is not supported")
+        }
+    };
+
+    true;
+};
+
+type structure_@COMP@_config_file = {
+    "contents" : string
+    # TODO: add owner/permission
+};
+
+type structure_@COMP@_command = {
+    "command" : string
+};
+
+type structure_@COMP@ = {
+    "module"   : string with SELF == "@COMP@"
+    # Config files to generate
+    "files"    : structure_@COMP@_config_file{}
+    # Packages to install
+    "packages" : string[]
+    # Commands to execute
+    "commands" : structure_@COMP@_command[]
+};
+
+# vim: set expandtab ts=4 sw=4:

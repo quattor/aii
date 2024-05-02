@@ -1,0 +1,9 @@
+COMP=custom
+NAME=aii-$(COMP)
+AUTHOR=Gabor Gombas
+MAINTAINER=Gabor Gombas
+DESCRIPTION=AII-KS hook that allows customizing the kickstart script from the templates.
+DESCR=$(DESCRIPTION)
+VERSION=1.0.0
+RELEASE=1
+DATE=03/12/11 12:45
