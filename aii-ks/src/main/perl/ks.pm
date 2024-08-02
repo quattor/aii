@@ -1079,6 +1079,9 @@ sub kspostreboot_header
 
     my $mailx_smtp = "";
     $mailx_smtp .= " smtp=$tree->{mail}->{smtp}" if $tree->{mail}->{smtp};
+    # support for s-nail on el9
+    my $snail_smtp = "";
+    $snail_smtp .= "  -Smta=smtp://$tree->{mail}->{smtp}" if $tree->{mail}->{smtp};
 
     print <<EOF;
 #!/bin/bash
@@ -1099,7 +1102,11 @@ fail() {
     echo "Quattor installation on $fqdn failed: \\\$1"
     subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn failed: \\\$1"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
+        mailx_options="from=root\@$fqdn $mailx_smtp mailx"
+        if [ -x /usr/bin/s-nail ]; then
+            mailx_options="mailx -:/ -Sfrom=root\@$fqdn $snail_smtp"
+        fi
+        env MAILRC=/dev/null \\\$mailx_options -s "\\\$subject" $rootmail <<End_of_mailx
 
 \\`cat $logfile\\`
 ------------------------------------------------------------
@@ -1132,7 +1139,11 @@ success() {
 
     subject="[\\`date +'%x %R %z'\\`] Quattor installation on $fqdn succeeded"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root\@$fqdn $mailx_smtp mailx -s "\\\$subject" $rootmail <<End_of_mailx
+        mailx_options="from=root\@$fqdn $mailx_smtp mailx"
+        if [ -x /usr/bin/s-nail ]; then
+            mailx_options="mailx -:/ -Sfrom=root\@$fqdn $snail_smtp"
+        fi
+        env MAILRC=/dev/null \\\$mailx_options -s "\\\$subject" $rootmail <<End_of_mailx
 
 Node $fqdn successfully installed.
 
