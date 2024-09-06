@@ -46,7 +46,11 @@ fail() {
     echo "Quattor installation on x.y failed: \$1"
     subject="[\`date +'%x %R %z'\`] Quattor installation on x.y failed: \$1"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root@x.y  smtp=smtp.example.com mailx -s "\$subject" root@example.com <<End_of_mailx
+        mailx_options="from=root@x.y  smtp=smtp.example.com mailx"
+        if [ -x /usr/bin/s-nail ]; then
+            mailx_options="mailx -:/ -Sfrom=root@x.y   -Smta=smtp://smtp.example.com"
+        fi
+        env MAILRC=/dev/null \$mailx_options -s "\$subject" root@example.com <<End_of_mailx
 
 \`cat /root/ks-post-reboot.log\`
 ------------------------------------------------------------
@@ -80,7 +84,11 @@ success() {
 
     subject="[\`date +'%x %R %z'\`] Quattor installation on x.y succeeded"
     if [ -x /usr/bin/mailx ]; then
-        env MAILRC=/dev/null from=root@x.y  smtp=smtp.example.com mailx -s "\$subject" root@example.com <<End_of_mailx
+        mailx_options="from=root@x.y  smtp=smtp.example.com mailx"
+        if [ -x /usr/bin/s-nail ]; then
+            mailx_options="mailx -:/ -Sfrom=root@x.y   -Smta=smtp://smtp.example.com"
+        fi
+        env MAILRC=/dev/null \$mailx_options -s "\$subject" root@example.com <<End_of_mailx
 
 Node x.y successfully installed.
 
