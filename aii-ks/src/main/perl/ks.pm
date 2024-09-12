@@ -996,7 +996,7 @@ sub ksinstall_rpm
 
     my $packager = $version >= ANACONDA_VERSION_EL_8_0 ? "dnf" : "yum";
     print join("\\\n    ",
-               "$packager -c /tmp/aii/yum/yum.conf -y install",
+               "$packager -c /var/tmp/aii/yum/yum.conf -y install",
                (map {s/^-//; "-x '$_'"} grep {$_ =~ /^-/} @pkgs),
                (grep {$_ !~ /^-/} @pkgs)
         ), " || fail 'Unable to install packages'\n";
@@ -1542,10 +1542,11 @@ sub yum_setup
     }
 
     print <<EOF;
-mkdir -p /tmp/aii/yum/repos
-chmod 700 /tmp/aii
+mkdir -p /var/tmp/aii/yum/repos
+chmod 700 /var/tmp/aii
+ln -s /var/tmp/aii /tmp/aii
 
-cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf
+cat <<end_of_yum_conf > /var/tmp/aii/yum/yum.conf
 [main]
 EOF
 
@@ -1559,7 +1560,7 @@ EOF
         plugins => 1,
         installonly_limit => 3,
         clean_dependencies_on_remove => 1,
-        reposdir => '/tmp/aii/yum/repos',
+        reposdir => '/var/tmp/aii/yum/repos',
         obsoletes => $obsoletes,
     };
 
@@ -1574,7 +1575,7 @@ EOF
     print <<EOF;
 end_of_yum_conf
 
-cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo
+cat <<end_of_repos > /var/tmp/aii/yum/repos/aii.repo
 EOF
 
     $self->debug(5, "Adding YUM repositories...");

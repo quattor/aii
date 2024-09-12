@@ -1,8 +1,8 @@
 Test the yum_setup
 ---
 ---
-^mkdir -p /tmp/aii/yum/repos$
-^cat <<end_of_yum_conf > /tmp/aii/yum/yum.conf$
+^mkdir -p /var/tmp/aii/yum/repos$
+^cat <<end_of_yum_conf > /var/tmp/aii/yum/yum.conf$
 ^\[main\]$
 ^cachedir=/var/cache/yum/\\\$basearch/\\\$releasever$
 ^clean_dependencies_on_remove=1$
@@ -15,10 +15,10 @@ Test the yum_setup
 ^logfile=/var/log/yum.log$
 ^obsoletes=0$
 ^plugins=1$
-^reposdir=/tmp/aii/yum/repos$
+^reposdir=/var/tmp/aii/yum/repos$
 ^retries=40$
 ^end_of_yum_conf$
-^cat <<end_of_repos > /tmp/aii/yum/repos/aii.repo$
+^cat <<end_of_repos > /var/tmp/aii/yum/repos/aii.repo$
 ^\[repo0\]$
 ^name=repo0$
 ^baseurl=http://www.example.com$
