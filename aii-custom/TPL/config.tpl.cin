@@ -1,0 +1,17 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+template quattor/aii/@COMP@/config;
+
+include { "quattor/aii/@COMP@/schema"; };
+
+bind "/system/aii/hooks" = nlist with validate_aii_@COMP@_config_hooks();
