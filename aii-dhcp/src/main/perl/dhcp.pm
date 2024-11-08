@@ -138,7 +138,12 @@ sub update_dhcp_config_file
                     push @newnodes, "$indent\t  next-server $node->{ST_IP_TFTP};";
                 }
 
-                # additional options
+                # DHCP bootloader filename option
+		if ($node->{FILENAME}) {
+                    push @newnodes, "$indent\t filename \"$node->{FILENAME}\";";
+		}
+
+		# additional options
                 if ($node->{MORE_OPT}) {
                     push @newnodes, "$indent\t  $node->{MORE_OPT}";
                 }
@@ -293,7 +298,7 @@ sub update_dhcp_config {
 # Adds the entry to dhcp
 sub Configure
 {
-    my ($self, $config) = @_;
+    my ($self, $config, $rescue) = @_;
 
     my $tree = $config->getElement("/system/network")->getTree();
     my $fqdn = $tree->{hostname} . "." . $tree->{domainname};
@@ -315,9 +320,18 @@ sub Configure
     my $opts = $config->getElement("/system/aii/dhcp")->getTree();
     my $tftpserver = "";
     my $additional = "";
+    my filename = "";
     if ($opts->{tftpserver}) {
         $tftpserver = $opts->{tftpserver};
     }
+    
+    if ($opts->(filename)) {
+        $filename = $opts->(filename);
+    }
+    if ($rescue eq 'rescue' && $opts->(rescue)) {
+        $filename = $opts->(rescue);
+    }
+
     if ($opts->{options}) {
         foreach my $k (sort keys %{$opts->{options}}) {
             $additional .= "option $k $opts->{options}->{$k};\n";
@@ -331,6 +345,7 @@ sub Configure
         IP         => unpack('N', Socket::inet_aton($ip)),
         MAC        => $cards->{$bootable}->{hwaddr},
         ST_IP_TFTP => $tftpserver,
+        FILENAME   => $filename,
         MORE_OPT   => $additional,
     };
     if ($this_app->option('use_fqdn')) {
