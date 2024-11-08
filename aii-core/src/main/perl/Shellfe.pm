@@ -529,7 +529,7 @@ sub run_plugin
 
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
-    my @modules = $only_modulename ? ($only_modulename) : sort keys %$tree;
+    my @modules = $only_modulename ? ($only_modulename) : map {$tree->{$_}->{plugin_modulename} || $_} sort keys %$tree;
 
     # Iterate over module names, handling each
     foreach my $modulename (@modules) {
