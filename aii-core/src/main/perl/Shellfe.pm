@@ -36,6 +36,7 @@ use File::Basename qw(basename dirname);
 use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
+use AII::Playbook;
 
 use NCM::Component::metaconfig 18.6.0;
 
@@ -60,7 +61,7 @@ use constant LOCKFILE   => '/var/lock/quattor/aii';
 use constant RETRIES    => 6;
 use constant TIMEOUT    => 60;
 use constant PARTERR_ST => 16;
-use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status metaconfig);
+use constant COMMANDS   => qw (remove configure install boot rescue firmware livecd status metaconfig ansible);
 use constant INCLUDE    => 'include';
 use constant CAFILE     => 'ca_file';
 use constant CADIR      => 'ca_dir';
@@ -188,6 +189,12 @@ sub app_options
 
        { NAME    => 'metaconfig=s',
          HELP    => 'Node(s) to generate all metaconfig services for, ' .
+                    'relative to the cachemanager cachepath for that host' .
+                    '(can be a regexp)',
+         DEFAULT => undef },
+
+       { NAME    => 'ansible=s',
+         HELP    => 'Node(s) to generate all ansible playbooks for, ' .
                     'relative to the cachemanager cachepath for that host' .
                     '(can be a regexp)',
          DEFAULT => undef },
@@ -529,12 +536,19 @@ sub run_plugin
 
     # This is here because CacheManager and Fetch objects may have
     # problems when they get out of scope.
-    my @modules = $only_modulename ? ($only_modulename) : sort keys %$tree;
+    my %pmodules;
+    if ($only_modulename) {
+        $pmodules{$only_modulename} = $only_modulename;
+    } else {
+        %pmodules = map {$_ => $tree->{$_}->{plugin_modulename} || $tree->{$_}->{'ncm-module'} || $_} keys %$tree;
+    }
 
     # Iterate over module names, handling each
-    foreach my $modulename (@modules) {
+    #    TODO: when dealing with ansible, this order should be resolved via the dependencies
+    foreach my $pname (sort keys %pmodules) {
+        my $modulename = $pmodules{$pname};
         if ($modulename !~ m/^[a-zA-Z_]\w+(::[a-zA-Z_]\w+)*$/) {
-            $self->error ("Invalid Perl identifier $modulename specified as a plug-in. Skipping.");
+            $self->error ("Invalid Perl identifier $modulename specified as a plug-in for $pname. Skipping.");
             $self->{status} = PARTERR_ST;
             next;
         }
@@ -547,7 +561,7 @@ sub run_plugin
             $self->debug (4, "Loading plugin module $modulename");
             eval (USEMODULE . $modulename);
             if ($@) {
-                $self->error ("Couldn't load plugin module $modulename for path $path: $@");
+                $self->error ("Couldn't load plugin module $modulename for $pname for path $path: $@");
                 $self->{status} = PARTERR_ST;
                 next;
             }
@@ -572,6 +586,14 @@ sub run_plugin
             $aii_shellfev2::__EC__->error_handler(sub {
                 $self->plugin_handler($modulename, @_);
             });
+
+            if ($method eq 'ansible_command') {
+                my $ansible = $st->{configuration}->{ansible};
+                # make role for component name, and also pass it via configuration hack
+                my $role = $ansible->{playbook}->add_role($pname);
+                # placeholder for current/last active role
+                $ansible->{role} = $role;
+            }
 
             # Set active config
             if ($plug->can('set_active_config')) {
@@ -1120,6 +1142,26 @@ sub _metaconfig
 {
     my ($self, $node, $st) = @_;
     $self->run_plugin($st, '/software/components/metaconfig', 'aii_command', 'metaconfig');
+}
+
+=item _metaconfig
+
+Runs the ansible_command method of all components of the node.
+
+=cut
+
+sub _ansible
+{
+    my ($self, $node, $st) = @_;
+    my $playbook = AII::Playbook->new($node, log => $self);
+
+    # ugly hack: pass it to the component via the configuration instance
+    $st->{configuration}->{ansible}->{playbook} = $playbook;
+
+    $self->run_plugin($st, '/software/components', 'ansible_command');
+
+    # for now, write it in the cache dir
+    $playbook->write($st->{configuration}->{cache_path}. "/ansible");
 }
 
 =item get_cache_time
