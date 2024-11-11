@@ -89,10 +89,12 @@ variable AII_ACK_PROTOCOL ?= AII_OSINSTALL_PROTOCOL;
 #
 variable AII_OSINSTALL_ROOT ?= undef;
 variable AII_OSINSTALL_OS_VERSION ?= undef;
-variable DEBUG = debug(format('%s: AII_OSINSTALL_ROOT=%s, AII_OSINSTALL_OS_VERSION=%s',
-                                OBJECT,
-                                AII_OSINSTALL_ROOT,
-                                AII_OSINSTALL_OS_VERSION));
+variable DEBUG = debug(
+    '%s: AII_OSINSTALL_ROOT=%s, AII_OSINSTALL_OS_VERSION=%s',
+    OBJECT,
+    AII_OSINSTALL_ROOT,
+    AII_OSINSTALL_OS_VERSION
+));
 
 # AII_OSINSTALL_SUBURL allows to specify a sub-url under root/version
 # (e.g. /base)
@@ -356,6 +358,11 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 # default list of packages required for the initial installation
 #
 
+variable AII_OSINSTALL_VERSIONLOCK_PLUGIN = if ( OS_VERSION_PARAMS['majorversion'] >= '8' ) {
+    "python3-dnf-plugin-versionlock";
+} else {
+    "yum-plugin-versionlock";
+};
 variable AII_OSINSTALL_PACKAGES ?= list(
     "curl",
     "lsof",
@@ -373,13 +380,15 @@ variable AII_OSINSTALL_PACKAGES ?= list(
     "perl-URI",
     "perl-XML-Parser",
     "yum-plugin-priorities",
-    "yum-plugin-versionlock",
+    AII_OSINSTALL_VERSIONLOCK_PLUGIN,
     "wget",
 );
 
 
-"packages" ?= AII_OSINSTALL_PACKAGES;
 "packages" = {
+    foreach (i; pkg_name; AII_OSINSTALL_PACKAGES) {
+        append(pkg_name);
+    };
     if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
         # grubby is used to disable selinux on with kernel parameter
         append('grubby');
