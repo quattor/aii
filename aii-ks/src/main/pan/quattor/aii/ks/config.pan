@@ -353,16 +353,41 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 "firewall" ?= AII_OSINSTALL_OPTION_FIREWALL;
 
 
+# Include OS specific kickstart configuration, if needed
+#  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
+#  - allow 2 types of variants : major and minor OS variants. Variants for major OS version are located in the standard configuration
+#    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
+#    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
+#    templates).  When both exist, they are both applied.
+variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?=
+    if ( is_defined(OS_VERSION_PARAMS['major']) ) {
+        if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
+    } else {
+        undef;
+    };
+include {
+    debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
+};
+# Existence of OS_VERSION_PARAMS['minor'] is used as a QWG signature
+variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?=
+    if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
+        if_exists('config/quattor/ks');
+    } else {
+        undef;
+};
+include {
+    debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
+};
+
+
 #
 # Minimal package sets to install
 # default list of packages required for the initial installation
 #
 
-variable AII_OSINSTALL_VERSIONLOCK_PLUGIN = if ( OS_VERSION_PARAMS['majorversion'] >= '8' ) {
-    "python3-dnf-plugin-versionlock";
-} else {
-    "yum-plugin-versionlock";
-};
+final variable AII_OSINSTALL_VERSIONLOCK_PLUGIN ?= 'yum-plugin-versionlock';
 variable AII_OSINSTALL_PACKAGES ?= list(
     "curl",
     "lsof",
@@ -446,34 +471,6 @@ variable AII_OSINSTALL_NODEPROFILE ?=
         format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
     };
 "node_profile" ?= AII_OSINSTALL_NODEPROFILE;
-
-# Include OS specific kickstart configuration, if needed
-#  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
-#  - allow 2 types of variants : major and minor OS variants. Variants for major OS version are located in the standard configuration
-#    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
-#    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
-#    templates).  When both exist, they are both applied.
-variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['major']) ) {
-        if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
-    } else {
-        undef;
-    };
-include {
-    debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
-    AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
-};
-# Existence of OS_VERSION_PARAMS['minor'] is used a a QWG signature
-variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
-        if_exists('config/quattor/ks');
-    } else {
-        undef;
-};
-include {
-    debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
-    AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
-};
 
 #
 # For more details on Kickstart options see RedHat documentation:

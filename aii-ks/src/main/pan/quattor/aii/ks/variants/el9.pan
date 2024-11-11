@@ -2,6 +2,8 @@
 
 template quattor/aii/ks/variants/el9;
 
+variable AII_OSINSTALL_VERSIONLOCK_PLUGIN ?= 'python3-dnf-plugin-versionlock';
+
 # Remove deprecated options
 prefix "/system/aii/osinstall/ks";
 "mouse" = null;
