@@ -301,11 +301,13 @@ variable AII_OSINSTALL_BOOTDISK_ORDER ?= AII_OSINSTALL_DISKS['boot_order'];
 variable AII_OSINSTALL_DISABLE_SERVICE ?= null;
 "disable_service" ?= AII_OSINSTALL_DISABLE_SERVICE;
 
-
-#
-# How will we configure the network during the installation?
-# Default to 'dhcp'
-variable  AII_OSINSTALL_BOOTPROTO ?= 'dhcp';
+@{
+desc = default boot protocol for installation
+values = choice between 'dhcp' or 'static' (see schema)
+default = static
+required = no
+}
+variable  AII_OSINSTALL_BOOTPROTO ?= 'static';
 "bootproto" ?= AII_OSINSTALL_BOOTPROTO;
 
 #
