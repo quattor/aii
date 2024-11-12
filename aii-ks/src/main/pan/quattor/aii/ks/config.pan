@@ -31,8 +31,10 @@ variable AII_OSINSTALL_CLEARPART_BOOT_ONLY ?= false;
 # Also ensure that AII_OSINSTALL_SRV has no  trailing /.
 #
 variable AII_OSINSTALL_SRV ?= {
-    error("You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) " +
-            " in order to use AII templates");
+    error(
+        "You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) " +
+        " in order to use AII templates"
+    );
 };
 
 variable AII_OSINSTALL_SRV = {
@@ -65,11 +67,11 @@ variable AII_OSINSTALL_PATH ?= undef;
 # defaults to http
 #
 variable AII_OSINSTALL_PROTOCOL ?=
-    if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
-        error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
-    } else {
-        'http';
-    };
+if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
+    error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
+} else {
+    'http';
+};
 "osinstall_protocol" ?= AII_OSINSTALL_PROTOCOL;
 # Be sure AII_OSINSTALL_PROTOCOL matches osinstall_protocol in case the latter was defined first.
 # For backward compatibility, as in previous versions, osinstall_protocol was explicitly defined by sites.
@@ -94,22 +96,22 @@ variable DEBUG = debug(
     OBJECT,
     AII_OSINSTALL_ROOT,
     AII_OSINSTALL_OS_VERSION
-));
+);
 
 # AII_OSINSTALL_SUBURL allows to specify a sub-url under root/version
 # (e.g. /base)
 
 variable AII_OSINSTALL_SUBURL ?= undef;
 variable AII_OSINSTALL_PATH ?=
-    if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
-        path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
-        if ( is_defined(AII_OSINSTALL_SUBURL) ) {
-            path = path + AII_OSINSTALL_SUBURL;
-        };
-        path;
-    } else {
-        debug('AII_OSINSTALL_ROOT or AII_OSINSTALL_OS_VERSION undefined: cannot define AII_OSINSTALL_PATH');
+if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
+    path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
+    if ( is_defined(AII_OSINSTALL_SUBURL) ) {
+        path = path + AII_OSINSTALL_SUBURL;
     };
+    path;
+} else {
+    debug('AII_OSINSTALL_ROOT or AII_OSINSTALL_OS_VERSION undefined: cannot define AII_OSINSTALL_PATH');
+};
 
 
 # SElinux default configuration at installation time.
@@ -124,8 +126,10 @@ variable AII_OSINSTALL_SELINUX ?= 'disabled';
 #
 "installtype" ?= {
     if ( !is_defined(AII_OSINSTALL_PATH) && !is_defined(BASE_OS_REPOSITORY_TEMPLATE) ) {
-        error("You need to define the variable AII_OSINSTALL_PATH or BASE_OS_REPOSITORY_TEMPLATE"
-                + " (base OS distribution location on the Quattor server)");
+        error(
+            "You need to define the variable AII_OSINSTALL_PATH or BASE_OS_REPOSITORY_TEMPLATE" +
+            " (base OS distribution location on the Quattor server)"
+        );
     };
 
     if ( match(AII_OSINSTALL_PROTOCOL, "^https?") )  {
@@ -242,8 +246,8 @@ variable AII_OSINSTALL_DISKS = {
     if ( is_defined(AII_OSINSTALL_OPTION_CLEARPART) ) {
         if ( is_list(AII_OSINSTALL_OPTION_CLEARPART) ) {
             SELF['clearpart'] = AII_OSINSTALL_OPTION_CLEARPART;
-                foreach (i; disk; AII_OSINSTALL_OPTION_CLEARPART) {
-                    explicit_clearpath[disk] = '';
+            foreach (i; disk; AII_OSINSTALL_OPTION_CLEARPART) {
+                explicit_clearpath[disk] = '';
             };
         } else {
             error('AII_OSINSTALL_OPTION_CLEARPART must be a list');
@@ -288,15 +292,17 @@ variable AII_OSINSTALL_DISKS = {
                         SELF['clearpart'][length(SELF['clearpart'])] = unescape(disk);
                     };
                 } else {
-                clearpart_enabled = false;
+                    clearpart_enabled = false;
                 };
                 # Define only if there is an explicit boot property defined, else let undefined
                 if ( exists(params['boot']) && params['boot'] ) {
                     if ( clearpart_enabled ) {
                         SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
                     } else {
-                        error('HW description inconsistency: ' + disk +
-                                ' defined as a boot disk but clearing of partitions disabled');
+                        error(
+                            'HW description inconsistency: ' + disk +
+                            ' defined as a boot disk but clearing of partitions disabled'
+                        );
                     };
                 };
             } else {
@@ -359,22 +365,16 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 #    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
 #    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
 #    templates).  When both exist, they are both applied.
-variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['major']) ) {
-        if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
-    } else {
-        undef;
-    };
+variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['major']) ) {
+    if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
+};
 include {
     debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
     AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
 };
 # Existence of OS_VERSION_PARAMS['minor'] is used as a QWG signature
-variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
-        if_exists('config/quattor/ks');
-    } else {
-        undef;
+variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
+    if_exists('config/quattor/ks');
 };
 include {
     debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
@@ -460,16 +460,18 @@ include 'components/ccm/config';
 variable AII_USE_CCM ?= exists("/software/components/ccm") && is_defined("/software/components/ccm");
 variable AII_PROFILE_PATH ?= "/profiles";
 variable AII_OSINSTALL_NODEPROFILE ?=
-    if (AII_USE_CCM) {
-        if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
-            value("/software/components/ccm/profile");
-        } else {
-            error("Can't find value for the profile url at /software/components/ccm/profile. " +
-                    "If you don't use ccm, set the variable AII_USE_CCM to false.");
-        };
+if (AII_USE_CCM) {
+    if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
+        value("/software/components/ccm/profile");
     } else {
-        format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
+        error(
+            "Can't find value for the profile url at /software/components/ccm/profile. " +
+            "If you don't use ccm, set the variable AII_USE_CCM to false."
+        );
     };
+} else {
+    format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
+};
 "node_profile" ?= AII_OSINSTALL_NODEPROFILE;
 
 #

@@ -113,20 +113,16 @@ variable AII_NBP_ROOT ?= {
 };
 
 "/system/aii/nbp/pxelinux/kernel" ?=
-    if ( is_defined(AII_NBP_ROOT) ) {
-        format('%s/vmlinuz', AII_NBP_ROOT);
-    } else {
-        undef;
-    };
+if ( is_defined(AII_NBP_ROOT) ) {
+    format('%s/vmlinuz', AII_NBP_ROOT);
+};
 
 variable AII_NBP_INITRD ?= "initrd.img";
 
 "/system/aii/nbp/pxelinux/initrd" ?=
-    if ( is_defined(AII_NBP_ROOT) ) {
-        format('%s/%s', AII_NBP_ROOT, AII_NBP_INITRD);
-    } else {
-        undef;
-    };
+if ( is_defined(AII_NBP_ROOT) ) {
+    format('%s/%s', AII_NBP_ROOT, AII_NBP_INITRD);
+};
 
 variable AII_NBP_KERNELPARAMS ?= null;
 
