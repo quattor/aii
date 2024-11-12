@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -e # halt script on error
+
+rm -f /tmp/indent.py
+wget -q https://raw.githubusercontent.com/stfc/Pan-Indenter/master/pan_indent_checker.py -O /tmp/indent.py
+chmod u+x /tmp/indent.py
+
+git diff --name-only --diff-filter=d HEAD^ | grep '\.pan$' | xargs -rn1 /tmp/indent.py check || exit 1
