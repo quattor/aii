@@ -15,7 +15,6 @@ prefix "/system/aii/osinstall/ks";
 
 # el7
 "version" = "19.31";
-"bootproto" = "static";
 "enable_sshd" = true;
 "cmdline" = true;
 
