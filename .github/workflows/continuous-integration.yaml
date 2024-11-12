@@ -3,6 +3,40 @@ name: Run Tests
 on: [push, pull_request]
 
 jobs:
+  panlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # we need the full repo or HEAD^ does not work
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3
+      - name: Install dependencies
+        run: pip install colorama prettytable six
+      - name: run panlint
+        run: .ci-scripts/panlint
+
+  indentation:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          # we need the full repo or HEAD^ does not work
+          fetch-depth: 0
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3
+      - name: Install dependencies
+        run: pip install colorama
+      - name: run indent checker
+        run: .ci-scripts/indent
+
   runtests:
     runs-on: ubuntu-latest
     container:
