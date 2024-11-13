@@ -66,8 +66,7 @@ variable AII_OSINSTALL_PATH ?= undef;
 # Installation protocol (http or nfs)
 # defaults to http
 #
-variable AII_OSINSTALL_PROTOCOL ?=
-if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
+variable AII_OSINSTALL_PROTOCOL ?= if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
     error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
 } else {
     'http';
@@ -102,8 +101,7 @@ variable DEBUG = debug(
 # (e.g. /base)
 
 variable AII_OSINSTALL_SUBURL ?= undef;
-variable AII_OSINSTALL_PATH ?=
-if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
+variable AII_OSINSTALL_PATH ?= if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
     path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
     if ( is_defined(AII_OSINSTALL_SUBURL) ) {
         path = path + AII_OSINSTALL_SUBURL;
@@ -300,8 +298,9 @@ variable AII_OSINSTALL_DISKS = {
                         SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
                     } else {
                         error(
-                            'HW description inconsistency: ' + disk +
-                            ' defined as a boot disk but clearing of partitions disabled'
+                            'HW description inconsistency: %s defined as a boot disk ' +
+                            'but clearing of partitions disabled',
+                            disk,
                         );
                     };
                 };
@@ -369,7 +368,7 @@ variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS[
     if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
 };
 include {
-    debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
+    debug('KS specific configuration for OS major version: %s', to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
     AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
 };
 # Existence of OS_VERSION_PARAMS['minor'] is used as a QWG signature
@@ -377,7 +376,7 @@ variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS[
     if_exists('config/quattor/ks');
 };
 include {
-    debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
+    debug('KS specific configuration for OS minor release: %s', to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
     AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
 };
 
@@ -459,8 +458,7 @@ variable AII_ACK_LIST ?= list(format("%s://%s%s", AII_ACK_PROTOCOL, AII_ACK_SRV,
 include 'components/ccm/config';
 variable AII_USE_CCM ?= exists("/software/components/ccm") && is_defined("/software/components/ccm");
 variable AII_PROFILE_PATH ?= "/profiles";
-variable AII_OSINSTALL_NODEPROFILE ?=
-if (AII_USE_CCM) {
+variable AII_OSINSTALL_NODEPROFILE ?= if (AII_USE_CCM) {
     if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
         value("/software/components/ccm/profile");
     } else {

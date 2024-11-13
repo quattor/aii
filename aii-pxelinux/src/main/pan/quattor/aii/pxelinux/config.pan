@@ -99,7 +99,7 @@ variable AII_NBP_ROOT ?= {
     if (LPXELINUX) {
         root = LPXELINUX_ROOT;
     } else {
-        toks =  matches(AII_OSINSTALL_OS_VERSION, '^([\w\.]+?)[_\-](.*)$');
+        toks = matches(AII_OSINSTALL_OS_VERSION, '^([\w\.]+?)[_\-](.*)$');
         if ( length(toks) < 3 ) {
             root = undef;
         } else {
@@ -112,15 +112,13 @@ variable AII_NBP_ROOT ?= {
     root;
 };
 
-"/system/aii/nbp/pxelinux/kernel" ?=
-if ( is_defined(AII_NBP_ROOT) ) {
+"/system/aii/nbp/pxelinux/kernel" ?= if ( is_defined(AII_NBP_ROOT) ) {
     format('%s/vmlinuz', AII_NBP_ROOT);
 };
 
 variable AII_NBP_INITRD ?= "initrd.img";
 
-"/system/aii/nbp/pxelinux/initrd" ?=
-if ( is_defined(AII_NBP_ROOT) ) {
+"/system/aii/nbp/pxelinux/initrd" ?= if ( is_defined(AII_NBP_ROOT) ) {
     format('%s/%s', AII_NBP_ROOT, AII_NBP_INITRD);
 };
 
