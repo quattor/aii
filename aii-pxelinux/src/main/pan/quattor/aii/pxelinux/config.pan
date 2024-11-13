@@ -40,10 +40,10 @@ variable AII_KS_PATH ?= {
 
 variable AII_KS_CONFIG_FILE ?= AII_KS_PATH + "/" + AII_HOSTNAME + "." + AII_DOMAIN + ".ks";
 "/system/aii/nbp/pxelinux/kslocation" ?= {
-    if (AII_OSINSTALL_PROTOCOL == "http") {
-        s = "http://" + AII_KS_SRV;
+    if ( match(AII_KS_PROTOCOL, "^https*$") ) {
+        s = format("%s://%s", AII_KS_PROTOCOL, AII_KS_SRV);
     } else {
-        s = "nfs:" + AII_KS_SRV + ":";
+        s = format("nfs:%s:", AII_KS_SRV);
     };
     return(s + AII_KS_CONFIG_FILE);
 };
@@ -99,7 +99,7 @@ variable AII_NBP_ROOT ?= {
     if (LPXELINUX) {
         root = LPXELINUX_ROOT;
     } else {
-        toks =  matches(AII_OSINSTALL_OS_VERSION, '^(\w+?)[_\-](.*)');
+        toks = matches(AII_OSINSTALL_OS_VERSION, '^([\w\.]+?)[_\-](.*)$');
         if ( length(toks) < 3 ) {
             root = undef;
         } else {
@@ -112,21 +112,15 @@ variable AII_NBP_ROOT ?= {
     root;
 };
 
-"/system/aii/nbp/pxelinux/kernel" ?=
-    if ( is_defined(AII_OSINSTALL_OS_VERSION) ) {
-        format('%s/vmlinuz', AII_NBP_ROOT);
-    } else {
-        undef;
-    };
+"/system/aii/nbp/pxelinux/kernel" ?= if ( is_defined(AII_NBP_ROOT) ) {
+    format('%s/vmlinuz', AII_NBP_ROOT);
+};
 
 variable AII_NBP_INITRD ?= "initrd.img";
 
-"/system/aii/nbp/pxelinux/initrd" ?=
-    if ( is_defined(AII_OSINSTALL_OS_VERSION) ) {
-        format('%s/%s', AII_NBP_ROOT, AII_NBP_INITRD);
-    } else {
-        undef;
-    };
+"/system/aii/nbp/pxelinux/initrd" ?= if ( is_defined(AII_NBP_ROOT) ) {
+    format('%s/%s', AII_NBP_ROOT, AII_NBP_INITRD);
+};
 
 variable AII_NBP_KERNELPARAMS ?= null;
 

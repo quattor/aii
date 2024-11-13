@@ -31,8 +31,10 @@ variable AII_OSINSTALL_CLEARPART_BOOT_ONLY ?= false;
 # Also ensure that AII_OSINSTALL_SRV has no  trailing /.
 #
 variable AII_OSINSTALL_SRV ?= {
-    error("You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) " +
-            " in order to use AII templates");
+    error(
+        "You need to define variable  AII_OSINSTALL_SRV (generally the Quattor server) " +
+        " in order to use AII templates"
+    );
 };
 
 variable AII_OSINSTALL_SRV = {
@@ -64,17 +66,21 @@ variable AII_OSINSTALL_PATH ?= undef;
 # Installation protocol (http or nfs)
 # defaults to http
 #
-variable AII_OSINSTALL_PROTOCOL ?=
-    if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
-        error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
-    } else {
-        'http';
-    };
+variable AII_OSINSTALL_PROTOCOL ?= if ( exists("/system/aii/osinstall/ks/osinstall_protocol") ) {
+    error('Use AII_OSINSTALL_PROTOCOL to define installation protocol');
+} else {
+    'http';
+};
 "osinstall_protocol" ?= AII_OSINSTALL_PROTOCOL;
 # Be sure AII_OSINSTALL_PROTOCOL matches osinstall_protocol in case the latter was defined first.
 # For backward compatibility, as in previous versions, osinstall_protocol was explicitly defined by sites.
 variable AII_OSINSTALL_PROTOCOL = value('/system/aii/osinstall/ks/osinstall_protocol');
 
+# Protocol to use with AII_KS_SERVER
+variable AII_KS_PROTOCOL ?= AII_OSINSTALL_PROTOCOL;
+
+# Protocol to use with AII_ACK_BIN
+variable AII_ACK_PROTOCOL ?= AII_OSINSTALL_PROTOCOL;
 
 #
 # Define OS installation path based on OS version
@@ -84,25 +90,26 @@ variable AII_OSINSTALL_PROTOCOL = value('/system/aii/osinstall/ks/osinstall_prot
 #
 variable AII_OSINSTALL_ROOT ?= undef;
 variable AII_OSINSTALL_OS_VERSION ?= undef;
-variable DEBUG = debug(format('%s: AII_OSINSTALL_ROOT=%s, AII_OSINSTALL_OS_VERSION=%s',
-                                OBJECT,
-                                AII_OSINSTALL_ROOT,
-                                AII_OSINSTALL_OS_VERSION));
+variable DEBUG = debug(
+    '%s: AII_OSINSTALL_ROOT=%s, AII_OSINSTALL_OS_VERSION=%s',
+    OBJECT,
+    AII_OSINSTALL_ROOT,
+    AII_OSINSTALL_OS_VERSION
+);
 
 # AII_OSINSTALL_SUBURL allows to specify a sub-url under root/version
 # (e.g. /base)
 
 variable AII_OSINSTALL_SUBURL ?= undef;
-variable AII_OSINSTALL_PATH ?=
-    if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
-        path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
-        if ( is_defined(AII_OSINSTALL_SUBURL) ) {
-            path = path + AII_OSINSTALL_SUBURL;
-        };
-        path;
-    } else {
-        debug('AII_OSINSTALL_ROOT or AII_OSINSTALL_OS_VERSION undefined: cannot define AII_OSINSTALL_PATH');
+variable AII_OSINSTALL_PATH ?= if ( is_defined(AII_OSINSTALL_ROOT) && is_defined(AII_OSINSTALL_OS_VERSION) ) {
+    path = AII_OSINSTALL_ROOT + '/' + AII_OSINSTALL_OS_VERSION;
+    if ( is_defined(AII_OSINSTALL_SUBURL) ) {
+        path = path + AII_OSINSTALL_SUBURL;
     };
+    path;
+} else {
+    debug('AII_OSINSTALL_ROOT or AII_OSINSTALL_OS_VERSION undefined: cannot define AII_OSINSTALL_PATH');
+};
 
 
 # SElinux default configuration at installation time.
@@ -113,16 +120,39 @@ variable AII_OSINSTALL_SELINUX ?= 'disabled';
 # Install type and URL (for http or https) or directory (for NFS)
 # with the OS distribution
 # For backward compatibility (deprecated), allow installtype to be defined explicicly
-# rather than from AII_OSINSTALL_xxx variables.
+# rather than from BASE_OS_REPOSITORY_TEMPLATE or AII_OSINSTALL_xxx variables.
 #
 "installtype" ?= {
-    if ( !exists(AII_OSINSTALL_PATH) || !is_defined(AII_OSINSTALL_PATH) ) {
-        error("You need to define the variable AII_OSINSTALL_PATH or AII_OSINSTALL_ROOT "
-                + "(OS distribution location on the Quattor server)");
+    if ( !is_defined(AII_OSINSTALL_PATH) && !is_defined(BASE_OS_REPOSITORY_TEMPLATE) ) {
+        error(
+            "You need to define the variable AII_OSINSTALL_PATH or BASE_OS_REPOSITORY_TEMPLATE" +
+            " (base OS distribution location on the Quattor server)"
+        );
     };
 
     if ( match(AII_OSINSTALL_PROTOCOL, "^https?") )  {
-        "url --url " + AII_OSINSTALL_PROTOCOL + "://" + AII_OSINSTALL_SRV + AII_OSINSTALL_PATH;
+        if ( is_defined(BASE_OS_REPOSITORY_TEMPLATE) ) {
+            debug('BASE_OS_REPOSITORY_TEMPLATE=%s', BASE_OS_REPOSITORY_TEMPLATE);
+            repo_template_name = format('%s/%s', YUM_OS_SNAPSHOT_NS, BASE_OS_REPOSITORY_TEMPLATE);
+            debug('Base OS repository template = %s', repo_template_name);
+            repo_template = if_exists(repo_template_name);
+        } else {
+            repo_template = undef;
+        };
+        repo_url = undef;
+        if ( is_defined(repo_template) ) {
+            repo_params = create(repo_template);
+            if ( exists(repo_params['protocols']) ) {
+                repo_protocols = repo_params['protocols'];
+                # Assume that all protocols entries are http/https entries
+                repo_url = repo_protocols[0]['url']
+            };
+        };
+        if ( !is_defined(repo_url) ) {
+            repo_url = format("%s://%s%s", AII_OSINSTALL_PROTOCOL, AII_OSINSTALL_SRV, AII_OSINSTALL_PATH);
+        };
+        debug('Base OS repository URL = %s', repo_url);
+        "url --url " + repo_url;
     } else if ( match(AII_OSINSTALL_PROTOCOL, "(?i)nfs") ) {
         "nfs --server " + AII_OSINSTALL_SRV + " --dir " + AII_OSINSTALL_PATH;
     } else {
@@ -175,6 +205,7 @@ variable AII_OSINSTALL_OPTION_NTPSERVERS ?= null;
 # Root Password (for example: aii)
 # by default, derived from the account component
 #
+include 'components/accounts/config';
 variable AII_OSINSTALL_ROOTPW ?= value("/software/components/accounts/rootpwd");
 "rootpw" ?= AII_OSINSTALL_ROOTPW;
 
@@ -213,8 +244,8 @@ variable AII_OSINSTALL_DISKS = {
     if ( is_defined(AII_OSINSTALL_OPTION_CLEARPART) ) {
         if ( is_list(AII_OSINSTALL_OPTION_CLEARPART) ) {
             SELF['clearpart'] = AII_OSINSTALL_OPTION_CLEARPART;
-                foreach (i; disk; AII_OSINSTALL_OPTION_CLEARPART) {
-                    explicit_clearpath[disk] = '';
+            foreach (i; disk; AII_OSINSTALL_OPTION_CLEARPART) {
+                explicit_clearpath[disk] = '';
             };
         } else {
             error('AII_OSINSTALL_OPTION_CLEARPART must be a list');
@@ -259,15 +290,18 @@ variable AII_OSINSTALL_DISKS = {
                         SELF['clearpart'][length(SELF['clearpart'])] = unescape(disk);
                     };
                 } else {
-                clearpart_enabled = false;
+                    clearpart_enabled = false;
                 };
                 # Define only if there is an explicit boot property defined, else let undefined
                 if ( exists(params['boot']) && params['boot'] ) {
                     if ( clearpart_enabled ) {
                         SELF['boot_order'][length(SELF['boot_order'])] = unescape(disk);
                     } else {
-                        error('HW description inconsistency: ' + disk +
-                                ' defined as a boot disk but clearing of partitions disabled');
+                        error(
+                            'HW description inconsistency: %s defined as a boot disk ' +
+                            'but clearing of partitions disabled',
+                            disk,
+                        );
                     };
                 };
             } else {
@@ -324,11 +358,35 @@ variable AII_OSINSTALL_OPTION_FIREWALL ?= null;
 "firewall" ?= AII_OSINSTALL_OPTION_FIREWALL;
 
 
+# Include OS specific kickstart configuration, if needed
+#  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
+#  - allow 2 types of variants : major and minor OS variants. Variants for major OS version are located in the standard configuration
+#    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
+#    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
+#    templates).  When both exist, they are both applied.
+variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['major']) ) {
+    if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
+};
+include {
+    debug('KS specific configuration for OS major version: %s', to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
+};
+# Existence of OS_VERSION_PARAMS['minor'] is used as a QWG signature
+variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?= if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
+    if_exists('config/quattor/ks');
+};
+include {
+    debug('KS specific configuration for OS minor release: %s', to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
+    AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
+};
+
+
 #
 # Minimal package sets to install
 # default list of packages required for the initial installation
 #
 
+final variable AII_OSINSTALL_VERSIONLOCK_PLUGIN ?= 'yum-plugin-versionlock';
 variable AII_OSINSTALL_PACKAGES ?= list(
     "curl",
     "lsof",
@@ -346,13 +404,15 @@ variable AII_OSINSTALL_PACKAGES ?= list(
     "perl-URI",
     "perl-XML-Parser",
     "yum-plugin-priorities",
-    "yum-plugin-versionlock",
+    AII_OSINSTALL_VERSIONLOCK_PLUGIN,
     "wget",
 );
 
 
-"packages" ?= AII_OSINSTALL_PACKAGES;
 "packages" = {
+    foreach (i; pkg_name; AII_OSINSTALL_PACKAGES) {
+        append(pkg_name);
+    };
     if (value('/system/aii/osinstall/ks/selinux') == 'disabled') {
         # grubby is used to disable selinux on with kernel parameter
         append('grubby');
@@ -389,54 +449,28 @@ variable AII_OSINSTALL_PACKAGES ?= list(
 #
 variable AII_ACK_SRV ?= AII_OSINSTALL_SRV;
 variable AII_ACK_CGI ?= "/cgi-bin/aii-installack.cgi";
-variable AII_ACK_LIST ?= list("http://" + AII_ACK_SRV + AII_ACK_CGI);
+variable AII_ACK_LIST ?= list(format("%s://%s%s", AII_ACK_PROTOCOL, AII_ACK_SRV, AII_ACK_CGI));
 "acklist" ?= AII_ACK_LIST;
 
 #
 # Set the location of the node profile
 #
+include 'components/ccm/config';
 variable AII_USE_CCM ?= exists("/software/components/ccm") && is_defined("/software/components/ccm");
 variable AII_PROFILE_PATH ?= "/profiles";
-variable AII_OSINSTALL_NODEPROFILE ?=
-    if (AII_USE_CCM) {
-        if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
-            value("/software/components/ccm/profile");
-        } else {
-            error("Can't find value for the profile url at /software/components/ccm/profile. " +
-                    "If you don't use ccm, set the variable AII_USE_CCM to false.");
-        };
+variable AII_OSINSTALL_NODEPROFILE ?= if (AII_USE_CCM) {
+    if (exists("/software/components/ccm/profile") && !(value("/software/components/ccm/profile") == '' )) {
+        value("/software/components/ccm/profile");
     } else {
-        format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
+        error(
+            "Can't find value for the profile url at /software/components/ccm/profile. " +
+            "If you don't use ccm, set the variable AII_USE_CCM to false."
+        );
     };
+} else {
+    format("http://%s%s/%s.xml", AII_CDB_SRV, AII_PROFILE_PATH, OBJECT);
+};
 "node_profile" ?= AII_OSINSTALL_NODEPROFILE;
-
-# Include OS specific kickstart configuration, if needed
-#  - including this at the end allow to undefine tree elements, and remain compatible with other (previous) OSes
-#  - allow 2 types of variants : major and minor OS variants. Variants for major OS version are located in the standard configuration
-#    (as defined by AII_KS_OS_MAJOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG templates). Variants for minor
-#    OS versions are located into the related OS templates ((as defined by AII_KS_OS_MINOR_SPECIFIC_INCLUDE, default value should be appropriate when using QWG
-#    templates).  When both exist, they are both applied.
-variable  AII_KS_OS_MAJOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['major']) ) {
-        if_exists('quattor/aii/ks/variants/' + OS_VERSION_PARAMS['major']);
-    } else {
-        undef;
-    };
-include {
-    debug('KS specific configuration for OS major version: ' + to_string(AII_KS_OS_MAJOR_SPECIFIC_INCLUDE));
-    AII_KS_OS_MAJOR_SPECIFIC_INCLUDE;
-};
-# Existence of OS_VERSION_PARAMS['minor'] is used a a QWG signature
-variable  AII_KS_OS_MINOR_SPECIFIC_INCLUDE ?=
-    if ( is_defined(OS_VERSION_PARAMS['minor']) ) {
-        if_exists('config/quattor/ks');
-    } else {
-        undef;
-};
-include {
-    debug('KS specific configuration for OS minor release: ' + to_string(AII_KS_OS_MINOR_SPECIFIC_INCLUDE));
-    AII_KS_OS_MINOR_SPECIFIC_INCLUDE;
-};
 
 #
 # For more details on Kickstart options see RedHat documentation:
