@@ -12,10 +12,6 @@ prefix "/system/aii/osinstall/ks";
 
 # Required by perl-CDB_File
 "packages" = append("perl-English");
-# Required by some Quattor components and must be installed before
-# /etc/init.d is created by something else (e.g. a Quattor package)
-"packages" = append("chkconfig");
-"packages" = append("initscripts");
 
 "part_label" = true;
 "volgroup_required" = false;
