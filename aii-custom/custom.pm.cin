@@ -1,0 +1,126 @@
+################################################################################
+# This is '@SELF@', a @NAME@'s file
+################################################################################
+#
+# VERSION:    @VERSION@, @DATE@
+# AUTHOR:     @AUTHOR@
+# MAINTAINER: @MAINTAINER@
+# LICENSE:    @LICENSE@
+#
+################################################################################
+# Coding style: emulate <TAB> characters with 4 spaces, thanks!
+################################################################################
+# File: @COMP@.pm
+# Implementation of ncm-@COMP@
+# Author: @AUTHOR@
+# Version: @VERSION@ : @DATE@
+# @MSG@
+#
+# Note: all methods in this component are called in a
+# $self->$method ($config) way, unless explicitly stated.
+
+package AII::@COMP@;
+
+use strict;
+use warnings;
+
+use EDG::WP4::CCM::Element qw (unescape);
+use NCM::Component::ks qw (ksinstall_rpm);
+
+sub new
+{
+    my $class = shift;
+    return bless {}, $class;
+}
+
+sub lookup_value
+{
+    # Look up a path in the configuration and return it as a string.
+    # Lists are returned as a space-separated string. Hashes are ignored.
+    my ($config, $path) = @_;
+
+    return "" unless $config->elementExists($path);
+
+    my $node = $config->getElement($path);
+    if ($node->isResource()) {
+        if ($node->isType(EDG::WP4::CCM::Element::LIST)) {
+            return join(" ", @{$node->getTree()});
+        }
+        else {
+            return "";
+        }
+    }
+    else {
+        return $node->getValue();
+    }
+}
+
+sub path_subst
+{
+    my ($self, $config, $str) = @_;
+    $str =~ s<\@\{([^{}\n]+)\}>{lookup_value($config, $1);}omeg;
+    return $str;
+}
+
+sub do_hook
+{
+    my ($self, $config, $path, $inside_heredoc) = @_;
+    my $hookcfg = $config->getElement($path)->getTree();
+
+    foreach my $key (keys %{$hookcfg->{files}}) {
+        my $file = unescape($key);
+        my ($dirname) = $file =~ m!^(.*)/[^/]+$!;
+        my $contents = $hookcfg->{files}->{$key}->{contents};
+        $contents = $self->path_subst($config, $contents);
+
+        # When the contents are printed as part of a here-document, we
+        # need to add escaping
+        $contents =~ s/([\\\$])/\\$1/omg if $inside_heredoc;
+
+        print "mkdir -p '$dirname'\n";
+        print "cat <<'End_Of_Config' >'$file'\n";
+        print $contents;
+        # Ensure there is a newline after the contens so the end marker is recognized
+        print "\n" if substr($contents, -1) ne "\n";
+        print "End_Of_Config\n\n";
+    }
+
+    ksinstall_rpm($config, @{$hookcfg->{packages}}) if exists($hookcfg->{packages});
+
+    foreach my $node (@{$hookcfg->{commands}}) {
+        my $cmd = $self->path_subst($config, $node->{command});
+        $cmd =~ s/([\\\$])/\\$1/omg if $inside_heredoc;
+        print $self->path_subst($config, $cmd . "\n\n");
+    }
+}
+
+sub post_reboot
+{
+    my ($self, $config, $path) = @_;
+
+    print "# ***** Begin: @COMP@ post_reboot hook\n";
+    $self->do_hook($config, $path, 1);
+    print "# ***** End: @COMP@ post_reboot hook\n\n";
+}
+
+sub post_reboot_end
+{
+    my ($self, $config, $path) = @_;
+
+    print "# ***** Begin: @COMP@ post_reboot_end hook\n";
+    $self->do_hook($config, $path, 1);
+    print "# ***** End: @COMP@ post_reboot_end hook\n\n";
+}
+
+sub post_install
+{
+    my ($self, $config, $path) = @_;
+
+    print "# ***** Begin: @COMP@ post_install hook\n";
+    $self->do_hook($config, $path, 0);
+    print "# ***** End: @COMP@ post_install hook\n\n";
+}
+
+1;
+
+# vim: set expandtab ts=4 sw=4:

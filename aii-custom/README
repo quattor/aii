@@ -1,0 +1,29 @@
+Plugin to allow customizing the kickstart script from templates. It allows
+doing various early setup tasks before the host profile is downloaded and
+the full-featured ncm components would become usable. The supported
+operations are:
+
+- Create config files with a given content
+- Install additional packages (only if used as a post-reboot hook)
+- Run arbitrary commands
+
+If more than one kind of operations are requested, they are performed in
+the above order. The hook may be invoked multiple times if you need even
+greater control over the order of events.
+
+Example use case:
+
+include { "quattor/aii/custom/config" };
+
+"/system/aii/hooks/post_reboot" = push(nlist(
+	"module", "custom",
+	"files", nlist(
+		escape("/etc/some_config_file"), nlist(
+			"contents", "config file contents"
+		),
+	),
+	"packages", list("name_of_package"),
+	"commands", list(
+		nlist("command", "ls -lR /dev"),
+	),
+));
