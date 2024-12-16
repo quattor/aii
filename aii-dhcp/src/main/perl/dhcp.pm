@@ -313,15 +313,19 @@ sub Configure
     }
     my $ip = $self->get_ip($bootable, $tree);
 
-    if ($opts->{verifyhostname}) {
+    if ($opts->{verifyhostname} && $opts->{verifyhostname} != 'no') {
         my $fqdn_ip = gethostbyname($fqdn);
         $fqdn_ip = inet_ntoa($fqdn_ip) if defined($fqdn_ip);
+        my $log_method = 'error';
+        if ($opts->{verifyhostname} == 'only_warn') {
+            $log_method = 'warn';
+        }
         if (defined($fqdn_ip)) {
             if ($fqdn_ip ne $ip) {
-                $self->error("aii-dhcp: fqdn $fqdn ip $fqdn_ip does not match configured ip $ip");
+                $self->$log_method();
             }
         } else {
-            $self->error("aii-dhcp: failed to obtain IP address for fqdn $fqdn");
+            $self->$log_method("aii-dhcp: failed to obtain IP address for fqdn $fqdn");
             return;
         }
     }

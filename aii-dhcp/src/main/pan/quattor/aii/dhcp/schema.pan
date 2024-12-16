@@ -21,5 +21,5 @@ type structure_dhcp_dhcp_info = {
     }
     "options" ? string{}
     @{Verify hostname in DNS}
-    "verifyhostname" ? boolean
+    "verifyhostname" ? choice('yes', 'no', 'only_warn')
 };
