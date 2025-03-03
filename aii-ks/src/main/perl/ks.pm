@@ -82,6 +82,7 @@ use constant ANACONDA_VERSION_EL_5_0 => version->new("11.1");
 use constant ANACONDA_VERSION_EL_6_0 => version->new("13.21");
 use constant ANACONDA_VERSION_EL_7_0 => version->new("19.31");
 use constant ANACONDA_VERSION_EL_8_0 => version->new("29.19");
+use constant ANACONDA_VERSION_EL_9_0 => version->new("34.25");
 use constant ANACONDA_VERSION_LOWEST => ANACONDA_VERSION_EL_5_0;
 
 
@@ -479,7 +480,9 @@ EOF
     if ($tree->{logging} && $tree->{logging}->{host}) {
         print "logging --host=$tree->{logging}->{host} ",
             "--port=$tree->{logging}->{port}";
-        print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
+        unless ($version >= ANACONDA_VERSION_EL_9_0) {
+            print " --level=$tree->{logging}->{level}" if $tree->{logging}->{level};
+        }
         print "\n";
         if($tree->{logging}->{send_aiilogs}) {
             # requirement for usleep
@@ -514,7 +517,12 @@ EOF
     }
 
     print "key $tree->{installnumber}\n" if exists $tree->{installnumber};
-    print "auth ", join(" ", map("--$_",  @{$tree->{auth}})), "\n";
+    unless ($version >= ANACONDA_VERSION_EL_8_0) {
+        print "auth ", join(" ", map("--$_",  @{$tree->{auth}})), "\n";
+    } else {
+        print "authselect select sssd --force\n";
+    }
+    
     print "lang $tree->{lang}\n";
     print "langsupport ", join (" ", @{$tree->{langsupport}}), "\n"
         if $tree->{langsupport} and @{$tree->{langsupport}}[0] ne "none";
