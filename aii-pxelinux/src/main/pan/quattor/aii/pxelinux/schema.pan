@@ -34,4 +34,6 @@ type structure_pxelinux_pxe_info = {
     @{Get (static) IP details used for ksdevice configuration form this device.
       For most network configs like bridges and bonds, this is not required.}
     "ipdev" ? string with exists(format("/system/network/interfaces/%s", SELF))
+    @{size (in MB) of the ramdisk to use; when size is 0, no ramdisk size option is set}
+    "ramdisk_size" ? long(0..)
 };

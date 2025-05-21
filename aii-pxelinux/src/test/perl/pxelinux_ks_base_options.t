@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_ks_block);
+use Test::Quattor qw(pxelinux_ks_block pxelinux_ks_ramdisk_size pxelinux_ks_no_ramdisk);
 use NCM::Component::PXELINUX::constants qw(:pxe_variants :pxe_constants);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
@@ -39,6 +39,8 @@ $mockpxe->mock('_file_path', $fp);
 
 my $comp = NCM::Component::pxelinux->new('pxelinux_ks');
 my $cfg = get_config_for_profile('pxelinux_ks_block');
+my $cfg_rds = get_config_for_profile('pxelinux_ks_ramdisk_size');
+my $cfg_no_rds = get_config_for_profile('pxelinux_ks_no_ramdisk');
 my $hostname = hostname();
 
 for my $variant_constant (@PXE_VARIANTS) {
@@ -49,7 +51,7 @@ for my $variant_constant (@PXE_VARIANTS) {
 
     $comp->$config_method($cfg);
     my $fh = get_file($fp);
-    
+
     like($fh, qr{^\s{4}$kernel_params_cmd.*?\sramdisk=32768(\s|$)}m, "append ramdisk (variant=$variant_name)");
     if ( $variant == PXE_VARIANT_PXELINUX ) {
         like($fh, qr{^\s{4}$kernel_params_cmd.*?\sinitrd=path/to/initrd(\s|$)}m, "append initrd (variant=$variant_name)");
@@ -58,6 +60,15 @@ for my $variant_constant (@PXE_VARIANTS) {
     like($fh, qr{^\s{4}$kernel_params_cmd.*?\sksdevice=eth0(\s|$)}m, "append ksdevice(variant=$variant_name)");
     like($fh, qr{^\s{4}$kernel_params_cmd.*?\supdates=http://somewhere/somthing/updates.img(\s|$)}m, "append ksdevice(variant=$variant_name)");
     like($fh, qr{^\s{4}$kernel_params_cmd.*?\sinst.stage2=http://$hostname/stage2.img}m, "hostname substitution in append(variant=$variant_name)");
+
+    $comp->$config_method($cfg_rds);
+    $fh = get_file($fp);
+    like($fh, qr{^\s{4}$kernel_params_cmd.*?\sramdisk_size=123456(\s|$)}m, "append ramdisk_size (variant=$variant_name)");
+
+    $comp->$config_method($cfg_no_rds);
+    $fh = get_file($fp);
+    like($fh, qr{^\s{4}$kernel_params_cmd}m, "append no ramdisk params (variant=$variant_name)");
+    unlike($fh, qr{ramdisk}m, "append no ramdisk (variant=$variant_name)");
 };
 
 done_testing();

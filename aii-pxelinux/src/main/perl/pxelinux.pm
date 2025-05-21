@@ -336,10 +336,23 @@ sub _kernel_params_ks
     my $ksloc = $pxe_config->{kslocation};
     $ksloc =~ s{\bLOCALHOST\b}{LOCALHOST}e;
 
+    my @kernel_params;
+
     # With PXELINUX, initrd path is specified with a kernel parameter
     # Parameter order is not important but is kept as "ramdisk, initrd, ks" for compatibility
     # with previous AII versions for easier comparisons.
-    my @kernel_params =  ("ramdisk=32768");
+
+    my $ramdisk_size = $pxe_config->{ramdisk_size};
+    if (defined($ramdisk_size)) {
+        # no ramdisk_size option when size is 0
+        $ramdisk_size = $ramdisk_size > 0 ? "ramdisk_size=$ramdisk_size" : undef;
+    } else {
+        # use legacy syntax and hardcoded value
+        $ramdisk_size = "ramdisk=32768";
+    }
+
+    push @kernel_params, $ramdisk_size if $ramdisk_size;
+
     if ($variant == PXE_VARIANT_PXELINUX) {
         push @kernel_params, "initrd=$initrd_path";
     }
