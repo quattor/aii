@@ -318,6 +318,10 @@ sub Configure
     if ($opts->{tftpserver}) {
         $tftpserver = $opts->{tftpserver};
     }
+    if ($opts->{filename}) {
+        $additional .= "filename \"$opts->{filename}\";\n";
+    }
+
     if ($opts->{options}) {
         foreach my $k (sort keys %{$opts->{options}}) {
             $additional .= "option $k $opts->{options}->{$k};\n";

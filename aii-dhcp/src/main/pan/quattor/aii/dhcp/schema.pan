@@ -8,6 +8,7 @@ unique template quattor/aii/${project.artifactId}/schema;
 # Information needed for creating the Kickstart file
 type structure_dhcp_dhcp_info = {
     "tftpserver" ? string
+    "filename" ? string
     "options" ? string{}
 };
 
