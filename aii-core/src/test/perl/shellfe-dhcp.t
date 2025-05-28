@@ -25,6 +25,7 @@ use Test::More;
 use Test::Quattor;
 use AII::DHCP;
 use AII::Shellfe;
+use Text::Diff;
 use Test::MockModule;
 use Test::Quattor qw(shellfe-dhcp-1 shellfe-dhcp-2 shellfe-dhcp-3 shellfe-dhcp-4 shellfe-dhcp-b);
 
@@ -102,7 +103,10 @@ subnet 10.11.0.0 netmask 255.255.255.0 {
     hardware ethernet 00:11:22:33:44:55;
     fixed-address 10.11.0.1;
     next-server 10.11.0.0;
-    moremore
+    moremore;
+     option less isless;
+     filename "smallfile";
+
   }
 
   host host2.example.com {  # added by aii-dhcp
@@ -146,6 +150,8 @@ is($lock, 2, "lock taken twice");
 ok(get_command('/sbin/service dhcpd restart'), 'dhcpd restarted');
 
 my $fh = get_file('/path/dhcpd.conf');
-is("$fh", $new_dhcpd, "generated new config file");
+my $diff = diff $fh->string_ref(), \$new_dhcpd;
+$diff = "no diff" if !defined($diff);
+is("$fh", $new_dhcpd, "generated new config file: $diff");
 
 done_testing();

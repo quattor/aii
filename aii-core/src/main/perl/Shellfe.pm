@@ -36,6 +36,7 @@ use File::Basename qw(basename dirname);
 use DB_File;
 use Readonly;
 use Parallel::ForkManager 0.7.6;
+use Socket;
 
 use NCM::Component::metaconfig 18.6.0;
 
@@ -623,23 +624,70 @@ sub dhcp
         return;
     }
 
-    my $mac;
+    my ($mac, $iface);
     my $cards = $st->{configuration}->getTree(HWCARDS);
-    foreach my $cfg (sort values (%$cards)) {
+    foreach my $cardname (sort keys (%$cards)) {
+        my $cfg = $cards->{$cardname};
         if ($cfg->{boot}) {
             if ($cfg->{hwaddr} =~ m{^((?:[0-9a-f]{2}[-:])+(?:[0-9a-f]{2}))$}i) {
                 $mac = $1;
-                $self->verbose("Using macaddress from (first) boot nic");
+                $iface = $cardname;
+                $self->verbose("Using macaddress $mac from (first) boot nic $iface");
                 last;
             };
         }
     }
 
+    # from dhcp.pm plugin code
+    my $verifyhn = "$tree->{verifyhostname}" || "no";
+    my $verified = 1;
+    if ($verifyhn ne "no") {
+        my $nwtree = $st->{configuration}->getTree('/system/network');
+        # /system/network/hostname and /system/network/domainname are mandatory
+        my $fqdn = $nwtree->{realhostname} || "$nwtree->{hostname}.$nwtree->{domainname}";
+
+        # Single redirection for bonding devices
+        if (defined($nwtree->{interfaces}->{$iface}->{master})) {
+            $iface = $nwtree->{interfaces}->{$iface}->{master};
+        }
+        my $ip = $nwtree->{interfaces}->{$iface}->{ip};
+        if (defined($ip)) {
+            my $fqdn_ip = gethostbyname($fqdn);
+            $fqdn_ip = inet_ntoa($fqdn_ip) if defined($fqdn_ip);
+            if (defined($fqdn_ip)) {
+                if ($fqdn_ip ne $ip) {
+                    $self->error("Fqdn $fqdn ip $fqdn_ip does not match configured ip $ip");
+                    $verified = 0;
+                }
+            } else {
+                $self->error("Failed to obtain IP address for fqdn $fqdn");
+                $verified = 0;
+            }
+        } else {
+            $self->error("Failed to get ip from profile for fqdn $fqdn iface $iface");
+            $verified = 0;
+        }
+    }
+
     my $ec;
-    if ($cmd eq CONFIGURE) {
-        my $opts = $st->{configuration}->getTree(DHCPOPTION);
+    if (($verifyhn eq "yes") && !$verified) {
+        $ec = 1;
+    } elsif ($cmd eq CONFIGURE) {
+        my $opts = $st->{configuration}->getTree(DHCPOPTION) || {};
         $self->debug (4, "Going to add dhcp entry of $name to configure");
-        $ec = $dhcpmgr->new_configure_entry($name, $mac, $opts->{tftpserver} // '', $opts->{addoptions} // ());
+
+        my @addoptions;
+
+        push(@addoptions, $opts->{addoptions}) if defined($opts->{addoptions});
+
+        # support same dhcp.pm plugin code
+        foreach my $okey (sort keys (%$opts)) {
+            push(@addoptions, "    option $okey $opts->{$okey};\n") if ($okey ne 'addoptions' && $okey ne 'tftpserver');
+        };
+        push(@addoptions, "    filename \"$tree->{filename}\";\n") if $tree->{filename};
+
+        $ec = $dhcpmgr->new_configure_entry($name, $mac, $opts->{tftpserver} // '', @addoptions);
+
     } elsif ($cmd eq REMOVEMETHOD) {
         if ($st->{reinstall}) {
             $self->debug(3, "No dhcp removal with reinstall set for $name");

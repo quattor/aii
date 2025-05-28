@@ -12,3 +12,9 @@ unique template shellfe-dhcp;
     "pxe", true,
 );
 
+prefix "/system/network";
+"hostname" = "host5";
+"domainname" = "example2.com";
+
+prefix "interfaces";
+"eth0/ip" = "10.11.3.5";
