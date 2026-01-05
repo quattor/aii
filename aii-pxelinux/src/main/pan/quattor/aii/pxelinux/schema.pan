@@ -21,8 +21,11 @@ type structure_pxelinux_pxe_info = {
     "initrd" : string
     @{try to resolve the hostname (when relevant) for EFI kernel and/or initrd; to use the ip instead of the hostname}
     "efi_name_lookup" ? boolean
-    "ksdevice"  : string with match(SELF, '^(bootif|link)$') || is_hwaddr(SELF) ||
-        exists("/system/network/interfaces/" + escape(SELF))
+    "ksdevice"  : string with {
+        match(SELF, '^(bootif|link)$') ||
+        is_hwaddr(SELF) ||
+        exists("/system/network/interfaces/" + escape(SELF));
+    }
     "kslocation" : type_absoluteURI
     "label"  : string
     "append" ? string
@@ -34,4 +37,6 @@ type structure_pxelinux_pxe_info = {
     @{Get (static) IP details used for ksdevice configuration form this device.
       For most network configs like bridges and bonds, this is not required.}
     "ipdev" ? string with exists(format("/system/network/interfaces/%s", SELF))
+    @{size (in MB) of the ramdisk to use; when size is 0, no ramdisk size option is set}
+    "ramdisk_size" ? long(0..)
 };
