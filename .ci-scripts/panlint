@@ -1,8 +1,0 @@
-#!/usr/bin/env bash
-set -e # halt script on error
-
-rm -f /tmp/panlint.py
-wget -q https://raw.githubusercontent.com/quattor/pan/master/panc/src/main/scripts/panlint/panlint.py -O /tmp/panlint.py
-chmod u+x /tmp/panlint.py
-
-git diff --name-only --diff-filter=d HEAD^ | grep '\.pan$' | xargs -r /tmp/panlint.py || exit 1

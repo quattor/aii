@@ -3,66 +3,9 @@ name: Run Tests
 on: [push, pull_request]
 
 jobs:
-  panlint:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # we need the full repo or HEAD^ does not work
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3
-      - name: Install dependencies
-        run: pip install colorama prettytable six
-      - name: run panlint
-        run: .ci-scripts/panlint
-
-  indentation:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          # we need the full repo or HEAD^ does not work
-          fetch-depth: 0
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3
-      - name: Install dependencies
-        run: pip install colorama
-      - name: run indent checker
-        run: .ci-scripts/indent
-
-  runtests:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/quattor/quattor-test-container:latest
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-    - name: Determine hash for caching key
-      id: cachekeystep
-      run: echo "pomcachekey=${{ hashFiles('**/pom.xml') }}" >> $GITHUB_ENV
-    - name: Cache Maven packages
-      uses: actions/cache@v4
-      with:
-        path: /tmp/m2
-        key: ${{ runner.os }}-m2-${{ env.pomcachekey }}
-        restore-keys: ${{ runner.os }}-m2-
-    - name: set up dependencies
-      run: |
-        dnf -y install perl-Parallel-ForkManager ncm-metaconfig
-    - name: run tests
-      run: |
-        # make sure it exists before chown
-        mkdir -p /tmp/m2
-        chown -R quattortest:quattortest . /tmp/m2
-        # we have to run as a non-root user to pass the spma tests
-        # secondly, we first download all maven dependencies and then run the tests because it fails with hanging downloads otherwise.
-        runuser --shell /bin/bash --preserve-environment --command "source /usr/bin/mvn_test.sh && mvn_run \"dependency:resolve-plugins dependency:go-offline $MVN_ARGS\" && mvn_test" quattortest
-      env:
-        MVN_ARGS: -Dmaven.repo.local=/tmp/m2
+  standard-maven:
+    uses: quattor/release/.github/workflows/maven-tests.yaml@main
+    with:
+      dependencies: perl-Parallel-ForkManager ncm-metaconfig
+  standard-pan:
+    uses: quattor/release/.github/workflows/pan-template-tests.yaml@main
