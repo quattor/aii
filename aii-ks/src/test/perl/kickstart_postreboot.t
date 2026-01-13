@@ -110,16 +110,7 @@ End_of_sendmail
 # Wait for functional network up by testing DNS lookup via nslookup.
 wait_for_network () {
     # Wait up to 2 minutes until the network comes up
-    i=0
-    while ! nslookup \$1 > /dev/null
-    do
-        sleep 1
-        let i=\$i+1
-        if [ \$i -gt 120 ]
-        then
-            fail "Network does not come up (nslookup \$1)"
-        fi
-    done
+    nslookup -retry=12 -timeout=10 \$1 > /dev/null || fail "Network does not come up (nslookup \$1)"
 }
 
 # Ensure that the log file doesn't exist.
