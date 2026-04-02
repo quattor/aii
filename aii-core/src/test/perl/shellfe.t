@@ -1,9 +1,10 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(metaconfig);
+use Test::Quattor qw(metaconfig modulename_exists modulename_not_exists);
 use AII::Shellfe;
 use Cwd;
+use CAF::FileReader;
 
 use Readonly;
 use File::Basename qw(basename);
@@ -54,6 +55,21 @@ $cli->_metaconfig("somenode", {configuration => $cfg});
 my $fh = get_file(getcwd . "/target/test/cache/metaconfig/metaconfig/etc/something");
 is("$fh", "a=1\n\n", "metaconfig option rendered file in cache dir");
 
+# test modulename
+$cfg = get_config_for_profile('modulename_not_exists');
+
+$cli->{status} = 0;
+$cli->run_plugin({configuration => $cfg}, "/system/aii/osinstall", 'Test');
+is($cli->{status}, 16, "Failure");
+my $text;
+{local $/; open(my $fh, '<', $AII_LOG_FILE); $text = <$fh>;}
+like($text, qr{ERROR.*?Couldn't load plugin module doesnotexist},
+     "Failure due to osinstall module missing");
+
+$cli->{status} = 0;
+$cfg = get_config_for_profile('modulename_exists');
+$cli->run_plugin({configuration => $cfg}, "/system/aii/osinstall", 'Test');
+is($cli->{status}, 0, "No failure");
 
 
 done_testing;

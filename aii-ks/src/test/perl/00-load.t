@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use Test::Quattor;
-use Test::More tests => 1;
+use Test::More tests => 2;
 
 use_ok("NCM::Component::ks");
+use_ok("NCM::Component::ks_post_script");
