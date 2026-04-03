@@ -580,6 +580,22 @@ sub run_plugin
                 $plug->set_active_config($st->{configuration});
             }
 
+	    my @params;
+	    if ($modulename eq "dhcp") {
+		if ($self->option("rescue") && $method eq CONFIGURE){
+		    $self->debug (4, "Setting params for DHCP plugin and rescue mode");
+		    @params = ($st->{configuration}, "rescue");
+		}
+		else {
+		    $self->debug (4, "Setting params for DHCP plugin and non-rescue mode");
+		    @params = ($st->{configuration}, "none");
+		}
+	    }
+	    else {
+		$self->debug (4, "Setting generic params");
+		@params = ($st->{configuration});
+	    }
+
             # The plugin method has to return success
             my $res = eval { $plug->$method ($st->{configuration}) };
             if ($@) {
