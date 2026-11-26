@@ -39,4 +39,7 @@ type structure_pxelinux_pxe_info = {
     "ipdev" ? string with exists(format("/system/network/interfaces/%s", SELF))
     @{size (in MB) of the ramdisk to use; when size is 0, no ramdisk size option is set}
     "ramdisk_size" ? long(0..)
+    @{Use an explicit INITRD directive instead of the initrd= kernel
+      parameter in the PXELINUX configuration. Defaults to false.}
+    "initrd_directive" ? boolean
 };
