@@ -1,7 +1,7 @@
 use strict;
 use warnings;
 use Test::More;
-use Test::Quattor qw(pxelinux_ks_block pxelinux_ks_ramdisk_size pxelinux_ks_no_ramdisk);
+use Test::Quattor qw(pxelinux_ks_block pxelinux_ks_ramdisk_size pxelinux_ks_no_ramdisk pxelinux_ks_initrd_directive);
 use NCM::Component::PXELINUX::constants qw(:pxe_variants :pxe_constants);
 use NCM::Component::pxelinux;
 use CAF::FileWriter;
@@ -41,6 +41,7 @@ my $comp = NCM::Component::pxelinux->new('pxelinux_ks');
 my $cfg = get_config_for_profile('pxelinux_ks_block');
 my $cfg_rds = get_config_for_profile('pxelinux_ks_ramdisk_size');
 my $cfg_no_rds = get_config_for_profile('pxelinux_ks_no_ramdisk');
+my $cfg_initrd_directive = get_config_for_profile('pxelinux_ks_initrd_directive');
 my $hostname = hostname();
 
 for my $variant_constant (@PXE_VARIANTS) {
@@ -69,6 +70,15 @@ for my $variant_constant (@PXE_VARIANTS) {
     $fh = get_file($fp);
     like($fh, qr{^\s{4}$kernel_params_cmd}m, "append no ramdisk params (variant=$variant_name)");
     unlike($fh, qr{ramdisk}m, "append no ramdisk (variant=$variant_name)");
+
+    $comp->$config_method($cfg_initrd_directive);
+    $fh = get_file($fp);
+    if ( $variant == PXE_VARIANT_PXELINUX ) {
+        like($fh, qr{^\s{4}initrd path/to/initrd$}m, "explicit initrd directive (variant=$variant_name)");
+        unlike($fh, qr{^\s{4}$kernel_params_cmd.*?\sinitrd=path/to/initrd(\s|$)}m, "no initrd= in append (variant=$variant_name)");
+    } else {
+        like($fh, qr{^\s{4}$test_efi_initrd_cmd path/to/initrd$}m, "initrd directive (variant=$variant_name)");
+    };
 };
 
 done_testing();
